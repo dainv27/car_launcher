@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Car body -->
+    <path
+        android:fillColor="#FF6200EE"
+        android:pathData="M20,55 L28,40 L40,35 L68,35 L80,40 L88,55 L88,70 L20,70 Z"/>
+    <!-- Car roof -->
+    <path
+        android:fillColor="#FF3700B3"
+        android:pathData="M35,40 L42,28 L66,28 L73,40 Z"/>
+    <!-- Windows -->
+    <path
+        android:fillColor="#FFBB86FC"
+        android:pathData="M38,42 L44,32 L52,32 L52,42 Z"/>
+    <path
+        android:fillColor="#FFBB86FC"
+        android:pathData="M56,32 L64,32 L70,42 L56,42 Z"/>
+    <!-- Wheels -->
+    <path
+        android:fillColor="#FF333333"
+        android:pathData="M30,70 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"/>
+    <path
+        android:fillColor="#FF333333"
+        android:pathData="M78,70 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"/>
+    <!-- Wheel centers -->
+    <path
+        android:fillColor="#FF666666"
+        android:pathData="M30,70 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"/>
+    <path
+        android:fillColor="#FF666666"
+        android:pathData="M78,70 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"/>
+    <!-- Headlights -->
+    <path
+        android:fillColor="#FFFFEB3B"
+        android:pathData="M22,52 L26,52 L26,58 L22,58 Z"/>
+    <path
+        android:fillColor="#FFFFEB3B"
+        android:pathData="M82,52 L86,52 L86,58 L82,58 Z"/>
+</vector>

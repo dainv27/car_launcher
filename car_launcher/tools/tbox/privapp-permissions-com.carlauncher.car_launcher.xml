@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <!-- Install under /system/priv-app and sign with the TBox platform key. -->
+    <privapp-permissions package="com.carlauncher.car_launcher">
+        <permission name="android.permission.ACTIVITY_EMBEDDING"/>
+        <permission name="android.permission.ADD_TRUSTED_DISPLAY"/>
+        <permission name="android.permission.INJECT_EVENTS"/>
+        <permission name="android.permission.MANAGE_ACTIVITY_STACKS"/>
+        <permission name="android.permission.MANAGE_ACTIVITY_TASKS"/>
+    </privapp-permissions>
+</permissions>

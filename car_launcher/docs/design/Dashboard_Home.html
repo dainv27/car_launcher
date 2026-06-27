@@ -1,0 +1,323 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Nova Drive | Automotive Cockpit</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#1b1c1d",
+                      "outline-variant": "#3b494c",
+                      "on-primary-fixed": "#001f24",
+                      "on-secondary-container": "#b4b5b7",
+                      "surface-bright": "#39393a",
+                      "surface-container": "#1f2021",
+                      "inverse-surface": "#e4e2e3",
+                      "on-secondary": "#2f3133",
+                      "on-primary": "#00363d",
+                      "on-tertiary-container": "#56595e",
+                      "on-tertiary": "#2d3135",
+                      "surface-container-high": "#292a2b",
+                      "surface-container-lowest": "#0d0e0f",
+                      "on-tertiary-fixed-variant": "#43474b",
+                      "hazard-red": "#FF3B30",
+                      "primary-fixed-dim": "#00daf3",
+                      "surface-container-highest": "#343536",
+                      "secondary": "#c6c6c9",
+                      "deep-obsidian": "#0A0B0C",
+                      "glass-surface": "rgba(255, 255, 255, 0.08)",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-container": "#00626e",
+                      "inverse-primary": "#006875",
+                      "background": "#121314",
+                      "inverse-on-surface": "#303031",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "on-background": "#e4e2e3",
+                      "primary-fixed": "#9cf0ff",
+                      "on-primary-fixed-variant": "#004f58",
+                      "on-secondary-fixed-variant": "#454749",
+                      "on-surface-variant": "#bac9cc",
+                      "on-surface": "#e4e2e3",
+                      "on-secondary-fixed": "#1a1c1e",
+                      "secondary-container": "#454749",
+                      "safety-white": "#FFFFFF",
+                      "surface": "#121314",
+                      "primary": "#c3f5ff",
+                      "tertiary-fixed": "#e0e3e8",
+                      "on-tertiary-fixed": "#181c20",
+                      "surface-tint": "#00daf3",
+                      "outline": "#849396",
+                      "tertiary": "#eaedf2",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#e2e2e5",
+                      "surface-variant": "#343536",
+                      "primary-container": "#00e5ff",
+                      "tertiary-fixed-dim": "#c3c7cc",
+                      "tertiary-container": "#ced1d6",
+                      "neon-cyan": "#00E5FF",
+                      "secondary-fixed-dim": "#c6c6c9",
+                      "surface-dim": "#121314"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "widget-gap": "16px",
+                      "touch-target-min": "64px",
+                      "sidebar-width": "120px",
+                      "gutter": "24px",
+                      "margin": "32px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "display-speed": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "label-lg": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "display-speed": ["80px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "18px", "fontWeight": "500"}],
+                      "label-lg": ["16px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-md": ["18px", {"lineHeight": "26px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0A0B0C;
+            overflow: hidden;
+            width: 1920px;
+            height: 720px;
+            cursor: default;
+            user-select: none;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .cyan-glow {
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- Persistent SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[120px] bg-deep-obsidian flex flex-col items-center py-8 gap-widget-gap bg-glass-surface backdrop-blur-xl border-r border-safety-white/10 z-50">
+    <div class="mb-8 flex flex-col items-center">
+        <span class="font-headline-md text-headline-md font-bold text-safety-white">12:45</span>
+        <div class="flex items-center gap-2 mt-1 text-on-surface-variant">
+            <span class="material-symbols-outlined" style="font-size: 18px;">signal_cellular_4_bar</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">bluetooth</span>
+        </div>
+    </div>
+    <!-- Navigation Tabs -->
+    <div class="flex-1 flex flex-col w-full">
+        <button class="relative flex items-center justify-center w-full h-16 text-neon-cyan before:absolute before:left-0 before:w-1 before:h-8 before:bg-neon-cyan before:shadow-[0_0_15px_#00E5FF] active:scale-95 transition-transform duration-150">
+            <span class="material-symbols-outlined active-icon" style="font-size: 32px;">home</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95">
+            <span class="material-symbols-outlined" style="font-size: 32px;">arrow_back</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95">
+            <span class="material-symbols-outlined" style="font-size: 32px;">apps</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95">
+            <span class="material-symbols-outlined" style="font-size: 32px;">music_note</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95">
+            <span class="material-symbols-outlined" style="font-size: 32px;">explore</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95">
+            <span class="material-symbols-outlined" style="font-size: 32px;">grid_view</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200 active:scale-95 mt-auto">
+            <span class="material-symbols-outlined" style="font-size: 32px;">settings</span>
+        </button>
+    </div>
+    <div class="mt-4 text-on-surface-variant flex flex-col items-center">
+        <span class="material-symbols-outlined" style="font-size: 24px;">battery_full</span>
+        <span class="font-label-md text-label-md mt-1">Status</span>
+    </div>
+</nav>
+<!-- Top AppBar -->
+<header class="absolute top-0 right-0 w-[calc(100%-120px)] h-20 flex justify-between items-center px-gutter ml-[120px] z-40 bg-transparent">
+    <div class="flex items-center gap-4">
+        <h1 class="font-headline-lg text-headline-lg font-bold text-safety-white tracking-tight">K3</h1>
+        <div class="h-6 w-[1px] bg-safety-white/20"></div>
+        <div class="flex items-center text-neon-cyan gap-2">
+            <span class="material-symbols-outlined" style="font-size: 20px;">navigation</span>
+            <span class="font-label-lg text-label-lg">Heading North-East</span>
+        </div>
+    </div>
+    <div class="flex items-center gap-gutter">
+        <button class="text-on-surface-variant hover:text-neon-cyan transition-colors active:opacity-80">
+            <span class="material-symbols-outlined" style="font-size: 28px;">notifications</span>
+        </button>
+        <button class="text-on-surface-variant hover:text-neon-cyan transition-colors active:opacity-80">
+            <span class="material-symbols-outlined" style="font-size: 28px;">mic</span>
+        </button>
+        <div class="w-10 h-10 rounded-full bg-surface-container-highest border border-safety-white/10 flex items-center justify-center overflow-hidden">
+            <img alt="Profile" class="w-full h-full object-cover" data-alt="A professional high-resolution headshot of a person with a neutral expression, captured in soft studio lighting that emphasizes a modern and sophisticated tech-professional look. The background is a dark, out-of-focus futuristic interior with subtle cyan light leaks that match the overall automotive interface aesthetic. The image is clean and minimalist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzU6Gi002BlDh4DSnZoIGk3w6yBIF6Crj-ckB5BjIZzLEicUyJHit_Fiem0eP0xRqa8JhwltURk2aaZXa35IHMNqJHPfh57sfysAo82t0hh-gYVuxqONdgcKkHbuCkHjwSg-0IiqFy9ajWySGz6tHQxZLiTWBUdq_Ny5R7XFZPNUd9UNp0Otz9PJqbCOd_niNs2oR_dQZi0QciXldC7_K4S4j4K3JmfDxoDXe5Ya-x16j3jS64VFEA_efj_PUj7PSuwEy-h8OLVvo8">
+        </div>
+    </div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[120px] pt-20 p-margin h-full w-[calc(100%-120px)] grid grid-cols-12 grid-rows-2 gap-gutter">
+    <!-- Large Navigation Widget (Left side, spans 8 columns, 2 rows) -->
+    <section class="col-span-8 row-span-2 glass-panel rounded-xl overflow-hidden relative group">
+        <div class="absolute inset-0 z-0">
+            <img alt="Map" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-10000 ease-linear" data-alt="A highly detailed 3D satellite view of a modern urban landscape at dusk, featuring glowing street grids and neon-lit skyscrapers. The lighting is dominated by deep blues and vibrant cyans, with arterial roads highlighted in a soft golden glow to indicate traffic flow. The perspective is a slight isometric tilt, creating a sense of depth and technical precision typical of high-end automotive navigation systems." data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqdqPe5jXOOL4Z8EauhRqKyaQ0e6Th1ltS2pwoer5d3g8HjHyuD4O3h-x96Zj8xryvazIEzK7DaedLkheOooltAux02gpI2WN63xuXn67or8m8gJ6bIHS5nDIWq2zUYUHoLthRFyoIjstzvZ5pvZRH315D2xhR7uLYcqR7wNcyDmc58ptA0yQaT1i-G43eBHDdVQWEISck_nZi5MWPq3Sk8NNvO-CS03mqzRKgj5Wvk6uYK2xPWZXwtXxSJa-wNAMExgViqnk3fvrJ">
+        </div>
+        <!-- Map Overlay UI -->
+        <div class="absolute inset-0 bg-gradient-to-t from-deep-obsidian/80 via-transparent to-deep-obsidian/40 z-10 pointer-events-none"></div>
+        <div class="absolute top-6 left-6 z-20 flex flex-col gap-4">
+            <div class="glass-panel p-4 rounded-lg flex items-center gap-4 border-l-4 border-l-neon-cyan cyan-glow">
+                <div class="bg-neon-cyan/20 p-2 rounded-full">
+                    <span class="material-symbols-outlined text-neon-cyan" style="font-size: 32px;">turn_slight_right</span>
+                </div>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant uppercase">Next Turn • 400m</p>
+                    <h2 class="font-headline-md text-headline-md text-safety-white">Embarcadero South</h2>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-6 left-6 right-6 z-20 flex justify-between items-end">
+            <div class="flex gap-4">
+                <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3">
+                    <span class="material-symbols-outlined text-neon-cyan" style="font-size: 24px;">speed</span>
+                    <span class="font-headline-md text-headline-md text-safety-white">65 <span class="text-label-md font-normal text-on-surface-variant">KM/H</span></span>
+                </div>
+                <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3">
+                    <span class="material-symbols-outlined text-hazard-red" style="font-size: 24px;">error</span>
+                    <span class="font-headline-md text-headline-md text-safety-white">50</span>
+                </div>
+            </div>
+            <button class="bg-neon-cyan text-deep-obsidian px-8 py-4 rounded-full font-label-lg text-label-lg font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+                <span class="material-symbols-outlined">search</span>
+                RE-ROUTE
+            </button>
+        </div>
+    </section>
+    <!-- Music Player Widget (Top Right, spans 4 columns) -->
+    <section class="col-span-4 glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+        <!-- Background Album Art Blur -->
+        <div class="absolute inset-0 -z-10 overflow-hidden">
+            <img alt="Album Art" class="w-full h-full object-cover blur-3xl opacity-20 scale-150 group-hover:rotate-6 transition-transform duration-10000" data-alt="Abstract digital artwork representing electronic music, featuring flowing waves of vibrant cyan and violet light particles against a pitch-black void. The composition is fluid and rhythmic, with a distinct glowing core that suggests energy and sound vibration. The style is ultra-modern and minimalist, designed to evoke a premium audio-visual experience in a luxury vehicle cabin." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAP9AgH_EAYrzlqFzNpvFK9psIWnk7Ff-jstBdyTv2eJHCi5_Hd-uDq6Y1tGxdpO46I7ScCcSF-OGmbXO4_aCqM4THEqZx975KHptbXmwevNuAqdmHpZmQgTchEhEVKJdcoUNm2XMZlXOtV9CXDNR6SerUTiWQl2B5hN5OLMiU3Jq2vzDjSdTT4pzGE-YRBakCoSn9oCH9Vgg1QFCEn2YoGtamK-LcTZqJ9sizAm3DX9HkO6QyRan6jZ6K_fTofMwLoI_AoGhHgYWZ">
+        </div>
+        <div class="flex items-start gap-6">
+            <div class="w-32 h-32 rounded-lg overflow-hidden border border-safety-white/10 shrink-0 shadow-2xl">
+                <img alt="Album Art" class="w-full h-full object-cover" data-alt="A close-up of a sleek, minimalist album cover featuring geometric shards of glass reflecting intense cyan neon light. The design is clean and technical, with a central focal point that pulses with digital energy. The lighting creates high-contrast shadows, emphasizing a premium, futuristic aesthetic that aligns perfectly with a high-end car's dark interior." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1VP2-Hh4V_kj3SO6PVlOS-xjvEob3wgOX3vh8GhAp5xnkcWCD4q09gX2uKakbT8uzwB4iw5CVSC7KA2-V-u3EeUgHnhFbqtPqBl3-OM2mR8Ez9Zt-4jwd3RaEeO5O4IzTrEzBR9zclx8Q0rrsnfSk6079vDkrj0_SMggUDO2OEI3Ih6UfQnn19AZP1tpxvBv38CnPtZ6U7tOxdMIzvwrBhW1GFMtmaLZlUhngsB4-623zlsGhR2kbKqWp03ouSu_2sTajoiHhWH-Z">
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <h3 class="font-headline-md text-headline-md text-safety-white truncate">Neon Horizons</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant truncate">Cyber-Pulse Collective</p>
+                <div class="flex items-center gap-2 mt-4 text-neon-cyan">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">graphic_eq</span>
+                    <span class="font-label-md text-label-md">Spatial Audio Active</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-auto">
+            <!-- Progress Bar -->
+            <div class="relative w-full h-3 bg-safety-white/10 rounded-full mb-6 cursor-pointer">
+                <div class="absolute top-0 left-0 h-full w-2/3 bg-neon-cyan rounded-full cyan-glow"></div>
+                <div class="absolute top-1/2 left-2/3 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-safety-white rounded-full border-4 border-neon-cyan shadow-lg"></div>
+            </div>
+            <!-- Controls -->
+            <div class="flex justify-between items-center px-4">
+                <button class="text-on-surface hover:text-neon-cyan transition-colors">
+                    <span class="material-symbols-outlined" style="font-size: 40px;">skip_previous</span>
+                </button>
+                <button class="w-20 h-20 bg-safety-white text-deep-obsidian rounded-full flex items-center justify-center hover:bg-neon-cyan transition-all active:scale-90">
+                    <span class="material-symbols-outlined" style="font-size: 48px; font-variation-settings: 'FILL' 1;">pause</span>
+                </button>
+                <button class="text-on-surface hover:text-neon-cyan transition-colors">
+                    <span class="material-symbols-outlined" style="font-size: 40px;">skip_next</span>
+                </button>
+            </div>
+        </div>
+    </section>
+    <!-- Weather & Clock Widget (Bottom Right, spans 4 columns) -->
+    <section class="col-span-4 glass-panel rounded-xl p-6 flex items-center justify-between overflow-hidden relative">
+        <div class="flex flex-col">
+            <span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-[0.2em] mb-1">San Francisco</span>
+            <div class="flex items-center gap-4">
+                <span class="font-display-speed text-display-speed text-safety-white">18°</span>
+                <div class="flex flex-col">
+                    <span class="material-symbols-outlined text-neon-cyan" style="font-size: 48px;">cloud</span>
+                    <span class="font-label-md text-label-md text-on-surface-variant">Partly Cloudy</span>
+                </div>
+            </div>
+        </div>
+        <div class="h-full w-[1px] bg-safety-white/10 mx-6"></div>
+        <div class="flex flex-col items-end text-right">
+            <span class="font-display-speed text-display-speed text-neon-cyan">12:45</span>
+            <span class="font-headline-md text-headline-md text-safety-white">MON, OCT 23</span>
+            <div class="mt-2 flex gap-2">
+                <div class="w-2 h-2 rounded-full bg-neon-cyan"></div>
+                <div class="w-2 h-2 rounded-full bg-safety-white/20"></div>
+                <div class="w-2 h-2 rounded-full bg-safety-white/20"></div>
+            </div>
+        </div>
+        <!-- Background Decorative Element -->
+        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+    </section>
+</main>
+<!-- Bottom Status Bar (Optional Micro-interaction Layer) -->
+<footer class="fixed bottom-0 right-0 w-[calc(100%-120px)] h-12 px-gutter flex items-center justify-between text-on-surface-variant font-label-md text-label-md pointer-events-none">
+    <div class="flex gap-6">
+        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">thermostat</span> 21°C Auto</span>
+        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">tire_repair</span> TPMS Normal</span>
+    </div>
+    <div class="flex gap-6">
+        <span class="flex items-center gap-2 text-neon-cyan">System Online <span class="w-2 h-2 bg-neon-cyan rounded-full animate-pulse"></span></span>
+    </div>
+</footer>
+<script>
+    // Simple micro-interaction for time update
+    function updateTime() {
+        const now = new Date();
+        const timeStrings = document.querySelectorAll('.font-display-speed, .font-headline-md');
+        // This is just a mockup behavior
+        console.log('Clock sync at:', now.toLocaleTimeString());
+    }
+    setInterval(updateTime, 60000);
+
+    // Interaction for buttons
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.classList.add('scale-95');
+            setTimeout(() => this.classList.remove('scale-95'), 150);
+        });
+    });
+</script>
+
+
+
+
+</body></html>

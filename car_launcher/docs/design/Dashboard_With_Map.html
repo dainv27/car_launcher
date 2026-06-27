@@ -1,0 +1,271 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Nova Drive - Automotive Dash</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#001f24",
+                      "on-tertiary-fixed": "#181c20",
+                      "on-secondary-fixed": "#1a1c1e",
+                      "secondary-container": "#454749",
+                      "safety-white": "#FFFFFF",
+                      "glass-surface": "rgba(255, 255, 255, 0.08)",
+                      "on-surface-variant": "#bac9cc",
+                      "surface-container-high": "#292a2b",
+                      "deep-obsidian": "#0A0B0C",
+                      "tertiary-fixed": "#e0e3e8",
+                      "error": "#ffb4ab",
+                      "on-tertiary-container": "#56595e",
+                      "secondary-fixed": "#e2e2e5",
+                      "surface-tint": "#00daf3",
+                      "on-secondary": "#2f3133",
+                      "primary-container": "#00e5ff",
+                      "primary": "#c3f5ff",
+                      "surface-container": "#1f2021",
+                      "on-secondary-container": "#b4b5b7",
+                      "on-tertiary-fixed-variant": "#43474b",
+                      "on-tertiary": "#2d3135",
+                      "inverse-primary": "#006875",
+                      "primary-fixed": "#9cf0ff",
+                      "tertiary": "#eaedf2",
+                      "surface-container-highest": "#343536",
+                      "on-error": "#690005",
+                      "tertiary-fixed-dim": "#c3c7cc",
+                      "inverse-surface": "#e4e2e3",
+                      "surface-dim": "#121314",
+                      "outline-variant": "#3b494c",
+                      "on-error-container": "#ffdad6",
+                      "on-background": "#e4e2e3",
+                      "surface-container-low": "#1b1c1d",
+                      "surface-bright": "#39393a",
+                      "inverse-on-surface": "#303031",
+                      "secondary": "#c6c6c9",
+                      "secondary-fixed-dim": "#c6c6c9",
+                      "surface-variant": "#343536",
+                      "on-primary": "#00363d",
+                      "background": "#121314",
+                      "surface-container-lowest": "#0d0e0f",
+                      "on-primary-container": "#00626e",
+                      "on-surface": "#e4e2e3",
+                      "on-primary-fixed-variant": "#004f58",
+                      "hazard-red": "#FF3B30",
+                      "outline": "#849396",
+                      "primary-fixed-dim": "#00daf3",
+                      "tertiary-container": "#ced1d6",
+                      "error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#454749",
+                      "neon-cyan": "#00E5FF",
+                      "surface": "#121314"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "widget-gap": "16px",
+                      "touch-target-min": "64px",
+                      "sidebar-width": "120px",
+                      "margin": "32px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-speed": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-lg": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "display-speed": ["80px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["18px", {"lineHeight": "26px", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "18px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-lg": ["16px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            background-color: #0A0B0C;
+            overflow: hidden;
+            width: 1920px;
+            height: 720px;
+        }
+        .glass-panel {
+            background: rgba(18, 19, 20, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .map-gradient-overlay {
+            background: linear-gradient(90deg, rgba(10, 11, 12, 1) 0%, rgba(10, 11, 12, 0.4) 15%, rgba(10, 11, 12, 0) 50%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex text-on-surface">
+<!-- PERSISTENT SIDEBAR: SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[120px] bg-deep-obsidian flex flex-col items-center py-8 gap-widget-gap bg-glass-surface backdrop-blur-xl border-r border-safety-white/10 z-50">
+    <div class="flex flex-col items-center gap-1 mb-8">
+        <span class="font-headline-md text-headline-md font-bold text-safety-white">15:09</span>
+        <div class="flex items-center gap-2 text-neon-cyan"><span class="material-symbols-outlined text-label-md">signal_cellular_4_bar</span><span class="material-symbols-outlined text-label-md">bluetooth</span></div>
+    </div>
+    <nav class="flex flex-col items-center w-full gap-2">
+        <!-- Navigation maps to 'Navigation' tab based on intent -->
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">home</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">arrow_back</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">apps</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">music_note</span>
+        </button>
+        <!-- Active Tab: Navigation -->
+        <button class="relative flex items-center justify-center w-full h-16 text-neon-cyan before:absolute before:left-0 before:w-1 before:h-8 before:bg-neon-cyan before:shadow-[0_0_15px_#00E5FF] active:scale-95 transition-transform duration-150">
+            <span class="material-symbols-outlined text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">explore</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">grid_view</span>
+        </button>
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">settings</span>
+        </button>
+    </nav>
+    <div class="mt-auto flex flex-col items-center w-full">
+        <button class="flex items-center justify-center w-full h-16 text-on-surface-variant hover:bg-glass-surface transition-colors duration-200">
+            <span class="material-symbols-outlined text-[32px]">battery_full</span>
+        </button>
+    </div>
+</aside>
+<!-- MAIN CANVAS -->
+<main class="flex-1 ml-[120px] relative w-full h-full overflow-hidden">
+    <!-- MAP LAYER (Background) -->
+    <div class="absolute inset-0 z-0">
+        <img class="w-full h-full object-cover grayscale-[0.3] brightness-[0.6]" data-alt="A highly detailed 3D satellite navigation map of a modern coastal city at dusk. The UI shows glowing neon blue route lines winding through skyscraper-filled streets. Soft atmospheric lighting illuminates the urban grid with deep navy and electric cyan tones, mirroring a premium automotive interface aesthetic. The perspective is a 45-degree birds-eye view typical of high-end digital cockpits." data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeGGHiKunnZSM-4YOb5-FutwTXeXcIYRG5ggQeWNlTTZJYemovw5zexGu0GJpyvIXNC-sVNuWmccsvsJkqZoiQUimRJlUKfqGwEJkaWhNQekweXNT9k4RBarz5On0Qfbbsnyro4kHaI8A9EMXVthxxxvdi17knxXzrnYLGpw5j7C1WH5rjiivbSTV76cyH6mBFuiRVnKxF0wje-ydEfVm27773wNRWNewCCr1iC9wv15pD7Yddpe7mIY9WdznfsE5zfHie5qwRSbHR">
+        <!-- Map UI Overlays -->
+        <div class="absolute inset-0 map-gradient-overlay"></div>
+        <!-- Navigation HUD -->
+        <div class="absolute top-10 left-10 flex flex-col gap-4">
+            <div class="bg-deep-obsidian/80 backdrop-blur-md p-6 rounded-xl border border-safety-white/10 w-80">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-neon-cyan rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.4)]">
+                        <span class="material-symbols-outlined text-on-primary-fixed text-4xl">turn_right</span>
+                    </div>
+                    <div>
+                        <span class="block font-headline-md text-headline-md text-safety-white">450 <span class="text-on-surface-variant">ft</span></span>
+                        <span class="block font-label-lg text-label-lg text-on-surface-variant uppercase tracking-widest">Market Street</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-deep-obsidian/80 backdrop-blur-md px-6 py-4 rounded-xl border border-safety-white/10 inline-flex items-center gap-3 w-fit">
+                <span class="material-symbols-outlined text-neon-cyan">timer</span>
+                <span class="font-body-md text-body-md text-safety-white">14 min</span>
+                <span class="text-on-surface-variant">•</span>
+                <span class="font-body-md text-body-md text-safety-white">4.2 mi</span>
+            </div>
+        </div>
+    </div>
+    <!-- TOP APP BAR -->
+    <header class="absolute top-0 right-0 w-[calc(100%-120px)] h-20 z-40 flex justify-between items-center px-gutter w-full">
+        <div class="flex items-center gap-4">
+            <h1 class="font-headline-lg text-headline-lg font-bold text-safety-white tracking-tight">K3</h1>
+            <div class="h-6 w-[1px] bg-safety-white/20"></div>
+            <span class="font-label-md text-label-md text-on-surface-variant">San Francisco, CA</span>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 px-4 py-2 bg-glass-surface rounded-full border border-safety-white/5">
+                <span class="material-symbols-outlined text-hazard-red" style="font-variation-settings: &quot;FILL&quot; 1;">favorite</span>
+                <span class="font-label-md text-label-md text-safety-white">72 BPM</span>
+            </div>
+            <button class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-neon-cyan transition-colors">
+                <span class="material-symbols-outlined text-2xl">notifications</span>
+            </button>
+            <button class="w-12 h-12 flex items-center justify-center bg-neon-cyan text-on-primary-fixed rounded-full shadow-[0_0_15px_rgba(0,229,255,0.4)]">
+                <span class="material-symbols-outlined text-2xl">mic</span>
+            </button>
+        </div>
+    </header>
+    <!-- YOUTUBE EMBEDDED APPLICATION PANEL (40% width) -->
+
+    <!-- Speed & Status Indicators (Floating over Map) -->
+    <div class="absolute bottom-10 left-10 flex items-end gap-10">
+        <div class="flex flex-col items-center">
+            <span class="font-display-speed text-display-speed text-safety-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">65</span>
+            <span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-widest mt-[-10px]">MPH</span>
+        </div>
+        <!-- Quick Controls -->
+        <div class="flex bg-deep-obsidian/80 backdrop-blur-md rounded-2xl p-2 border border-safety-white/10 mb-2">
+            <button class="w-14 h-14 flex items-center justify-center rounded-xl hover:bg-glass-surface text-on-surface-variant">
+                <span class="material-symbols-outlined">ac_unit</span>
+            </button>
+            <div class="w-[1px] h-10 bg-safety-white/10 self-center"></div>
+            <button class="w-14 h-14 flex items-center justify-center rounded-xl hover:bg-glass-surface text-on-surface-variant">
+                <span class="material-symbols-outlined">light_mode</span>
+            </button>
+            <div class="w-[1px] h-10 bg-safety-white/10 self-center"></div>
+            <button class="w-14 h-14 flex items-center justify-center rounded-xl hover:bg-glass-surface text-on-surface-variant">
+                <span class="material-symbols-outlined">volume_up</span>
+            </button>
+        </div>
+    </div>
+</main>
+<script>
+    // Atmospheric Micro-interactions
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('mousedown', () => {
+            btn.style.transform = 'scale(0.95)';
+        });
+        btn.addEventListener('mouseup', () => {
+            btn.style.transform = 'scale(1)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'scale(1)';
+        });
+    });
+
+    // Simple Clock Update
+    function updateClock() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const clockEl = document.querySelector('.font-headline-md.text-headline-md.font-bold.text-safety-white');
+        if(clockEl) clockEl.textContent = `${hours}:${minutes}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+
+
+
+
+</body></html>

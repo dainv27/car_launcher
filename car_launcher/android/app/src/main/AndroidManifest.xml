@@ -1,0 +1,158 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY"/>
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_TASKS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_STACKS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.INJECT_EVENTS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.ACTIVITY_EMBEDDING"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.REORDER_TASKS"/>
+<!--    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>-->
+<!--    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES"/>-->
+<!--    <uses-permission android:name="android.permission.MANAGE_USERS"/>-->
+<!--    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>-->
+<!--    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>-->
+<!--    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>-->
+<!--    <uses-permission android:name="android.permission.SET_ACTIVITY_WATCHER"/>-->
+<!--    <uses-permission android:name="android.permission.TETHER_PRIVILEGED"/>-->
+<!--    <uses-permission android:name="android.permission.NETWORK_SETTINGS"/>-->
+<!--    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>-->
+<!--    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>-->
+<!--    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>-->
+<!--    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>-->
+<!--    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL"/>-->
+<!--    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>-->
+<!--    <uses-permission android:name="android.permission.CONTROL_DISPLAY_BRIGHTNESS"/>-->
+<!--    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>-->
+<!--    <uses-permission android:name="com.carlauncher.car_launcher.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"/>-->
+<!--    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"/>-->
+
+    <application
+        android:label="Car Launcher"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:resizeableActivity="true"
+            android:windowSoftInputMode="adjustNothing">
+
+            <!-- Normal app launcher intent filter -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- Keycloak OAuth callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="carlauncher"
+                    android:host="oauth"
+                    android:path="/callback" />
+            </intent-filter>
+
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"/>
+        </activity>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".AppPackageChangedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REMOVED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".VehicleTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location"/>
+
+        <service
+            android:name=".StartupJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
+
+        <!-- Notification listener for MediaSession access -->
+        <service
+            android:name=".NotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".embedding.EmbeddedInputAccessibilityService"
+            android:label="Virtual display input fallback"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/embedded_input_accessibility_service"/>
+        </service>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+        <meta-data
+            android:name="io.flutter.embedding.android.DisableSurfaceControl"
+            android:value="true"/>
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+    </queries>
+</manifest>

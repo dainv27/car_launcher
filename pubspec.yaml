@@ -1,0 +1,94 @@
+name: car_launcher
+description: "Car Launcher - Android automotive launcher"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.0.0
+
+  # Local storage
+  shared_preferences: ^2.3.0
+
+  # Keycloak OIDC authentication
+  openidconnect: ^2.0.1
+  openidconnect_platform_interface: ^2.0.1
+  openidconnect_linux: ^2.0.2
+  openidconnect_windows: ^2.0.2
+  flutter_secure_storage: ^10.2.0
+  url_launcher: ^6.3.1
+
+  # Utilities
+  http: ^1.2.0
+  intl: ^0.19.0
+  get_it: ^8.0.0
+  path_provider: ^2.1.0
+  uuid: ^4.5.0
+  image_picker: ^1.1.0
+  # Icons
+  cupertino_icons: ^1.0.8
+  sqflite: ^2.4.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  riverpod_generator: ^2.6.1
+  build_runner: ^2.4.0
+  json_serializable: ^6.9.0
+  flutter_native_splash: ^2.4.8
+  flutter_launcher_icons: ^0.14.4
+  sqflite_common_ffi: ^2.4.2
+
+flutter_native_splash:
+  color: "#000000"
+  color_dark: "#000000"
+  image: assets/images/splash.png
+
+  android: true
+  ios: false
+
+  android_12:
+    color: "#000000"
+    color_dark: "#000000"
+    image: assets/images/splash.png
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/k3_logo.png
+    - assets/images/splash_logo.png
+    - assets/images/splash.png
+    - assets/images/dainv.png
+    - assets/images/logo_1.png
+    - assets/images/logo_2.png
+    - assets/images/icon_app.png
+    - assets/images/icon_fg.png
+    - assets/images/icon_bg.png
+
+  # To add more assets to your application, add them here:
+  #   - assets/icons/
+  #   - assets/images/
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font.
+  # For example:
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: fonts/Roboto-Regular.ttf
+  #       - asset: fonts/Roboto-Bold.ttf
+  #         weight: 700

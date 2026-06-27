@@ -2020,26 +2020,26 @@ class _ConnectivitySection extends ConsumerWidget {
                 _ConnectivityRow(
                   icon: Icons.wifi,
                   label: 'Wi-Fi',
-                  value: connectivity['wifi'] == true ? 'Connected' : 'Off',
-                  isOn: connectivity['wifi'] == true,
+                  value: connectivity.extra['wifi'] == true ? 'Connected' : 'Off',
+                  isOn: connectivity.extra['wifi'] == true,
                 ),
                 const SizedBox(height: 16),
                 _ConnectivityRow(
                   icon: Icons.bluetooth,
                   label: 'Bluetooth',
-                  value: connectivity['bluetoothConnected'] == true
+                  value: connectivity.extra['bluetoothConnected'] == true
                       ? 'Connected'
-                      : connectivity['bluetoothEnabled'] == true
+                      : connectivity.extra['bluetoothEnabled'] == true
                       ? 'On'
                       : 'Off',
-                  isOn: connectivity['bluetoothEnabled'] == true,
+                  isOn: connectivity.extra['bluetoothEnabled'] == true,
                 ),
                 const SizedBox(height: 16),
                 _ConnectivityRow(
                   icon: Icons.vpn_key,
                   label: 'VPN',
-                  value: connectivity['vpn'] == true ? 'Active' : 'Off',
-                  isOn: connectivity['vpn'] == true,
+                  value: connectivity.extra['vpn'] == true ? 'Active' : 'Off',
+                  isOn: connectivity.extra['vpn'] == true,
                 ),
               ],
             ),

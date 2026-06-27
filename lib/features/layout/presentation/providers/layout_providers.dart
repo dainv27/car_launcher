@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
 
@@ -18,7 +20,8 @@ class LayoutNotifier extends StateNotifier<LayoutModel> {
     try {
       final map = jsonDecode(json) as Map<String, dynamic>;
       state = LayoutModel.fromJson(map);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Layout load failed — using default', tag: 'LAYOUT', error: e);
       state = const LayoutModel();
     }
   }

@@ -10,6 +10,9 @@ import 'package:uuid/uuid.dart';
 import 'package:car_launcher/core/auth/app_secure_storage.dart';
 import 'package:car_launcher/core/auth/keycloak_config.dart';
 import 'package:car_launcher/core/auth/keycloak_oidc_platform.dart';
+import 'package:car_launcher/core/di/injection_container.dart';
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/features/account/domain/account_user.dart';
 
 sealed class AccountAuthException implements Exception {
@@ -70,13 +73,13 @@ class KeycloakAuthRepository {
 
   Future<void> restoreSession() async {
     final client = await _ensureClient();
-    debugPrint('[KC] restoreSession — identity=${client.identity != null}');
+    AppLogger.instance.d('[KC] restoreSession — identity=${client.identity != null}', tag: 'KC');
     if (client.identity == null) return;
     if (client.isTokenAboutToExpire) {
-      debugPrint('[KC] token expiring — refreshing');
+      AppLogger.instance.d('[KC] token expiring — refreshing', tag: 'KC');
       final ok = await client.refresh(raiseEvents: false);
       if (!ok) {
-        debugPrint('[KC] refresh failed — clearing identity');
+        AppLogger.instance.w('[KC] refresh failed — clearing identity', tag: 'KC');
         await client.clearIdentity();
       }
     }
@@ -85,7 +88,7 @@ class KeycloakAuthRepository {
   Future<AccountUser?> currentUser() async {
     final client = await _ensureClient();
     final identity = client.identity;
-    debugPrint('[KC] currentUser — identity=${identity != null}');
+    AppLogger.instance.d('[KC] currentUser — identity=${identity != null}', tag: 'KC');
     if (identity == null) return null;
     if (client.isTokenAboutToExpire) {
       final ok = await client.refresh(raiseEvents: false);
@@ -165,22 +168,22 @@ class KeycloakAuthRepository {
   }
 
   Future<AccountUser> _authorize(BuildContext context, {String? idpHint}) async {
-    debugPrint('[KC] _authorize — idpHint=$idpHint');
+    AppLogger.instance.d('[KC] _authorize — idpHint=$idpHint', tag: 'KC');
     final client = await _ensureClient();
     const provider = AccountAuthProvider.email;
     try {
       if (!context.mounted) throw const KeycloakAuthException('Login cancelled.');
-      debugPrint('[KC] calling loginInteractive…');
+      AppLogger.instance.d('[KC] calling loginInteractive…', tag: 'KC');
       await client.loginInteractive(
         context: context,
         title: 'Car Launcher Login',
         additionalParameters: idpHint != null ? {'kc_idp_hint': idpHint} : null,
         prompts: const ['login'],
       );
-      debugPrint('[KC] loginInteractive done — writing provider');
+      AppLogger.instance.d('[KC] loginInteractive done — writing provider', tag: 'KC');
       await _writeStoredProvider(provider);
       final identity = client.identity;
-      debugPrint('[KC] identity after login: ${identity != null}');
+      AppLogger.instance.d('[KC] identity after login: ${identity != null}', tag: 'KC');
       if (identity == null) {
         throw const KeycloakAuthException('Keycloak did not return a session.');
       }
@@ -201,8 +204,7 @@ class KeycloakAuthRepository {
 
   KeycloakAuthException _mapAuthError(Object error, StackTrace? stackTrace, {required String phase}) {
     if (kDebugMode) {
-      debugPrint('Keycloak auth [$phase]: $error');
-      if (stackTrace != null) debugPrint('$stackTrace');
+      AppLogger.instance.e('Keycloak auth [$phase]: $error', tag: 'KC', error: error, stackTrace: stackTrace);
     }
     if (error is KeycloakAuthException) return error;
 
@@ -259,7 +261,7 @@ class KeycloakAuthRepository {
     var displayName = identity.fullName ?? identity.givenName ?? email.split('@').first;
     var locale = identity.claims['locale']?.toString() ?? 'vi';
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = getIt<SharedPreferences>();
     final profileRaw = prefs.getString('$_profileKeyPrefix$id');
     if (profileRaw != null) {
       final profile = jsonDecode(profileRaw) as Map<String, dynamic>;

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/app_drawer/presentation/providers/app_drawer_providers.dart';
 import 'package:flutter/material.dart';
@@ -126,7 +128,8 @@ class _AppIconTileState extends ConsumerState<AppIconTile> {
     if (base64 == null || base64.isEmpty) return null;
     try {
       return base64Decode(base64);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Icon decode failed', tag: 'APP_DRAWER', error: e);
       return null;
     }
   }

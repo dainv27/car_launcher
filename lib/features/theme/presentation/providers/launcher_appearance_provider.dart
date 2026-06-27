@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/core/theme/app_theme.dart';
 import 'package:car_launcher/core/theme/launcher_appearance.dart';
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
@@ -15,8 +17,9 @@ final launcherAppearanceProvider =
       SharedPreferences? prefs;
       try {
         prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {
+      } catch (e) {
         // Widget tests and previews can use the in-memory defaults.
+        AppLogger.instance.d('SharedPreferences unavailable for appearance', tag: 'THEME', error: e);
       }
       return LauncherAppearanceNotifier(prefs);
     });

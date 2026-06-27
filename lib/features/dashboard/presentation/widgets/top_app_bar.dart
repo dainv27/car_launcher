@@ -112,7 +112,7 @@ class TopAppBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     bool hasMediaAccess,
-    Map<String, dynamic> connectivity,
+    ConnectivityStatus connectivity,
     bool compact,
     String clock,
     VehicleTrackingState tracking,

@@ -1,4 +1,5 @@
 import 'package:car_launcher/core/theme/carplay_theme.dart';
+import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:flutter/material.dart';
 
 class ConnectionIcon {
@@ -49,15 +50,15 @@ class ConnectionIcon {
 class ConnectivityIndicator extends StatelessWidget {
   const ConnectivityIndicator({super.key, required this.status, this.showLabels = false, this.size = 16});
 
-  final Map<String, dynamic> status;
+  final ConnectivityStatus status;
   final bool showLabels;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final networkLevel = ConnectionIcon.networkLevel(status);
-    final bluetoothConnected = status['bluetoothConnected'] == true;
-    final online = status['validated'] == true;
+    final networkLevel = ConnectionIcon.networkLevel(status.toMap());
+    final bluetoothConnected = status.extra['bluetoothConnected'] == true;
+    final online = status.isConnected;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -65,14 +66,14 @@ class ConnectivityIndicator extends StatelessWidget {
         _MobileNetworkStatus(connectivity: status),
         const SizedBox(width: 10),
         Icon(
-          ConnectionIcon.networkIcon(status, level: networkLevel),
+          ConnectionIcon.networkIcon(status.toMap(), level: networkLevel),
           size: size,
           color: online ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
         ),
         if (showLabels) ...[
           const SizedBox(width: 5),
           Text(
-            ConnectionIcon.networkLabel(status, networkLevel),
+            ConnectionIcon.networkLabel(status.toMap(), networkLevel),
             style: TextStyle(
               color: online ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
               fontSize: 12,
@@ -82,7 +83,7 @@ class ConnectivityIndicator extends StatelessWidget {
         ],
         const SizedBox(width: 10),
         Icon(
-          ConnectionIcon.bluetoothIcon(status),
+          ConnectionIcon.bluetoothIcon(status.toMap()),
           size: size,
           color: bluetoothConnected ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
         ),
@@ -94,14 +95,14 @@ class ConnectivityIndicator extends StatelessWidget {
 class _MobileNetworkStatus extends StatelessWidget {
   const _MobileNetworkStatus({required this.connectivity});
 
-  final Map<String, dynamic> connectivity;
+  final ConnectivityStatus connectivity;
 
   @override
   Widget build(BuildContext context) {
-    final cellular = connectivity['cellular'] == true;
-    final level = connectivity['cellularLevel'] as int? ?? -1;
-    final networkType = (connectivity['cellularNetworkType'] as String?)?.trim() ?? '';
-    final operator = (connectivity['cellularOperator'] as String?)?.trim() ?? '';
+    final cellular = connectivity.extra['cellular'] == true;
+    final level = (connectivity.extra['cellularLevel'] as int?) ?? -1;
+    final networkType = (connectivity.extra['cellularNetworkType'] as String?)?.trim() ?? '';
+    final operator = (connectivity.extra['cellularOperator'] as String?)?.trim() ?? '';
     final statusText = cellular ? _activeLabel(networkType, operator, level) : 'Mobile unavailable';
     final color = cellular ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant;
 

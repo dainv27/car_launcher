@@ -37,7 +37,7 @@ class BottomStatusBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connectivity = ref.watch(connectivityStatusProvider);
     final dashboardIndex = ref.watch(dashboardIndexProvider);
-    final online = connectivity['validated'] == true;
+    final online = connectivity.isConnected;
 
     return Container(
       height: height,

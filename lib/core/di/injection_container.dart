@@ -74,9 +74,9 @@ Future<void> setupServiceLocator() async {
   // native bridge it wraps is inherently singleton.
   getIt.registerSingleton<LauncherService>(LauncherService(prefs));
 
-  // WeatherService — stateless API wrapper. Factory because each
-  // construction is cheap and identical given the same deps.
-  getIt.registerFactory<WeatherService>(
+  // WeatherService — stateless API wrapper. Lazy singleton because it holds
+  // no mutable state and a single instance avoids unnecessary allocations.
+  getIt.registerLazySingleton<WeatherService>(
     () => WeatherService(
       getIt<SharedPreferences>(),
       getIt<http.Client>(),

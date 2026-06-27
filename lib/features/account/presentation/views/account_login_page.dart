@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:flutter/material.dart' hide Notification; // hide to avoid clash with go_router's Notification
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,9 +54,9 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> with Widget
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      debugPrint('[LoginPage] _run — starting action');
+      AppLogger.instance.d('[LoginPage] _run — starting action', tag: 'LOGIN');
       await action();
-      debugPrint('[LoginPage] _run — action done, navigating to Settings → Account');
+      AppLogger.instance.d('[LoginPage] _run — action done, navigating to Settings → Account', tag: 'LOGIN');
 
       // Wait for the widget tree to be fully mounted before navigating,
       // otherwise GoRouter may throw if the context is unmounted.
@@ -64,7 +66,7 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> with Widget
       // Open the account details immediately after the OAuth callback.
       context.go('/');
     } catch (e, st) {
-      debugPrint('[LoginPage] _run — error: $e\n$st');
+      AppLogger.instance.e('[LoginPage] _run — error: $e', tag: 'LOGIN', error: e, stackTrace: st);
       if (!mounted) return;
       final message = accountErrorMessage(e);
       if (message != 'Đăng nhập đã hủy.') {

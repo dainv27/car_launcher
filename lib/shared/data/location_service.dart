@@ -9,7 +9,6 @@ import 'package:car_launcher/core/native/native_bridge.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
 import 'package:car_launcher/features/vehicle/domain/device.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
-import 'package:car_launcher/shared/providers/shared_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -980,7 +979,8 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
       if (snapshot.enabled) await _setNativeBackgroundTracking(true);
       await _syncNativeConfig(() => auth.accessToken());
       unawaited(syncNow());
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.w('Vehicle tracking initialisation failed', tag: 'TRACKING', error: e);
       if (mounted) state = const VehicleTrackingState();
     }
   }
@@ -1018,8 +1018,9 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
       await NativeBridge.call<bool>(
         enabled ? 'startVehicleTrackingService' : 'stopVehicleTrackingService',
       );
-    } catch (_) {
+    } catch (e) {
       // Tests and non-Android platforms do not have the native channel.
+      AppLogger.instance.d('Native background tracking toggle failed', tag: 'TRACKING', error: e);
     }
   }
 
@@ -1031,8 +1032,9 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
         'accessToken': token,
         'vehicle': state.vehicle.toJson(),
       });
-    } catch (_) {
+    } catch (e) {
       // Tests and non-Android platforms do not have the native channel.
+      AppLogger.instance.d('Native sync config update failed', tag: 'TRACKING', error: e);
     }
   }
 
@@ -1042,7 +1044,8 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
         'getConnectivityStatus',
       );
       return status?['validated'] == true;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Connectivity check failed', tag: 'TRACKING', error: e);
       return false;
     }
   }
@@ -1054,7 +1057,8 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
       );
       if (raw == null) return const {};
       return raw.map((key, value) => MapEntry(key.toString(), value));
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Device info fetch failed', tag: 'TRACKING', error: e);
       return const {};
     }
   }

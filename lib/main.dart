@@ -14,7 +14,6 @@ import 'package:car_launcher/features/theme/presentation/providers/launcher_appe
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
-import 'package:car_launcher/shared/providers/shared_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,8 +23,7 @@ import 'shared/data/location_service.dart';
 void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('==> FLUTTER ERROR: ${details.exception}');
-    debugPrint('${details.stack}');
+    AppLogger.instance.e('Flutter error: ${details.exception}', tag: 'MAIN', error: details.exception, stackTrace: details.stack);
   };
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -146,8 +144,7 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
   /// correct behaviour (new install = new registration).
   Future<void> _ensureDeviceRegistered() async {
     try {
-      final httpClient = ref.read(httpClientProvider);
-      final syncClient = VehicleTrackingSyncClient(httpClient: httpClient);
+      final syncClient = getIt<VehicleTrackingSyncClient>();
       await syncClient.ensureDeviceRegistered();
     } catch (error, stackTrace) {
       // Surface but do not crash the app — registration is best-effort at

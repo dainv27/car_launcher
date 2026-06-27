@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/core/native/native_bridge.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
 import 'package:path_provider/path_provider.dart';
@@ -199,8 +201,9 @@ class VehicleTrackingStoreService {
         'getVehicleTrackingDatabasePath',
       );
       if (nativePath != null && nativePath.isNotEmpty) return nativePath;
-    } catch (_) {
+    } catch (e) {
       // Tests and non-Android platforms use the documents directory fallback.
+      AppLogger.instance.d('Native database path lookup failed — using fallback', tag: 'TRACKING_STORE', error: e);
     }
 
     final base = await getApplicationDocumentsDirectory();
@@ -244,7 +247,8 @@ class VehicleTrackingStoreService {
       if (decoded is Map<String, dynamic>) {
         return VehicleProfile.fromJson(decoded);
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Vehicle profile parse failed — returning empty', tag: 'TRACKING_STORE', error: e);
       return const VehicleProfile();
     }
     return const VehicleProfile();

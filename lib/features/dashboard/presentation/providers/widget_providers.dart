@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:car_launcher/core/logging/app_logger.dart';
+import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/features/dashboard/domain/widget_model.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
 
@@ -20,7 +22,8 @@ class WidgetListNotifier extends StateNotifier<List<WidgetModel>> {
       state = list
           .map((e) => WidgetModel.fromJson(e as Map<String, dynamic>))
           .toList();
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.d('Widget list load failed — using empty', tag: 'WIDGETS', error: e);
       state = [];
     }
   }

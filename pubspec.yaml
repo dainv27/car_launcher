@@ -32,6 +32,7 @@ dependencies:
   http: ^1.2.0
   intl: ^0.19.0
   get_it: ^8.0.0
+  flutter_dotenv: ^5.2.1
   path_provider: ^2.1.0
   uuid: ^4.5.0
   image_picker: ^1.1.0
@@ -67,6 +68,9 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env.local
+    - .env.development
+    - .env.production
     - assets/images/k3_logo.png
     - assets/images/splash_logo.png
     - assets/images/splash.png

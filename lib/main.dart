@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:car_launcher/core/auth/keycloak_oidc_platform.dart';
+import 'package:car_launcher/core/config/env_loader.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/logging/logging.dart';
@@ -28,6 +29,12 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   configureKeycloakOidcPlatform();
+
+  // Load environment variables from .env files before anything else.
+  // This must complete before setupServiceLocator() because services
+  // (ApiConfig, KeycloakConfig) read env values at construction time.
+  await EnvLoader.instance.load(environment: const String.fromEnvironment('APP_ENV', defaultValue: 'development'));
+  AppLogger.instance.i('Environment loaded', tag: 'MAIN');
 
   // Initialise file logger before anything else
   await AppLogger.instance.init();

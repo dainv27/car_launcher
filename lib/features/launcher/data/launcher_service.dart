@@ -13,12 +13,17 @@ class LauncherService {
   LauncherService(this._prefs);
   final SharedPreferences _prefs;
 
-  /// Get connectivity status from native
+  /// Get connectivity status from native.
+  ///
+  /// The native bridge returns `Map<Object?, Object?>` (method-channel
+  /// serialisation does not preserve generic type arguments), so we
+  /// re-key the map explicitly instead of casting.
   Future<Map<String, dynamic>> getConnectivityStatus() async {
-    return await NativeBridge.call<Map<String, dynamic>>(
-          'getConnectivityStatus',
-        ) ??
-        {};
+    final raw = await NativeBridge.call<Map<Object?, Object?>>(
+      'getConnectivityStatus',
+    );
+    if (raw == null || raw.isEmpty) return {};
+    return raw.map((k, v) => MapEntry(k.toString(), v));
   }
 
   /// Get battery level from the same native status source used by the bars.
@@ -28,7 +33,9 @@ class LauncherService {
 
   /// Get device info
   Future<Map<String, dynamic>> getDeviceInfo() async {
-    return await NativeBridge.call<Map<String, dynamic>>('getDeviceInfo') ?? {};
+    final raw = await NativeBridge.call<Map<Object?, Object?>>('getDeviceInfo');
+    if (raw == null || raw.isEmpty) return {};
+    return raw.map((k, v) => MapEntry(k.toString(), v));
   }
 
   /// Whether native ActivityView embedding is available on this device.
@@ -38,12 +45,15 @@ class LauncherService {
 
   /// Detailed embedding capability from the native layer.
   Future<Map<String, dynamic>> getEmbeddingInfo() async {
-    return await NativeBridge.call<Map<String, dynamic>>('getEmbeddingInfo') ??
-        {
-          'supported': false,
-          'reason': 'Native bridge unavailable',
-          'apiLevel': 0,
-        };
+    final raw = await NativeBridge.call<Map<Object?, Object?>>('getEmbeddingInfo');
+    if (raw == null || raw.isEmpty) {
+      return {
+        'supported': false,
+        'reason': 'Native bridge unavailable',
+        'apiLevel': 0,
+      };
+    }
+    return raw.map((k, v) => MapEntry(k.toString(), v));
   }
 
   /// Launch an app by package name

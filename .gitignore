@@ -53,3 +53,4 @@ app.*.map.json
 # Keep the reference files tracked
 !.env.development
 !.env.production
+!.env

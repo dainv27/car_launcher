@@ -11,6 +11,9 @@ const _testEndpoint =
     'https://car-apis.202corp.com/vehicle-service/client-api/v1';
 
 const _nativeChannel = MethodChannel('com.carlauncher/native');
+const _deviceInfoChannel =
+    MethodChannel('dev.fluttercommunity.plus/device_info');
+const _androidIdChannel = MethodChannel('android_id');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +21,10 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_nativeChannel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_deviceInfoChannel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_androidIdChannel, null);
   });
 
   group('VehicleTrackingSyncClient', () {
@@ -306,47 +313,23 @@ void main() {
       expect(result[0]['id'], 'dev-001');
     });
 
-    test('ensureDeviceRegistered skips if no device info from native', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_nativeChannel, (call) async {
-        if (call.method == 'getDeviceInfo') return null;
-        return null;
-      });
-
-      final client = VehicleTrackingSyncClient(
-        httpClient: MockClient((req) async => http.Response('', 200)),
-      );
-      // Should not throw — just logs a warning and returns
-      await client.ensureDeviceRegistered();
-    });
-
-    test('ensureDeviceRegistered skips if device info is empty', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_nativeChannel, (call) async {
-        if (call.method == 'getDeviceInfo') return <dynamic, dynamic>{};
-        return null;
-      });
-
-      final client = VehicleTrackingSyncClient(
-        httpClient: MockClient((req) async => http.Response('', 200)),
-      );
-      // Should not throw — just logs a warning and returns
-      await client.ensureDeviceRegistered();
-    });
-
     test('ensureDeviceRegistered skips if no stable device id derivable', () async {
+      // Empty androidId + empty serial → no device id can be derived.
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_nativeChannel, (call) async {
+          .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
         if (call.method == 'getDeviceInfo') {
-          // All identifying fields are empty → no device id can be derived
-          return <dynamic, dynamic>{
-            'androidId': '',
-            'serial': '',
+          return <String, dynamic>{
+            'id': '',
             'manufacturer': '',
             'model': '',
-            'sdkInt': '',
+            'version': <String, dynamic>{'sdkInt': 0, 'release': ''},
           };
         }
+        return null;
+      });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_androidIdChannel, (call) async {
+        if (call.method == 'getId') return '';
         return null;
       });
 
@@ -359,16 +342,24 @@ void main() {
 
     test('ensureDeviceRegistered registers device when not found', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_nativeChannel, (call) async {
+          .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
         if (call.method == 'getDeviceInfo') {
-          return <dynamic, dynamic>{
-            'androidId': 'dev-001',
+          return <String, dynamic>{
+            'id': 'RQ3A.210805.001',
+            'fingerprint': 'R8YY91N3TAF',
             'manufacturer': 'samsung',
             'model': 'SM-X133',
+            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
           };
         }
         return null;
       });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_androidIdChannel, (call) async {
+        if (call.method == 'getId') return 'dev-001';
+        return null;
+      });
+
 
       var requestCount = 0;
       final client = VehicleTrackingSyncClient(
@@ -391,16 +382,24 @@ void main() {
 
     test('ensureDeviceRegistered skips if device already exists', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_nativeChannel, (call) async {
+          .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
         if (call.method == 'getDeviceInfo') {
-          return <dynamic, dynamic>{
-            'androidId': 'dev-001',
+          return <String, dynamic>{
+            'id': 'RQ3A.210805.001',
+            'fingerprint': 'R8YY91N3TAF',
             'manufacturer': 'samsung',
             'model': 'SM-X133',
+            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
           };
         }
         return null;
       });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_androidIdChannel, (call) async {
+        if (call.method == 'getId') return 'dev-001';
+        return null;
+      });
+
 
       var requestCount = 0;
       final client = VehicleTrackingSyncClient(

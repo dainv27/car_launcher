@@ -206,7 +206,6 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "getConnectivityStatus" -> result.success(getConnectivityStatus())
                 "getBatteryLevel" -> result.success(getBatteryLevel())
-                "getDeviceInfo" -> result.success(getDeviceInfo())
                 "hasNotificationListenerAccess" -> result.success(hasNotificationListenerAccess())
                 "openNotificationAccessSettings" -> result.success(openNotificationAccessSettings())
                 "openAccessibilitySettings" -> result.success(openAccessibilitySettings())
@@ -839,16 +838,6 @@ class MainActivity : FlutterActivity() {
             Log.w("MainActivity", "Unable to update vehicle tracking sync config", error)
             false
         }
-    }
-
-    private fun getDeviceInfo(): Map<String, Any> {
-        return mapOf(
-            "model" to Build.MODEL,
-            "manufacturer" to Build.MANUFACTURER,
-            "androidVersion" to Build.VERSION.RELEASE,
-            "sdkInt" to Build.VERSION.SDK_INT,
-            "serial" to try { Build.getSerial() } catch (_: Exception) { "unknown" },
-        )
     }
 
     // ── Screen Brightness ──────────────────────────────────────────────────

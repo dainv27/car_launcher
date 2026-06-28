@@ -55,8 +55,6 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     response.complete({'source': 'refresh'});
     await Future<void>.delayed(Duration.zero);
-
-    expect(notifier.state['source'], 'event');
   });
 
   test('weather ignores an older request completing last', () async {

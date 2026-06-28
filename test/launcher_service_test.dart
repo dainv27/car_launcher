@@ -18,8 +18,6 @@ void main() {
               return <String, dynamic>{};
             case 'getBatteryLevel':
               return 80;
-            case 'getDeviceInfo':
-              return <String, dynamic>{};
             case 'launchMapsWithYoutubeOnTop':
               return true;
             default:

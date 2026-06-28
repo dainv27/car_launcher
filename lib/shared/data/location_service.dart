@@ -6,13 +6,13 @@ import 'package:car_launcher/core/api/api_config.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/native/native_bridge.dart';
+import 'package:car_launcher/core/services/device_info_service.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
 import 'package:car_launcher/features/vehicle/domain/device.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-import '../../core/services/device_info_service.dart';
 import 'vehicle_tracking_store_service.dart';
 
 class LocationInfo {
@@ -1052,11 +1052,8 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
 
   Future<Map<String, dynamic>> _deviceInfo() async {
     try {
-      final raw = await NativeBridge.call<Map<dynamic, dynamic>>(
-        'getDeviceInfo',
-      );
-      if (raw == null) return const {};
-      return raw.map((key, value) => MapEntry(key.toString(), value));
+      final info = await DeviceInfoService.instance.fetchDeviceInfo();
+      return info.toMap();
     } catch (e) {
       AppLogger.instance.d('Device info fetch failed', tag: 'TRACKING', error: e);
       return const {};

@@ -44,7 +44,6 @@ void main() {
     test('listVehicles returns empty list on empty response', () async {
       final client = VehicleTrackingSyncClient(
         httpClient: _mockClient(body: jsonEncode([])),
-        accessTokenProvider: () async => 'test-token',
       );
       final repo = VehicleRepository(
         syncClient: client,

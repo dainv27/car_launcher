@@ -422,18 +422,32 @@ void main() {
   test(
     'ensureDeviceRegistered registers device with correct payload',
     () async {
-      const nativeChannel = MethodChannel('com.carlauncher/native');
+      // device_info_plus reads from its own channel, not the app's native bridge.
+      const deviceInfoChannel =
+          MethodChannel('dev.fluttercommunity.plus/device_info');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(nativeChannel, (call) async {
+          .setMockMethodCallHandler(deviceInfoChannel, (call) async {
         if (call.method == 'getDeviceInfo') {
-          return <dynamic, dynamic>{
-            'androidId': 'android-abc',
+          return <String, dynamic>{
+            'id': 'RQ3A.210805.001',
+            // `fingerprint` is used as the serial source (device_info_plus v13
+            // dropped serialNumber).
+            'fingerprint': 'R8YY91N3TAF',
             'manufacturer': 'samsung',
             'model': 'SM-X133',
-            'serial': 'R8YY91N3TAF',
-            'sdkInt': 36,
+            'version': <String, dynamic>{
+              'sdkInt': 36,
+              'release': '14',
+            },
           };
         }
+        return null;
+      });
+      // android_id plugin reads from its own channel.
+      const androidIdChannel = MethodChannel('android_id');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(androidIdChannel, (call) async {
+        if (call.method == 'getId') return 'android-abc';
         return null;
       });
 

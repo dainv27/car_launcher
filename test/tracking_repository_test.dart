@@ -40,7 +40,6 @@ void main() {
     test('getLatestTrackingPoint returns null on 204', () async {
       final client = VehicleTrackingSyncClient(
         httpClient: _mockClient(body: '', status: 204),
-        accessTokenProvider: () async => 'test-token',
       );
       final repo = TrackingRepository(
         syncClient: client,
@@ -83,7 +82,6 @@ void main() {
     test('listTrackingPoints passes from/to/page/size query params', () async {
       final client = VehicleTrackingSyncClient(
         httpClient: _MockCapturingClient(),
-        accessTokenProvider: () async => 'test-token',
       );
       final repo = TrackingRepository(
         syncClient: client,

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:car_launcher/core/services/device_info_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
@@ -31,11 +32,13 @@ class LauncherService {
     return await NativeBridge.call<int>('getBatteryLevel') ?? -1;
   }
 
-  /// Get device info
+  /// Get device info.
+  ///
+  /// Sourced from `device_info_plus` on the Flutter side (see
+  /// `DeviceInfoAdapter`), not the native bridge.
   Future<Map<String, dynamic>> getDeviceInfo() async {
-    final raw = await NativeBridge.call<Map<Object?, Object?>>('getDeviceInfo');
-    if (raw == null || raw.isEmpty) return {};
-    return raw.map((k, v) => MapEntry(k.toString(), v));
+    final info = await DeviceInfoService.instance.fetchDeviceInfo();
+    return info.toMap();
   }
 
   /// Whether native ActivityView embedding is available on this device.

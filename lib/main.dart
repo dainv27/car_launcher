@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:car_launcher/core/auth/keycloak_oidc_platform.dart';
 import 'package:car_launcher/core/config/env_loader.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
+import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/logging/logging.dart';
 import 'package:car_launcher/core/native/native_bridge.dart';
@@ -15,7 +16,9 @@ import 'package:car_launcher/features/theme/presentation/providers/launcher_appe
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
+import 'package:car_launcher/shared/data/device_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,6 +63,10 @@ void main() async {
   // before any provider tries to read them.
   await setupServiceLocator();
   AppLogger.instance.d('Service locator initialised', tag: 'MAIN');
+
+  // Set up the tracking auth channel — lets the native VehicleTrackingService
+  // request a token refresh when its bearer token expires (HTTP 401).
+  _setupTrackingAuthChannel();
 
   runApp(
     ProviderScope(
@@ -151,8 +158,8 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
   /// correct behaviour (new install = new registration).
   Future<void> _ensureDeviceRegistered() async {
     try {
-      final syncClient = getIt<VehicleTrackingSyncClient>();
-      await syncClient.ensureDeviceRegistered();
+      final deviceSyncClient = getIt<DeviceService>();
+      await deviceSyncClient.ensureDeviceRegistered();
     } catch (error, stackTrace) {
       // Surface but do not crash the app — registration is best-effort at
       // startup and can be retried on the next launch by clearing the flag
@@ -168,4 +175,43 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// Sets up the MethodChannel that the native VehicleTrackingService uses to
+/// request bearer-token refreshes.
+///
+/// The native service runs in a background thread and only holds the access
+/// token (not the refresh token or OIDC credentials). When a sync request
+/// returns HTTP 401, the service calls `refreshToken` on this channel. We
+/// delegate to [KeycloakAuthRepository.forceRefreshToken] which owns the
+/// refresh token and the OIDC client, then return the new access token.
+void _setupTrackingAuthChannel() {
+  const channel = MethodChannel('com.carlauncher/tracking_auth');
+  channel.setMethodCallHandler((call) async {
+    if (call.method != 'refreshToken') {
+      throw MissingPluginException('Unknown method: ${call.method}');
+    }
+    final arguments = call.arguments;
+    final oldToken = arguments is String ? arguments : '';
+    AppLogger.instance.d('Tracking service requested token refresh', tag: 'TRACKING_AUTH');
+    final repo = getIt<KeycloakAuthRepository>();
+    final ok = await repo.forceRefreshToken();
+    if (!ok) {
+      throw PlatformException(
+        code: 'REFRESH_FAILED',
+        message: 'Keycloak token refresh failed',
+      );
+    }
+    final newToken = await repo.accessToken();
+    if (newToken == null || newToken.isEmpty) {
+      throw PlatformException(
+        code: 'NO_TOKEN',
+        message: 'No access token available after refresh',
+      );
+    }
+    if (newToken == oldToken) {
+      AppLogger.instance.w('Token refresh returned the same token', tag: 'TRACKING_AUTH');
+    }
+    return newToken;
+  });
 }

@@ -71,11 +71,17 @@ class MainActivity : FlutterActivity() {
 
     private var mediaSessionManager: MediaSessionManager? = null
     private var mediaControllerCallback: MediaController.Callback? = null
+
+    /** Set by configureFlutterEngine; lets services call back into Flutter. */
+    val methodChannelForServices: MethodChannel
+        get() = methodChannel
+
     private var activeSessionsChangedListener: MediaSessionManager.OnActiveSessionsChangedListener? = null
     private var activeMediaController: MediaController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        instance = this
         applyImmersiveFullscreen()
         processOAuthCallback(intent)
     }
@@ -301,6 +307,10 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARG", "Missing enabled", null)
                     }
                 }
+                "refreshVehicleToken" -> {
+                    val oldToken = call.arguments as? String
+                    handleVehicleTokenRefresh(oldToken ?: "", result)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -319,6 +329,10 @@ class MainActivity : FlutterActivity() {
                 unregisterAppPackageChangedReceiver()
             }
         })
+
+        // Tracking auth channel — Flutter handles refresh requests from the
+        // native VehicleTrackingService when bearer tokens expire.
+        trackingAuthChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.carlauncher/tracking_auth")
 
         // Navigation MethodChannel
         navMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NAV_METHOD_CHANNEL)
@@ -382,8 +396,11 @@ class MainActivity : FlutterActivity() {
         navEventChannel?.setStreamHandler(null)
         mediaEventChannel?.setStreamHandler(null)
         oauthChannel?.setMethodCallHandler(null)
+        trackingAuthChannel?.setMethodCallHandler(null)
+        trackingAuthChannel = null
         oauthDeliveryHandler.removeCallbacksAndMessages(null)
         oauthDeliveryInFlight = false
+        if (instance === this) instance = null
         pendingOAuthCallback = null
         navMethodChannel = null
         navEventChannel = null
@@ -840,6 +857,51 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // ── Vehicle Tracking Token Refresh ─────────────────────────────────────
+    //
+    // The native VehicleTrackingService runs in a background thread and holds
+    // only the access token (not the refresh token or OIDC credentials). When
+    // the access token expires (HTTP 401), it asks Flutter to refresh it via
+    // this channel. Flutter owns KeycloakAuthRepository and can perform the
+    // refresh; it returns the new access token.
+
+    private var trackingAuthChannel: MethodChannel? = null
+
+    private fun handleVehicleTokenRefresh(oldToken: String, result: MethodChannel.Result) {
+        try {
+            val channel = trackingAuthChannel
+            if (channel == null) {
+                result.error("NO_CHANNEL", "Tracking auth channel not initialised", null)
+                return
+            }
+            // Forward to Flutter. Flutter's handler returns the new token via
+            // the result callback.
+            channel.invokeMethod(
+                "refreshToken",
+                oldToken,
+                object : MethodChannel.Result {
+                    override fun success(response: Any?) {
+                        val newToken = response?.toString().orEmpty()
+                        if (newToken.isNotEmpty()) {
+                            result.success(newToken)
+                        } else {
+                            result.error("REFRESH_FAILED", "Flutter returned empty token", null)
+                        }
+                    }
+                    override fun error(code: String, message: String?, details: Any?) {
+                        result.error(code, message, details)
+                    }
+                    override fun notImplemented() {
+                        result.error("NOT_IMPLEMENTED", "Flutter did not handle refreshToken", null)
+                    }
+                },
+            )
+        } catch (error: Exception) {
+            Log.w("MainActivity", "Vehicle token refresh failed", error)
+            result.error("REFRESH_EXCEPTION", error.message, null)
+        }
+    }
+
     // ── Screen Brightness ──────────────────────────────────────────────────
 
     @Suppress("DEPRECATION")
@@ -1138,5 +1200,10 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val LOCATION_PERMISSION_REQUEST = 3102
         private const val STARTUP_PERMISSION_REQUEST = 3103
+
+        /** Set in onCreate; lets services call back into Flutter. */
+        @JvmStatic
+        var instance: MainActivity? = null
+            private set
     }
 }

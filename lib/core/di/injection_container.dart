@@ -1,3 +1,4 @@
+import 'package:car_launcher/shared/data/device_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -93,6 +94,12 @@ Future<void> setupServiceLocator() async {
   // SQLite connections.
   getIt.registerLazySingleton<VehicleTrackingStoreService>(
     () => VehicleTrackingStoreService(),
+  );
+
+  // DeviceService — thin HTTP wrapper. Factory because it is
+  // lightweight and has no mutable state beyond the injected http.Client.
+  getIt.registerFactory<DeviceService>(
+    () => DeviceService(httpClient: getIt<http.Client>()),
   );
 
   // VehicleTrackingSyncClient — thin HTTP wrapper. Factory because it is

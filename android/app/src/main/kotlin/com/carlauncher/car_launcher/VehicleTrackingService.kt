@@ -17,9 +17,12 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -170,7 +173,7 @@ class VehicleTrackingService : Service(), LocationListener {
         val prefs = getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
         val endpoint = prefs.getString(KEY_SYNC_ENDPOINT, "")?.trim().orEmpty()
-        val token = prefs.getString(KEY_ACCESS_TOKEN, "")?.trim().orEmpty()
+        var token = prefs.getString(KEY_ACCESS_TOKEN, "")?.trim().orEmpty()
         val vehicle = prefs.getString(KEY_VEHICLE_PROFILE, "")?.trim().orEmpty()
         val vehicleId = vehicleIdFromProfile(vehicle)
         if (token.isEmpty() || vehicleId.isEmpty()) return
@@ -179,7 +182,10 @@ class VehicleTrackingService : Service(), LocationListener {
             while (true) {
                 val batch = readPendingBatch()
                 if (batch.isEmpty()) return
-                postBatch(endpoint, token, vehicleId, batch)
+                val newToken = postBatchWithRefresh(endpoint, token, vehicleId, batch)
+                if (newToken != null && newToken != token) {
+                    token = newToken
+                }
                 markBatchSynced(batch)
             }
         } catch (error: Exception) {
@@ -206,14 +212,20 @@ class VehicleTrackingService : Service(), LocationListener {
         return points
     }
 
-    private fun postBatch(
+    /// Post a batch of tracking points, automatically refreshing the bearer
+    /// token on HTTP 401 and retrying once. Returns the (possibly refreshed)
+    /// token so callers can persist it for subsequent batches.
+    ///
+    /// Returns null if no refresh was needed (original token is still valid).
+    private fun postBatchWithRefresh(
         endpoint: String,
         token: String,
         vehicleId: String,
         points: List<TrackedPoint>,
-    ) {
+    ): String? {
         val url = locationTrackingUrl(endpoint, vehicleId)
-        points.forEach { point ->
+        var refreshedToken: String? = null
+        points.forEachIndexed { index, point ->
             val payload = JSONObject()
                 .put("latitude", point.latitude)
                 .put("longitude", point.longitude)
@@ -224,25 +236,107 @@ class VehicleTrackingService : Service(), LocationListener {
                         .put("clientPointId", point.id)
                         .put("displayName", point.displayName),
                 )
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = HTTP_TIMEOUT_MS
-                readTimeout = HTTP_TIMEOUT_MS
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Authorization", "Bearer $token")
-            }
-            try {
-                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use {
-                    it.write(payload.toString())
+            var currentToken = refreshedToken ?: token
+            var responseCode = postPoint(url, payload, currentToken)
+
+            // On 401, ask Flutter to refresh the token and retry this point.
+            if (responseCode == 401) {
+                val newToken = requestTokenRefresh(currentToken)
+                if (newToken != null && newToken.isNotEmpty()) {
+                    refreshedToken = newToken
+                    currentToken = newToken
+                    // Persist the new token immediately so future batches reuse it.
+                    persistAccessToken(newToken)
+                    responseCode = postPoint(url, payload, currentToken)
                 }
-                val code = connection.responseCode
-                if (code < 200 || code >= 300) {
-                    throw IllegalStateException("Tracking sync failed: HTTP $code")
-                }
-            } finally {
-                connection.disconnect()
             }
+
+            if (responseCode < 200 || responseCode >= 300) {
+                throw IllegalStateException("Tracking sync failed: HTTP $responseCode")
+            }
+        }
+        return refreshedToken
+    }
+
+    /// POST a single tracking point. Returns the HTTP status code.
+    private fun postPoint(url: String, payload: JSONObject, token: String): Int {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = HTTP_TIMEOUT_MS
+            readTimeout = HTTP_TIMEOUT_MS
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Authorization", "Bearer $token")
+        }
+        try {
+            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use {
+                it.write(payload.toString())
+            }
+            return connection.responseCode
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    /// Persist the refreshed access token to SharedPreferences.
+    private fun persistAccessToken(token: String) {
+        try {
+            getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_ACCESS_TOKEN, token)
+                .apply()
+        } catch (error: Exception) {
+            Log.w(TAG, "Unable to persist refreshed access token", error)
+        }
+    }
+
+    /// Request a fresh access token from Flutter via the MethodChannel.
+    ///
+    /// This calls back into Flutter's KeycloakAuthRepository which owns the
+    /// refresh token and the OIDC client credentials. Returns the new access
+    /// token, or null if the refresh call failed.
+    private fun requestTokenRefresh(oldToken: String): String? {
+        return try {
+            val mainHandler = Handler(Looper.getMainLooper())
+            val latch = java.util.concurrent.CountDownLatch(1)
+            val resultHolder = arrayOfNulls<String>(1)
+            mainHandler.post {
+                try {
+                    val activity = MainActivity.instance
+                    if (activity == null) {
+                        Log.w(TAG, "MainActivity instance unavailable for token refresh")
+                        latch.countDown()
+                        return@post
+                    }
+                    activity.methodChannelForServices.invokeMethod(
+                        "refreshVehicleToken",
+                        oldToken,
+                        object : MethodChannel.Result {
+                            override fun success(result: Any?) {
+                                resultHolder[0] = result?.toString()
+                                latch.countDown()
+                            }
+                            override fun error(code: String, message: String?, details: Any?) {
+                                Log.w(TAG, "Token refresh failed: $code — $message")
+                                latch.countDown()
+                            }
+                            override fun notImplemented() {
+                                Log.w(TAG, "refreshVehicleToken not implemented on Flutter side")
+                                latch.countDown()
+                            }
+                        },
+                    )
+                } catch (error: Exception) {
+                    Log.w(TAG, "Unable to invoke token refresh", error)
+                    latch.countDown()
+                }
+            }
+            // Block the background thread for up to 30s for Flutter to respond.
+            latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
+            resultHolder[0]
+        } catch (error: Exception) {
+            Log.w(TAG, "Token refresh request failed", error)
+            null
         }
     }
 

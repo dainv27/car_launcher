@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:car_launcher/shared/data/device_service.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:car_launcher/features/vehicle/domain/device.dart';
 import 'package:flutter/services.dart';
@@ -298,7 +299,7 @@ void main() {
     });
 
     test('listDevices handles wrapped response', () async {
-      final client = VehicleTrackingSyncClient(
+      final client = DeviceService(
         httpClient: MockClient((req) async => http.Response(
           jsonEncode({
             'devices': [
@@ -333,7 +334,7 @@ void main() {
         return null;
       });
 
-      final client = VehicleTrackingSyncClient(
+      final client = DeviceService(
         httpClient: MockClient((req) async => http.Response('', 200)),
       );
       // Should not throw — just logs a warning and returns
@@ -362,7 +363,7 @@ void main() {
 
 
       var requestCount = 0;
-      final client = VehicleTrackingSyncClient(
+      final client = DeviceService(
         httpClient: MockClient((req) async {
           requestCount++;
           // GET returns 404 (device not found), POST returns 201
@@ -402,7 +403,7 @@ void main() {
 
 
       var requestCount = 0;
-      final client = VehicleTrackingSyncClient(
+      final client = DeviceService(
         httpClient: MockClient((req) async {
           requestCount++;
           // GET returns 200 (device exists)
@@ -418,7 +419,7 @@ void main() {
     });
 
     test('createDevice returns existing device on 409', () async {
-      final client = VehicleTrackingSyncClient(
+      final client = DeviceService(
         httpClient: MockClient((req) async {
           if (req.method == 'POST') {
             return http.Response('', 409);

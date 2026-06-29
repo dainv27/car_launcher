@@ -29,7 +29,7 @@ void main() {
         store: VehicleTrackingStoreService(),
         syncEndpoint: _testEndpoint,
       );
-      final point = await repo.getLatestTrackingPoint('car-001');
+      final point = await repo.getLatestTrackingPoint('dev-001');
       expect(point, isNotNull);
       expect(point!.id, 'uuid-1');
       expect(point.latitude, 10.0);
@@ -46,7 +46,7 @@ void main() {
         store: VehicleTrackingStoreService(),
         syncEndpoint: _testEndpoint,
       );
-      final point = await repo.getLatestTrackingPoint('car-001');
+      final point = await repo.getLatestTrackingPoint('dev-001');
       expect(point, isNull);
     });
 
@@ -73,7 +73,7 @@ void main() {
         store: VehicleTrackingStoreService(),
         syncEndpoint: _testEndpoint,
       );
-      final points = await repo.listTrackingPoints('car-001');
+      final points = await repo.listTrackingPoints('dev-001');
       expect(points, hasLength(2));
       expect(points[0].id, 'uuid-1');
       expect(points[1].id, 'uuid-2');
@@ -91,7 +91,7 @@ void main() {
       final from = DateTime.parse('2026-06-01T00:00:00.000Z');
       final to = DateTime.parse('2026-06-30T23:59:59.000Z');
       await repo.listTrackingPoints(
-        'car-001',
+        'dev-001',
         from: from,
         to: to,
         page: 2,

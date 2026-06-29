@@ -22,20 +22,20 @@ class TrackingRepository {
 
   /// Create a tracking point by inserting into the local pending queue
   /// and triggering an immediate sync.
-  Future<TrackingPoint> createTrackingPoint(String vehicleId, TrackingPoint point) async {
-    await _store.appendPending(_toTrackPoint(point, vehicleId));
-    unawaited(syncPendingPoints(vehicleId));
+  Future<TrackingPoint> createTrackingPoint(String deviceId, TrackingPoint point) async {
+    await _store.appendPending(_toTrackPoint(point, deviceId));
+    unawaited(syncPendingPoints(deviceId));
     return point;
   }
 
-  /// Fetch the latest tracking point for a vehicle from the server.
-  Future<TrackingPoint?> getLatestTrackingPoint(String vehicleId) async {
-    return _syncClient.getLatestTrackingPoint(endpoint: syncEndpoint, vehicleId: vehicleId);
+  /// Fetch the latest tracking point for a device from the server.
+  Future<TrackingPoint?> getLatestTrackingPoint(String deviceId) async {
+    return _syncClient.getLatestTrackingPoint(endpoint: syncEndpoint, deviceId: deviceId);
   }
 
   /// Fetch a paginated list of tracking points from the server.
   Future<List<TrackingPoint>> listTrackingPoints(
-    String vehicleId, {
+    String deviceId, {
     DateTime? from,
     DateTime? to,
     int page = 0,
@@ -43,7 +43,7 @@ class TrackingRepository {
   }) async {
     return _syncClient.listTrackingPoints(
       endpoint: syncEndpoint,
-      vehicleId: vehicleId,
+      deviceId: deviceId,
       from: from,
       to: to,
       page: page,
@@ -51,12 +51,12 @@ class TrackingRepository {
     );
   }
 
-  /// Sync all pending points for a vehicle with the server.
+  /// Sync all pending points for a device with the server.
   ///
   /// Reads pending points from the SQLite store, POSTs them in batches,
   /// and marks them as synced on success.
-  Future<void> syncPendingPoints(String vehicleId) async {
-    if (vehicleId.isEmpty) return;
+  Future<void> syncPendingPoints(String deviceId) async {
+    if (deviceId.isEmpty) return;
     final pending = await _store.readPending();
     if (pending.isEmpty) return;
     const batchSize = 50;
@@ -66,14 +66,14 @@ class TrackingRepository {
       await _syncClient.sync(
         endpoint: syncEndpoint,
         points: batch,
-        vehicle: VehicleProfile(vehicleId: vehicleId),
+        vehicle: VehicleProfile(deviceId: deviceId),
       );
       final syncedIds = batch.map((p) => p.id).toSet();
       await _store.markSynced(syncedIds, DateTime.now().toUtc());
     }
   }
 
-  static VehicleTrackPoint _toTrackPoint(TrackingPoint point, String vehicleId) {
+  static VehicleTrackPoint _toTrackPoint(TrackingPoint point, String deviceId) {
     return VehicleTrackPoint(
       id: point.id,
       latitude: point.latitude,

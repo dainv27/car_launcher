@@ -11,6 +11,9 @@ class Vehicle {
     this.name = '',
     this.brand = '',
     this.model = '',
+    this.deviceId = '',
+    this.color = '',
+    this.vin = '',
     this.metadata = const {},
   });
 
@@ -28,6 +31,15 @@ class Vehicle {
 
   /// Vehicle model (e.g. "Vios").
   final String model;
+
+  /// Device attached to this vehicle (required by the vehicle-service API).
+  final String deviceId;
+
+  /// Exterior color.
+  final String color;
+
+  /// Vehicle Identification Number.
+  final String vin;
 
   /// Arbitrary key-value metadata (e.g. {"year": "2026"}).
   final Map<String, dynamic> metadata;
@@ -55,6 +67,9 @@ class Vehicle {
     String? name,
     String? brand,
     String? model,
+    String? deviceId,
+    String? color,
+    String? vin,
     Map<String, dynamic>? metadata,
   }) {
     return Vehicle(
@@ -63,6 +78,9 @@ class Vehicle {
       name: name ?? this.name,
       brand: brand ?? this.brand,
       model: model ?? this.model,
+      deviceId: deviceId ?? this.deviceId,
+      color: color ?? this.color,
+      vin: vin ?? this.vin,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -79,6 +97,9 @@ class Vehicle {
       name: json['name'] as String? ?? '',
       brand: json['brand'] as String? ?? json['make'] as String? ?? '',
       model: json['model'] as String? ?? '',
+      deviceId: json['deviceId'] as String? ?? '',
+      color: json['color'] as String? ?? '',
+      vin: json['vin'] as String? ?? '',
       metadata: metadata,
     );
   }
@@ -87,19 +108,25 @@ class Vehicle {
   Map<String, dynamic> toJson() => {
         if (id.isNotEmpty) 'id': id,
         if (id.isNotEmpty) 'vehicleId': id,
+        if (deviceId.isNotEmpty) 'deviceId': deviceId,
         'plateNumber': plateNumber,
         'name': name,
         'brand': brand,
         'model': model,
+        if (color.isNotEmpty) 'color': color,
+        if (vin.isNotEmpty) 'vin': vin,
         if (metadata.isNotEmpty) 'metadata': metadata,
       };
 
   /// Serialize to the PATCH request shape (all fields optional).
   Map<String, dynamic> toPatchJson() => {
+        if (deviceId.isNotEmpty) 'deviceId': deviceId,
         'plateNumber': plateNumber,
         'name': name,
         'brand': brand,
         'model': model,
+        if (color.isNotEmpty) 'color': color,
+        if (vin.isNotEmpty) 'vin': vin,
         if (metadata.isNotEmpty) 'metadata': metadata,
       };
 
@@ -110,6 +137,7 @@ class Vehicle {
         name: name,
         make: brand,
         model: model,
+        deviceId: deviceId,
         year: year,
       );
 
@@ -120,6 +148,7 @@ class Vehicle {
         name: profile.name,
         brand: profile.make,
         model: profile.model,
+        deviceId: profile.deviceId,
         metadata: profile.year.isNotEmpty ? {'year': profile.year} : const {},
       );
 
@@ -134,8 +163,12 @@ class Vehicle {
           plateNumber == other.plateNumber &&
           name == other.name &&
           brand == other.brand &&
-          model == other.model;
+          model == other.model &&
+          deviceId == other.deviceId &&
+          color == other.color &&
+          vin == other.vin;
 
   @override
-  int get hashCode => Object.hash(id, plateNumber, name, brand, model);
+  int get hashCode =>
+      Object.hash(id, plateNumber, name, brand, model, deviceId, color, vin);
 }

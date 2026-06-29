@@ -57,7 +57,7 @@ void main() {
         client.sync(
           endpoint: _testEndpoint,
           points: [point],
-          vehicle: const VehicleProfile(vehicleId: 'car-001'),
+          vehicle: const VehicleProfile(vehicleId: 'car-001', deviceId: 'dev-001'),
         ),
         throwsStateError,
       );
@@ -77,7 +77,7 @@ void main() {
       await client.sync(
         endpoint: _testEndpoint,
         points: [point],
-        vehicle: const VehicleProfile(vehicleId: 'car-001'),
+        vehicle: const VehicleProfile(vehicleId: 'car-001', deviceId: 'dev-001'),
       );
     });
 
@@ -88,7 +88,7 @@ void main() {
       expect(
         client.getLatestTrackingPoint(
           endpoint: _testEndpoint,
-          vehicleId: 'car-001',
+          deviceId: 'dev-001',
         ),
         throwsStateError,
       );
@@ -101,7 +101,7 @@ void main() {
       expect(
         client.listTrackingPoints(
           endpoint: _testEndpoint,
-          vehicleId: 'car-001',
+          deviceId: 'dev-001',
         ),
         throwsStateError,
       );
@@ -126,7 +126,7 @@ void main() {
       );
       final contentResult = await contentClient.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(contentResult, hasLength(1));
 
@@ -148,7 +148,7 @@ void main() {
       );
       final dataResult = await dataClient.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(dataResult, hasLength(1));
 
@@ -170,7 +170,7 @@ void main() {
       );
       final itemsResult = await itemsClient.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(itemsResult, hasLength(1));
 
@@ -192,7 +192,7 @@ void main() {
       );
       final tpResult = await tpClient.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(tpResult, hasLength(1));
     });
@@ -213,7 +213,7 @@ void main() {
       );
       final result = await client.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(result, hasLength(1));
       expect(result[0].id, 'p-1');
@@ -228,7 +228,7 @@ void main() {
       );
       final result = await client.listTrackingPoints(
         endpoint: _testEndpoint,
-        vehicleId: 'car-001',
+        deviceId: 'dev-001',
       );
       expect(result, isEmpty);
     });

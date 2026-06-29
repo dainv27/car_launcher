@@ -153,6 +153,7 @@ class VehicleProfile {
     this.name = '',
     this.make = '',
     this.model = '',
+    this.deviceId = '',
     this.year = '',
   });
 
@@ -161,6 +162,7 @@ class VehicleProfile {
   final String name;
   final String make;
   final String model;
+  final String deviceId;
   final String year;
 
   bool get hasData =>
@@ -169,6 +171,7 @@ class VehicleProfile {
       name.isNotEmpty ||
       make.isNotEmpty ||
       model.isNotEmpty ||
+      deviceId.isNotEmpty ||
       year.isNotEmpty;
 
   String get displayName {
@@ -184,6 +187,7 @@ class VehicleProfile {
     String? name,
     String? make,
     String? model,
+    String? deviceId,
     String? year,
   }) {
     return VehicleProfile(
@@ -192,6 +196,7 @@ class VehicleProfile {
       name: name ?? this.name,
       make: make ?? this.make,
       model: model ?? this.model,
+      deviceId: deviceId ?? this.deviceId,
       year: year ?? this.year,
     );
   }
@@ -207,6 +212,7 @@ class VehicleProfile {
       name: json['name'] as String? ?? '',
       make: json['make'] as String? ?? json['brand'] as String? ?? '',
       model: json['model'] as String? ?? '',
+      deviceId: json['deviceId'] as String? ?? '',
       year: json['year'] as String? ?? metadataYear,
     );
   }
@@ -214,6 +220,7 @@ class VehicleProfile {
   Map<String, dynamic> toJson() => {
     if (vehicleId.isNotEmpty) 'id': vehicleId,
     'vehicleId': vehicleId,
+    if (deviceId.isNotEmpty) 'deviceId': deviceId,
     'plateNumber': plateNumber,
     'name': name,
     'make': make,
@@ -222,6 +229,7 @@ class VehicleProfile {
   };
 
   Map<String, dynamic> toRegistrationJson() => {
+    if (deviceId.isNotEmpty) 'deviceId': deviceId,
     'plateNumber': plateNumber,
     'name': name,
     'brand': make,
@@ -265,7 +273,10 @@ class VehicleTrackingState {
 
   bool get hasRoute => points.length > 1;
 
-  bool get canSync => vehicle.vehicleId.isNotEmpty && pendingSyncCount > 0;
+  bool get canSync =>
+      vehicle.vehicleId.isNotEmpty &&
+      vehicle.deviceId.isNotEmpty &&
+      pendingSyncCount > 0;
 
   String get formattedDistance {
     if (distanceMeters >= 1000) {
@@ -322,13 +333,13 @@ class VehicleTrackingSyncClient {
     required List<VehicleTrackPoint> points,
     VehicleProfile vehicle = const VehicleProfile(),
   }) async {
-    if (vehicle.vehicleId.isEmpty) {
-      throw StateError('Tracking sync requires assigned vehicle');
+    if (vehicle.deviceId.isEmpty) {
+      throw StateError('Tracking sync requires an assigned device');
     }
 
     final url = UrlUtils.vehicleUri(
       endpoint,
-      'vehicles/${vehicle.vehicleId}/tracking-points',
+      'devices/${vehicle.deviceId}/tracking-points',
     );
     for (final point in points) {
       final response = await _httpClient.post(
@@ -342,14 +353,14 @@ class VehicleTrackingSyncClient {
     }
   }
 
-  /// Fetch the latest tracking point for a vehicle.
+  /// Fetch the latest tracking point for a device.
   /// Returns null if the server responds with 204 No Content.
   Future<TrackingPoint?> getLatestTrackingPoint({
     required String endpoint,
-    required String vehicleId,
+    required String deviceId,
   }) async {
     final response = await _httpClient.get(
-      UrlUtils.vehicleUri(endpoint, 'vehicles/$vehicleId/tracking-points/latest'),
+      UrlUtils.vehicleUri(endpoint, 'devices/$deviceId/tracking-points/latest'),
     );
     if (response.statusCode == 204) return null;
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -364,10 +375,10 @@ class VehicleTrackingSyncClient {
     throw StateError('Latest tracking point fetch failed: unexpected shape');
   }
 
-  /// Fetch a paginated list of tracking points for a vehicle.
+  /// Fetch a paginated list of tracking points for a device.
   Future<List<TrackingPoint>> listTrackingPoints({
     required String endpoint,
-    required String vehicleId,
+    required String deviceId,
     DateTime? from,
     DateTime? to,
     int page = 0,
@@ -382,7 +393,7 @@ class VehicleTrackingSyncClient {
     final response = await _httpClient.get(
       UrlUtils.vehicleUri(
         endpoint,
-        'vehicles/$vehicleId/tracking-points',
+        'devices/$deviceId/tracking-points',
         queryParameters: queryParams,
       ),
     );
@@ -743,13 +754,19 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
       _syncAgainRequested = true;
       return;
     }
-    if (!mounted || state.isSyncing || state.vehicle.vehicleId.isEmpty) {
+    if (!mounted ||
+        state.isSyncing ||
+        state.vehicle.vehicleId.isEmpty ||
+        state.vehicle.deviceId.isEmpty) {
       return;
     }
     state = state.copyWith(isSyncing: true, lastSyncError: null);
 
     final online = await _hasValidatedInternet();
-    if (!online || !mounted || state.vehicle.vehicleId.isEmpty) {
+    if (!online ||
+        !mounted ||
+        state.vehicle.vehicleId.isEmpty ||
+        state.vehicle.deviceId.isEmpty) {
       if (mounted) state = state.copyWith(isSyncing: false);
       return;
     }

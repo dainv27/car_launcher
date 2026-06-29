@@ -3,6 +3,7 @@ import 'package:car_launcher/features/account/presentation/providers/account_pro
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
+import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,8 +36,11 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
       );
     }
 
+    // Tracking points are scoped to the device attached to this vehicle.
+    final vehicleAsync = ref.watch(vehicleProvider(widget.vehicleId));
+    final deviceId = vehicleAsync.valueOrNull?.deviceId ?? '';
     final historyAsync = ref.watch(
-      trackingHistoryProvider((widget.vehicleId, _from, _to)),
+      trackingHistoryProvider((deviceId, _from, _to)),
     );
 
     return Scaffold(
@@ -88,7 +92,7 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
                     OutlinedButton.icon(
                       onPressed: () => ref.invalidate(
                         trackingHistoryProvider(
-                          (widget.vehicleId, _from, _to),
+                          (deviceId, _from, _to),
                         ),
                       ),
                       icon: const Icon(Icons.refresh, size: 18),

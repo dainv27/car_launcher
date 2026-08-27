@@ -473,4 +473,81 @@ void main() {
       );
     });
   });
+
+  group('VehicleTrackingSyncClient request logging', () {
+    test('rethrows when the underlying HTTP client throws', () async {
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async {
+          throw const SocketishError('connection reset');
+        }),
+      );
+      await expectLater(
+        client.fetchVehicles(endpoint: _testEndpoint),
+        throwsA(isA<SocketishError>()),
+      );
+    });
+
+    test('verboseLogging:false still performs requests', () async {
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async => http.Response(
+          jsonEncode({'vehicles': <Object>[]}),
+          200,
+        )),
+        verboseLogging: false,
+      );
+      final result = await client.fetchVehicles(endpoint: _testEndpoint);
+      expect(result, isEmpty);
+    });
+
+    test('verboseLogging:false still surfaces non-2xx failures', () async {
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async => http.Response('nope', 503)),
+        verboseLogging: false,
+      );
+      await expectLater(
+        client.fetchVehicles(endpoint: _testEndpoint),
+        throwsStateError,
+      );
+    });
+
+    test('truncates an oversized request body when logging a write', () async {
+      var capturedBodyLength = 0;
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async {
+          capturedBodyLength = req.body.length;
+          // Empty body → saveVehicle echoes the input vehicle back.
+          return http.Response('', 200);
+        }),
+      );
+      // A >2000-char registration payload exercises the truncation branch.
+      final saved = await client.saveVehicle(
+        endpoint: _testEndpoint,
+        vehicle: VehicleProfile(
+          plateNumber: '51A-12345',
+          name: 'X' * 3000,
+        ),
+      );
+      expect(capturedBodyLength, greaterThan(2000));
+      expect(saved.name.length, 3000);
+    });
+
+    test('truncates an oversized error response body when logging', () async {
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async => http.Response('E' * 5000, 500)),
+      );
+      await expectLater(
+        client.fetchVehicles(endpoint: _testEndpoint),
+        throwsStateError,
+      );
+    });
+  });
+}
+
+/// A distinctively-typed error so the "HTTP client threw" test can assert on
+/// the exact type that propagated through [VehicleTrackingSyncClient].
+class SocketishError implements Exception {
+  const SocketishError(this.message);
+  final String message;
+  @override
+  String toString() => 'SocketishError: $message';
 }

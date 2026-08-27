@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:car_launcher/core/api/url_utils.dart';
+import 'package:car_launcher/core/config/app_env.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/native/native_bridge.dart';
@@ -321,12 +322,84 @@ class VehicleTrackingState {
 }
 
 class VehicleTrackingSyncClient {
-  VehicleTrackingSyncClient({required http.Client httpClient})
-    : this._(httpClient);
+  VehicleTrackingSyncClient({
+    required http.Client httpClient,
+    bool? verboseLogging,
+  }) : this._(httpClient, verboseLogging ?? AppEnv.isDevelopment);
 
-  VehicleTrackingSyncClient._(this._httpClient);
+  VehicleTrackingSyncClient._(this._httpClient, this._verboseLogging);
 
   final http.Client _httpClient;
+
+  /// When true, every request/response is traced to [AppLogger] at DEBUG
+  /// level. Defaults to [AppEnv.isDevelopment] so the develop environment
+  /// gets full HTTP tracing while release builds only log failures.
+  final bool _verboseLogging;
+
+  static const _logTag = 'VEHICLE_SVC';
+  static const _maxLoggedBodyChars = 2000;
+
+  /// Runs [request] with structured logging around it.
+  ///
+  /// - Verbose mode logs the outbound method/URL (plus the body for writes)
+  ///   and the response status/latency/size.
+  /// - Regardless of mode, non-2xx responses are logged at WARN (with the
+  ///   response body) and thrown exceptions at ERROR before rethrowing, so a
+  ///   failing vehicle-service call is always diagnosable from the log file.
+  Future<http.Response> _send(
+    String operation,
+    String method,
+    Uri url,
+    Future<http.Response> Function() request, {
+    Object? requestBody,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    if (_verboseLogging) {
+      final bodyPart = requestBody == null
+          ? ''
+          : '\n  body: ${_truncateForLog(requestBody.toString())}';
+      AppLogger.instance.d(
+        '-> $method $url  [$operation]$bodyPart',
+        tag: _logTag,
+      );
+    }
+    try {
+      final response = await request();
+      stopwatch.stop();
+      final elapsedMs = stopwatch.elapsedMilliseconds;
+      final status = response.statusCode;
+      if (status < 200 || status >= 300) {
+        AppLogger.instance.w(
+          '<- $status $method $url  [$operation] (${elapsedMs}ms)\n'
+          '  response: ${_truncateForLog(response.body)}',
+          tag: _logTag,
+        );
+      } else if (_verboseLogging) {
+        AppLogger.instance.d(
+          '<- $status $method $url  [$operation] '
+          '(${elapsedMs}ms, ${response.bodyBytes.length}B)',
+          tag: _logTag,
+        );
+      }
+      return response;
+    } catch (error, stackTrace) {
+      stopwatch.stop();
+      AppLogger.instance.e(
+        '-x $method $url  [$operation] threw after '
+        '${stopwatch.elapsedMilliseconds}ms',
+        tag: _logTag,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  static String _truncateForLog(String value) {
+    if (value.length <= _maxLoggedBodyChars) return value;
+    return '${value.substring(0, _maxLoggedBodyChars)}'
+        '... (${value.length} chars total)';
+  }
 
   Future<void> sync({
     required String endpoint,
@@ -341,11 +414,25 @@ class VehicleTrackingSyncClient {
       endpoint,
       'devices/${vehicle.deviceId}/tracking-points',
     );
+    if (_verboseLogging) {
+      AppLogger.instance.d(
+        'sync: ${points.length} point(s) -> device ${vehicle.deviceId} '
+        '(vehicle ${vehicle.vehicleId}, endpoint "$endpoint")',
+        tag: _logTag,
+      );
+    }
     for (final point in points) {
-      final response = await _httpClient.post(
+      final body = jsonEncode(point.toVehicleServiceJson());
+      final response = await _send(
+        'sync point ${point.id}',
+        'POST',
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(point.toVehicleServiceJson()),
+        () => _httpClient.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        ),
+        requestBody: body,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw StateError('Tracking sync failed: HTTP ${response.statusCode}');
@@ -359,8 +446,13 @@ class VehicleTrackingSyncClient {
     required String endpoint,
     required String deviceId,
   }) async {
-    final response = await _httpClient.get(
-      UrlUtils.vehicleUri(endpoint, 'devices/$deviceId/tracking-points/latest'),
+    final url =
+        UrlUtils.vehicleUri(endpoint, 'devices/$deviceId/tracking-points/latest');
+    final response = await _send(
+      'getLatestTrackingPoint($deviceId)',
+      'GET',
+      url,
+      () => _httpClient.get(url),
     );
     if (response.statusCode == 204) return null;
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -390,12 +482,16 @@ class VehicleTrackingSyncClient {
     };
     if (from != null) queryParams['from'] = from.toUtc().toIso8601String();
     if (to != null) queryParams['to'] = to.toUtc().toIso8601String();
-    final response = await _httpClient.get(
-      UrlUtils.vehicleUri(
-        endpoint,
-        'devices/$deviceId/tracking-points',
-        queryParameters: queryParams,
-      ),
+    final url = UrlUtils.vehicleUri(
+      endpoint,
+      'devices/$deviceId/tracking-points',
+      queryParameters: queryParams,
+    );
+    final response = await _send(
+      'listTrackingPoints($deviceId)',
+      'GET',
+      url,
+      () => _httpClient.get(url),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError(
@@ -419,12 +515,16 @@ class VehicleTrackingSyncClient {
   }
 
   Future<List<VehicleProfile>> fetchVehicles({required String endpoint}) async {
-    final response = await _httpClient.get(
-      UrlUtils.vehicleUri(
-        endpoint,
-        'vehicles',
-        queryParameters: const {'page': '0', 'size': '10'},
-      ),
+    final url = UrlUtils.vehicleUri(
+      endpoint,
+      'vehicles',
+      queryParameters: const {'page': '0', 'size': '10'},
+    );
+    final response = await _send(
+      'fetchVehicles',
+      'GET',
+      url,
+      () => _httpClient.get(url),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('Vehicle list failed: HTTP ${response.statusCode}');
@@ -449,8 +549,12 @@ class VehicleTrackingSyncClient {
     required String endpoint,
     required String id,
   }) async {
-    final response = await _httpClient.get(
-      UrlUtils.vehicleUri(endpoint, 'vehicles/$id'),
+    final url = UrlUtils.vehicleUri(endpoint, 'vehicles/$id');
+    final response = await _send(
+      'getVehicle($id)',
+      'GET',
+      url,
+      () => _httpClient.get(url),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('Vehicle get failed: HTTP ${response.statusCode}');
@@ -471,10 +575,18 @@ class VehicleTrackingSyncClient {
     required String id,
     required VehicleProfile vehicle,
   }) async {
-    final response = await _httpClient.patch(
-      UrlUtils.vehicleUri(endpoint, 'vehicles/$id'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(vehicle.toRegistrationJson()),
+    final url = UrlUtils.vehicleUri(endpoint, 'vehicles/$id');
+    final body = jsonEncode(vehicle.toRegistrationJson());
+    final response = await _send(
+      'updateVehicle($id)',
+      'PATCH',
+      url,
+      () => _httpClient.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      ),
+      requestBody: body,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('Vehicle update failed: HTTP ${response.statusCode}');
@@ -496,9 +608,14 @@ class VehicleTrackingSyncClient {
     required VehicleProfile vehicle,
     Map<String, dynamic> deviceInfo = const {},
   }) async {
-    final response = await _httpClient.post(
-      UrlUtils.vehicleUri(endpoint, 'vehicles'),
-      body: jsonEncode(vehicle.toRegistrationJson()),
+    final url = UrlUtils.vehicleUri(endpoint, 'vehicles');
+    final body = jsonEncode(vehicle.toRegistrationJson());
+    final response = await _send(
+      'saveVehicle',
+      'POST',
+      url,
+      () => _httpClient.post(url, body: body),
+      requestBody: body,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('Vehicle save failed: HTTP ${response.statusCode}');

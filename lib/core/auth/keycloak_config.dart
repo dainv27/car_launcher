@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart';
 
 import 'package:car_launcher/core/config/env_loader.dart';
 
-/// Keycloak OIDC config — realm `card_management` on idp.202corp.com.
+/// Keycloak OIDC config — realm `car_management` on idp.202corp.com.
 ///
 /// Values resolve in this order:
 ///   1. `.env` / `.env.local` / `.env.<env>` (via flutter_dotenv)
 ///   2. `--dart-define` (compile-time)
 ///   3. Hardcoded default
 abstract final class KeycloakConfig {
-  static const realm = 'card_management';
+  static const realm = 'car_management';
   static const issuer = 'https://dev-idp.202corp.com/realms/$realm';
 
   static String get discoveryUrl =>

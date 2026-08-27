@@ -72,10 +72,6 @@ class MainActivity : FlutterActivity() {
     private var mediaSessionManager: MediaSessionManager? = null
     private var mediaControllerCallback: MediaController.Callback? = null
 
-    /** Set by configureFlutterEngine; lets services call back into Flutter. */
-    val methodChannelForServices: MethodChannel
-        get() = methodChannel
-
     private var activeSessionsChangedListener: MediaSessionManager.OnActiveSessionsChangedListener? = null
     private var activeMediaController: MediaController? = null
 
@@ -104,7 +100,9 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STARTUP_PERMISSION_REQUEST) {
-            openNextStartupPermissionSettings()
+            // Let Flutter decide what (if anything) to open next — native only
+            // reports that the runtime-permission dialog was resolved.
+            methodChannel.invokeMethod("startupRuntimePermissionsResult", null)
         }
     }
 
@@ -232,11 +230,11 @@ class MainActivity : FlutterActivity() {
                 "startVehicleTrackingService" -> result.success(setVehicleTrackingServiceEnabled(true))
                 "stopVehicleTrackingService" -> result.success(setVehicleTrackingServiceEnabled(false))
                 "getVehicleTrackingDatabasePath" -> result.success(getVehicleTrackingDatabasePath())
+                "syncVehicleTrackingNow" -> result.success(VehicleTrackingService.triggerSyncNow())
                 "updateVehicleTrackingSyncConfig" -> {
-                    val endpoint = call.argument<String>("syncEndpoint") ?: ""
+                    val trackingPointsUrl = call.argument<String>("trackingPointsUrl") ?: ""
                     val token = call.argument<String>("accessToken") ?: ""
-                    val vehicle = call.argument<Map<String, Any?>>("vehicle") ?: emptyMap()
-                    result.success(updateVehicleTrackingSyncConfig(endpoint, token, vehicle))
+                    result.success(updateVehicleTrackingSyncConfig(trackingPointsUrl, token))
                 }
                 "launchApp" -> {
                     val packageName = call.argument<String>("packageName")
@@ -286,7 +284,15 @@ class MainActivity : FlutterActivity() {
                     )
                 }
                 "launchMapsWithYoutubeOnTop" -> {
-                    result.success(MultiWindowLauncher.launchMapsWithYoutubeOnTop(this))
+                    val layout = WindowLayoutConfig(
+                        widthFraction = (call.argument<Double>("widthFraction") ?: 0.38).toFloat(),
+                        heightFraction = (call.argument<Double>("heightFraction") ?: 0.72).toFloat(),
+                        marginDp = (call.argument<Double>("marginDp") ?: 16.0).toFloat(),
+                        minWidthPx = call.argument<Int>("minWidthPx") ?: 480,
+                        minHeightPx = call.argument<Int>("minHeightPx") ?: 360,
+                        secondWindowDelayMs = call.argument<Int>("secondWindowDelayMs")?.toLong() ?: 700L,
+                    )
+                    result.success(MultiWindowLauncher.launchMapsWithYoutubeOnTop(this, layout))
                 }
                 "setScreenBrightness" -> {
                     val level = call.argument<Double>("level")
@@ -306,10 +312,6 @@ class MainActivity : FlutterActivity() {
                     } else {
                         result.error("INVALID_ARG", "Missing enabled", null)
                     }
-                }
-                "refreshVehicleToken" -> {
-                    val oldToken = call.arguments as? String
-                    handleVehicleTokenRefresh(oldToken ?: "", result)
                 }
                 else -> result.notImplemented()
             }
@@ -506,7 +508,6 @@ class MainActivity : FlutterActivity() {
             "positionMs" to 0,
             "state" to "none",
             "packageName" to "",
-            "hasMedia" to false,
         )
         try {
             val controller = activeMediaController ?: return default
@@ -527,8 +528,6 @@ class MainActivity : FlutterActivity() {
                 else -> "none"
             }
 
-            val hasMedia = title.isNotEmpty() || artist.isNotEmpty()
-
             return mapOf(
                 "title" to title,
                 "artist" to artist,
@@ -538,7 +537,6 @@ class MainActivity : FlutterActivity() {
                 "positionMs" to position.toInt(),
                 "state" to stateStr,
                 "packageName" to (controller.packageName ?: ""),
-                "hasMedia" to hasMedia,
             )
         } catch (_: Exception) {
             return default
@@ -679,22 +677,10 @@ class MainActivity : FlutterActivity() {
             )
         }
 
-        val notificationAccess = hasNotificationListenerAccess()
-        val accessibilityAccess = hasInputAccessibilityAccess()
-        val openedAccessibilitySettings =
-            missingRuntimePermissions.isEmpty() && !accessibilityAccess && openAccessibilitySettings()
-        val openedNotificationAccessSettings =
-            missingRuntimePermissions.isEmpty() &&
-                accessibilityAccess &&
-                !notificationAccess &&
-                openNotificationAccessSettings()
-
         return mapOf(
             "requestedRuntimePermissions" to missingRuntimePermissions,
-            "accessibilityInputGranted" to accessibilityAccess,
-            "openedAccessibilitySettings" to openedAccessibilitySettings,
-            "notificationListenerGranted" to notificationAccess,
-            "openedNotificationAccessSettings" to openedNotificationAccessSettings,
+            "accessibilityInputGranted" to hasInputAccessibilityAccess(),
+            "notificationListenerGranted" to hasNotificationListenerAccess(),
             "privilegedPermissions" to mapOf(
                 "addTrustedDisplay" to hasPermission("android.permission.ADD_TRUSTED_DISPLAY"),
                 "injectEvents" to hasPermission("android.permission.INJECT_EVENTS"),
@@ -713,16 +699,6 @@ class MainActivity : FlutterActivity() {
             permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
         }
         return permissions
-    }
-
-    private fun openNextStartupPermissionSettings() {
-        if (!hasInputAccessibilityAccess()) {
-            openAccessibilitySettings()
-            return
-        }
-        if (!hasNotificationListenerAccess()) {
-            openNotificationAccessSettings()
-        }
     }
 
     private fun hasPermission(permission: String): Boolean {
@@ -835,21 +811,13 @@ class MainActivity : FlutterActivity() {
         return getDatabasePath(VehicleTrackingService.DATABASE_NAME).absolutePath
     }
 
-    private fun updateVehicleTrackingSyncConfig(endpoint: String, token: String, vehicle: Map<String, Any?>): Boolean {
+    private fun updateVehicleTrackingSyncConfig(trackingPointsUrl: String, token: String): Boolean {
         return try {
-            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val vehicleJson = org.json.JSONObject(vehicle.filterValues {
-                it?.toString()?.isNotBlank() == true
-            }).toString()
-            val editor = prefs.edit()
-                .putString("flutter.vehicle_tracking_sync_endpoint", endpoint)
+            getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                .edit()
+                .putString("flutter.vehicle_tracking_points_url", trackingPointsUrl)
                 .putString("flutter.vehicle_tracking_access_token", token)
-            if (vehicleJson == "{}") {
-                editor.remove("flutter.vehicle_profile")
-            } else {
-                editor.putString("flutter.vehicle_profile", vehicleJson)
-            }
-            editor.apply()
+                .apply()
             true
         } catch (error: Throwable) {
             Log.w("MainActivity", "Unable to update vehicle tracking sync config", error)
@@ -866,6 +834,12 @@ class MainActivity : FlutterActivity() {
     // refresh; it returns the new access token.
 
     private var trackingAuthChannel: MethodChannel? = null
+
+    /** Called by [VehicleTrackingService] (posted to the main thread) when its
+     * bearer token expires. Forwards to Flutter over [trackingAuthChannel]. */
+    fun requestVehicleTokenRefresh(oldToken: String, result: MethodChannel.Result) {
+        handleVehicleTokenRefresh(oldToken, result)
+    }
 
     private fun handleVehicleTokenRefresh(oldToken: String, result: MethodChannel.Result) {
         try {

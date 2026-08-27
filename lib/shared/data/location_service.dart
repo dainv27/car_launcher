@@ -532,19 +532,18 @@ final vehicleTrackingProvider =
       final auth = getIt<KeycloakAuthRepository>();
       final syncClient = getIt<VehicleTrackingSyncClient>();
       final store = getIt<VehicleTrackingStoreService>();
-      final notifier = VehicleTrackingNotifier(
+      // Location capture and server sync are owned exclusively by the native
+      // background service (offline-first: it durably records to SQLite
+      // regardless of connectivity, then uploads opportunistically). Flutter
+      // only reads that same store to reflect state in the UI — it does not
+      // poll [currentLocationProvider] or sync independently, which would
+      // otherwise race with native on the shared database and double-upload
+      // points to the server.
+      return VehicleTrackingNotifier(
         auth,
         syncClient: syncClient,
         store: store,
       );
-      ref.listen<AsyncValue<LocationInfo?>>(currentLocationProvider, (
-        previous,
-        next,
-      ) {
-        final location = next.valueOrNull;
-        if (location != null) notifier.recordLocation(location);
-      });
-      return notifier;
     });
 
 class LocationNotifier extends StateNotifier<AsyncValue<LocationInfo?>> {
@@ -599,7 +598,6 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
   VehicleTrackingNotifier(this.auth, {
     VehicleTrackingSyncClient? syncClient,
     VehicleTrackingStoreService? store,
-    this.syncBatchSize = _defaultSyncBatchSize,
     bool loadPersisted = true,
   }) : _syncClient =
            syncClient ?? (throw ArgumentError('syncClient is required')),
@@ -610,19 +608,18 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     } else {
       state = const VehicleTrackingState();
     }
-    _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) => syncNow());
+    // Native owns capture and sync; this just keeps the UI's read-only view
+    // of the shared offline-first store fresh between manual refreshes.
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _refreshFromStore(),
+    );
   }
-
-  static const _maxPoints = 1000;
-  static const _minimumDistanceMeters = 5.0;
-  static const _defaultSyncBatchSize = 100;
 
   final KeycloakAuthRepository auth;
   final VehicleTrackingSyncClient _syncClient;
   final VehicleTrackingStoreService _store;
-  final int syncBatchSize;
-  late final Timer _syncTimer;
-  bool _syncAgainRequested = false;
+  late final Timer _refreshTimer;
 
   Future<void> start() async {
     state = state.copyWith(
@@ -723,85 +720,28 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     }
   }
 
-  void recordLocation(LocationInfo location, {DateTime? timestamp}) {
-    if (!mounted || !state.enabled) return;
-
-    final point = VehicleTrackPoint.fromLocation(
-      location,
-      timestamp: timestamp,
-    );
-    final previous = state.lastPoint;
-    if (previous != null &&
-        previous.distanceTo(point) < _minimumDistanceMeters) {
-      return;
-    }
-
-    final updatedPoints = _dedupe([...state.points, point]);
-    final trimmedPoints = updatedPoints.length > _maxPoints
-        ? updatedPoints.sublist(updatedPoints.length - _maxPoints)
-        : updatedPoints;
-    state = state.copyWith(
-      points: trimmedPoints,
-      distanceMeters: _calculateDistance(trimmedPoints),
-      isLoading: false,
-      lastSyncError: null,
-    );
-    unawaited(_store.appendPending(point).then((_) => syncNow()));
-  }
-
+  /// Nudges the native background service to attempt an upload now, then
+  /// refreshes this read-only view from the shared offline-first store.
+  ///
+  /// Flutter never captures points or uploads them itself — see the
+  /// [vehicleTrackingProvider] definition for why. Points are already
+  /// durably stored locally by native regardless of connectivity; this only
+  /// requests an earlier attempt than native's next periodic cycle. If the
+  /// native service isn't running (or this runs on a test/non-Android
+  /// platform), the call is a no-op and the periodic refresh timer still
+  /// picks up whatever native eventually syncs.
   Future<void> syncNow() async {
-    if (mounted && state.isSyncing) {
-      _syncAgainRequested = true;
-      return;
-    }
-    if (!mounted ||
-        state.isSyncing ||
-        state.vehicle.vehicleId.isEmpty ||
-        state.vehicle.deviceId.isEmpty) {
-      return;
-    }
+    if (!mounted || state.isSyncing) return;
     state = state.copyWith(isSyncing: true, lastSyncError: null);
-
-    final online = await _hasValidatedInternet();
-    if (!online ||
-        !mounted ||
-        state.vehicle.vehicleId.isEmpty ||
-        state.vehicle.deviceId.isEmpty) {
-      if (mounted) state = state.copyWith(isSyncing: false);
-      return;
-    }
-
     try {
-      while (mounted) {
-        final pending = await _store.readPending();
-        if (pending.isEmpty) break;
-
-        final batchSize = syncBatchSize.clamp(1, pending.length).toInt();
-        final batch = pending.take(batchSize).toList(growable: false);
-        await _syncClient.sync(
-          endpoint: state.syncEndpoint,
-          points: batch,
-          vehicle: state.vehicle,
-        );
-        if (!mounted) return;
-
-        final syncedAt = DateTime.now().toUtc();
-        final syncedIds = batch.map((point) => point.id).toSet();
-        await _store.markSynced(syncedIds, syncedAt);
-      }
-
-      await _refreshFromStore(isSyncing: false, lastSyncError: null);
-      if (mounted && _syncAgainRequested) {
-        _syncAgainRequested = false;
-        unawaited(syncNow());
-      }
-    } catch (error) {
-      if (!mounted) return;
-      await _refreshFromStore(
-        isSyncing: false,
-        lastSyncError: error.toString(),
-      );
+      await NativeBridge.call<bool>('syncVehicleTrackingNow');
+    } catch (e) {
+      AppLogger.instance.d('Native sync nudge failed', tag: 'TRACKING', error: e);
     }
+    // Give native's async HTTP batch a brief window before reading back.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    await _refreshFromStore(isSyncing: false);
   }
 
   Future<void> _load() async {
@@ -865,29 +805,26 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     }
   }
 
+  /// Builds the exact POST URL the native background service should hit for
+  /// this device's tracking points, so native never has to know the vehicle
+  /// service's URL-shaping rules (kept in [UrlUtils] as the single source of
+  /// truth). Empty when no device is assigned yet.
+  String _trackingPointsUrl() {
+    final deviceId = state.vehicle.deviceId;
+    if (deviceId.isEmpty) return '';
+    return UrlUtils.vehicleUri(state.syncEndpoint, 'devices/$deviceId/tracking-points').toString();
+  }
+
   Future<void> _syncNativeConfig(Future<String?> Function() accessToken, {bool clearToken = false}) async {
     try {
       final token = clearToken ? '' : await accessToken() ?? '';
       await NativeBridge.call<bool>('updateVehicleTrackingSyncConfig', {
-        'syncEndpoint': state.syncEndpoint,
+        'trackingPointsUrl': _trackingPointsUrl(),
         'accessToken': token,
-        'vehicle': state.vehicle.toJson(),
       });
     } catch (e) {
       // Tests and non-Android platforms do not have the native channel.
       AppLogger.instance.d('Native sync config update failed', tag: 'TRACKING', error: e);
-    }
-  }
-
-  Future<bool> _hasValidatedInternet() async {
-    try {
-      final status = await NativeBridge.call<Map<dynamic, dynamic>>(
-        'getConnectivityStatus',
-      );
-      return status?['validated'] == true;
-    } catch (e) {
-      AppLogger.instance.d('Connectivity check failed', tag: 'TRACKING', error: e);
-      return false;
     }
   }
 
@@ -938,7 +875,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
 
   @override
   void dispose() {
-    _syncTimer.cancel();
+    _refreshTimer.cancel();
     super.dispose();
   }
 }

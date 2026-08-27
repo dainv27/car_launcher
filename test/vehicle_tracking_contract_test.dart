@@ -7,7 +7,6 @@ import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -66,187 +65,12 @@ void main() {
         );
   });
 
-  test('vehicle tracking records movement only while enabled', () async {
-    const channel = MethodChannel('com.carlauncher/native');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async => true);
-
-    final directory = Directory.systemTemp.createTempSync(
-      'vehicle_tracking_test_',
-    );
-    final store = VehicleTrackingStoreService(directory: directory);
-    final auth = KeycloakAuthRepository();
-    final syncClient = VehicleTrackingSyncClient(
-      httpClient: MockClient((req) async => http.Response('{}', 200)),
-    );
-    final notifier = VehicleTrackingNotifier(
-      auth,
-      syncClient: syncClient,
-      store: store,
-      loadPersisted: false,
-    );
-    addTearDown(() async {
-      notifier.dispose();
-      await store.close();
-      directory.deleteSync(recursive: true);
-    });
-
-    notifier.recordLocation(
-      const LocationInfo(displayName: 'Ignored', latitude: 10, longitude: 106),
-    );
-    expect(notifier.state.points, isEmpty);
-
-    await notifier.start();
-    notifier.recordLocation(
-      const LocationInfo(displayName: 'Start', latitude: 10, longitude: 106),
-      timestamp: DateTime.utc(2026),
-    );
-    notifier.recordLocation(
-      const LocationInfo(displayName: 'End', latitude: 10.001, longitude: 106),
-      timestamp: DateTime.utc(2026, 1, 1, 0, 1),
-    );
-
-    expect(notifier.state.enabled, isTrue);
-    expect(notifier.state.pointCount, 2);
-    expect(notifier.state.pendingSyncCount, 2);
-    expect(notifier.state.distanceMeters, greaterThan(100));
-    expect(notifier.state.lastPoint?.displayName, 'End');
-
-    // Disable tracking — stop() calls auth.accessToken() which may fail in
-    // tests without a real Keycloak server, so we just verify the state change.
-    try {
-      await notifier.stop();
-    } catch (_) {
-      // Swallow auth-related errors in test environment.
-    }
-    expect(notifier.state.enabled, isFalse);
-    notifier.recordLocation(
-      const LocationInfo(
-        displayName: 'Ignored 2',
-        latitude: 10.002,
-        longitude: 106,
-      ),
-    );
-    expect(notifier.state.pointCount, 2);
-
-    await notifier.clear();
-    expect(notifier.state.points, isEmpty);
-    expect(notifier.state.distanceMeters, 0);
-  });
-
-  test(
-    'vehicle tracking sync marks points once after successful upload',
-    () async {
-      const channel = MethodChannel('com.carlauncher/native');
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (call) async {
-            if (call.method == 'getConnectivityStatus') {
-              return {'validated': true};
-            }
-            return true;
-          });
-
-      final sync = _RecordingSyncClient();
-      const vehicle = VehicleProfile(vehicleId: 'car-001');
-      final directory = Directory.systemTemp.createTempSync(
-        'vehicle_tracking_sync_test_',
-      );
-      final store = VehicleTrackingStoreService(directory: directory);
-      final auth = KeycloakAuthRepository();
-      final notifier = VehicleTrackingNotifier(
-        auth,
-        syncClient: sync,
-        store: store,
-        loadPersisted: false,
-      );
-      addTearDown(() async {
-        notifier.dispose();
-        await store.close();
-        directory.deleteSync(recursive: true);
-      });
-
-      await notifier.setSyncEndpoint('https://tracking.example.test/points');
-      await notifier.assignVehicle(vehicle);
-      await notifier.start();
-      notifier.recordLocation(
-        const LocationInfo(displayName: 'A', latitude: 10, longitude: 106),
-        timestamp: DateTime.utc(2026),
-      );
-      notifier.recordLocation(
-        const LocationInfo(displayName: 'B', latitude: 10.001, longitude: 106),
-        timestamp: DateTime.utc(2026, 1, 1, 0, 1),
-      );
-      await notifier.syncNow();
-      for (var i = 0; i < 10 && notifier.state.pendingSyncCount > 0; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-
-      expect(sync.uploadedIds.toSet().length, 2);
-      expect(notifier.state.pendingSyncCount, 0);
-      final snapshot = await store.load();
-      expect(snapshot.pending, isEmpty);
-      expect(snapshot.synced.length, 2);
-      expect(snapshot.synced.every((point) => point.synced), isTrue);
-
-      await notifier.syncNow();
-      expect(sync.calls, 1);
-    },
-  );
-
-  test('vehicle tracking sync uploads pending points in batches', () async {
-    const channel = MethodChannel('com.carlauncher/native');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          if (call.method == 'getConnectivityStatus') {
-            return {'validated': true};
-          }
-          return true;
-        });
-
-    final sync = _RecordingSyncClient();
-    const vehicle = VehicleProfile(vehicleId: 'car-001');
-    final directory = Directory.systemTemp.createTempSync(
-      'vehicle_tracking_batch_test_',
-    );
-    final store = VehicleTrackingStoreService(directory: directory);
-    final auth = KeycloakAuthRepository();
-    final notifier = VehicleTrackingNotifier(
-      auth,
-      syncClient: sync,
-      store: store,
-      syncBatchSize: 2,
-      loadPersisted: false,
-    );
-    addTearDown(() async {
-      notifier.dispose();
-      await store.close();
-      directory.deleteSync(recursive: true);
-    });
-
-    await notifier.assignVehicle(vehicle);
-    await notifier.start();
-    for (var i = 0; i < 5; i++) {
-      notifier.recordLocation(
-        LocationInfo(
-          displayName: 'Point $i',
-          latitude: 10 + (i * 0.001),
-          longitude: 106,
-        ),
-        timestamp: DateTime.utc(2026, 1, 1, 0, i),
-      );
-    }
-    await notifier.setSyncEndpoint('https://tracking.example.test/points');
-    for (var i = 0; i < 30 && sync.batchSizes.length < 3; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
-    for (var i = 0; i < 20 && notifier.state.pendingSyncCount > 0; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
-
-    expect(sync.batchSizes, [2, 2, 1]);
-    expect(sync.uploadedIds.toSet().length, 5);
-    expect(notifier.state.pendingSyncCount, 0);
-  });
+  // Location capture and server upload are exclusively the native background
+  // service's job (offline-first: durable local write, opportunistic sync —
+  // see VehicleTrackingService.kt and android_native_flutter_business_logic
+  // notes in docs/VEHICLE_TRACKING.md). Flutter only reads the shared store;
+  // coverage for that read-only path lives in vehicle_tracking_notifier_test.
+  // dart. This file keeps only the HTTP-contract and vehicle-CRUD coverage.
 
   test(
     'vehicle tracking sync client sends tracking point body',
@@ -260,6 +84,7 @@ void main() {
         endpoint: 'https://dev-car-apis.202corp.com/vehicle-service',
         vehicle: const VehicleProfile(
           vehicleId: 'car-001',
+          deviceId: 'android-abc',
           plateNumber: '51A-12345',
           name: 'Family car',
         ),
@@ -278,7 +103,7 @@ void main() {
       expect(client.lastHeaders?['Content-Type'], 'application/json');
       expect(
         client.lastUrl.toString(),
-        'https://dev-car-apis.202corp.com/vehicle-service/client-api/v1/vehicles/car-001/tracking-points',
+        'https://dev-car-apis.202corp.com/vehicle-service/client-api/v1/devices/android-abc/tracking-points',
       );
       expect(client.lastBody, contains('eventTime'));
       expect(client.lastBody, contains('metadata'));
@@ -550,14 +375,14 @@ void main() {
       expect(nativeService, contains('requestLocationUpdates'));
       expect(nativeService, contains('SQLiteOpenHelper'));
       expect(nativeService, contains('HttpURLConnection'));
-      expect(nativeService, contains('KEY_VEHICLE_PROFILE'));
-      expect(nativeService, contains('tracking-points'));
+      expect(nativeService, contains('KEY_TRACKING_POINTS_URL'));
+      expect(service, contains('tracking-points'));
       expect(nativeService, contains('SYNC_BATCH_SIZE'));
       expect(nativeService, contains('pending_points'));
       expect(nativeService, contains('synced_points'));
       expect(mainActivity, contains('getVehicleTrackingDatabasePath'));
       expect(mainActivity, contains('updateVehicleTrackingSyncConfig'));
-      expect(mainActivity, contains('flutter.vehicle_profile'));
+      expect(mainActivity, contains('flutter.vehicle_tracking_points_url'));
       expect(mainActivity, contains('startVehicleTrackingService'));
       expect(mainActivity, contains('stopVehicleTrackingService'));
       expect(bootReceiver, contains('VehicleTrackingService.ACTION_START'));

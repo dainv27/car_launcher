@@ -83,8 +83,29 @@ class LauncherService {
 
   /// Launch Google Maps fullscreen and request YouTube in a freeform window.
   /// Falls back to Android adjacent split-screen when freeform is unavailable.
-  Future<bool> launchMapsWithYoutubeOnTop() async {
-    return await NativeBridge.call<bool>('launchMapsWithYoutubeOnTop') ?? false;
+  ///
+  /// Window layout is decided here, not by native — [widthFraction] and
+  /// [heightFraction] size the YouTube window relative to the screen,
+  /// [minWidthPx]/[minHeightPx] floor it on small displays, [marginDp] pads
+  /// it from the screen edge, and [secondWindowDelayMs] staggers the YouTube
+  /// launch after Maps so the freeform window request isn't dropped.
+  Future<bool> launchMapsWithYoutubeOnTop({
+    double widthFraction = 0.38,
+    double heightFraction = 0.72,
+    double marginDp = 16,
+    int minWidthPx = 480,
+    int minHeightPx = 360,
+    int secondWindowDelayMs = 700,
+  }) async {
+    return await NativeBridge.call<bool>('launchMapsWithYoutubeOnTop', {
+          'widthFraction': widthFraction,
+          'heightFraction': heightFraction,
+          'marginDp': marginDp,
+          'minWidthPx': minWidthPx,
+          'minHeightPx': minHeightPx,
+          'secondWindowDelayMs': secondWindowDelayMs,
+        }) ??
+        false;
   }
 
   /// Get launcher icon bytes for [packageName], or null if unavailable.

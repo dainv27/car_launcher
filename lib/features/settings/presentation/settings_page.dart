@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:car_launcher/features/launcher/data/launcher_service.dart';
 import 'package:car_launcher/shared/widgets/car_responsive.dart';
+import 'package:car_launcher/core/theme/app_theme.dart';
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/core/theme/launcher_appearance.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
@@ -14,6 +15,7 @@ import 'package:car_launcher/features/layout/presentation/providers/layout_provi
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
 import 'package:car_launcher/features/settings/presentation/widgets/weather_settings_dialog.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
+import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -767,6 +769,8 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
   Widget _buildThemeCard({required bool compact}) {
     final appearance = ref.watch(launcherAppearanceProvider);
     final notifier = ref.read(launcherAppearanceProvider.notifier);
+    final themeMode = ref.watch(themeModeProvider);
+    final themeModeNotifier = ref.read(themeModeProvider.notifier);
     final hasCustomWallpaper =
         appearance.customWallpaperPath?.isNotEmpty == true;
     return Column(
@@ -809,6 +813,55 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
             ),
           ],
         ),
+        const SizedBox(height: 20),
+        Flex(
+          direction: compact ? Axis.vertical : Axis.horizontal,
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Light / Dark Mode',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: CarPlayTheme.onSurface,
+              ),
+            ),
+            if (compact) const SizedBox(height: 12),
+            Container(
+              key: const Key('settings-theme-mode-picker'),
+              decoration: BoxDecoration(
+                color: CarPlayTheme.deepObsidian,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withAlpha(26)),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final mode in AppThemeMode.values)
+                    _PillButton(
+                      label: mode.label,
+                      isSelected: themeMode == mode,
+                      onTap: () => themeModeNotifier.setMode(mode),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (themeMode == AppThemeMode.auto) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Auto follows the system Dark setting, or day/night hours when that setting isn\'t meaningful on this device.',
+            style: TextStyle(
+              fontSize: 12,
+              color: CarPlayTheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         Row(
           children: [

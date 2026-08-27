@@ -13,7 +13,6 @@ import 'package:car_launcher/features/dashboard/presentation/providers/carplay_s
 import 'package:car_launcher/features/dashboard/presentation/providers/widget_providers.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
-import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
 import 'package:car_launcher/shared/data/device_service.dart';
@@ -88,19 +87,15 @@ class CarLauncherApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode = ref.watch(effectiveThemeModeProvider);
     final appearance = ref.watch(effectiveLauncherAppearanceProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.launcherTheme(appearance),
+      theme: AppTheme.launcherLightTheme(appearance),
       darkTheme: AppTheme.launcherTheme(appearance),
-      themeMode: themeMode == AppThemeMode.auto
-          ? ThemeMode.system
-          : themeMode == AppThemeMode.night
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
         return Stack(
@@ -132,6 +127,15 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
     super.didChangeDependencies();
     if (_requested) return;
     _requested = true;
+
+    // Native reports when the OS runtime-permission dialog resolves; Flutter
+    // owns the decision of what (if anything) to open next.
+    NativeBridge.setIncomingCallHandler((method) async {
+      if (method == 'startupRuntimePermissionsResult') {
+        await _ensurePermissions();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Permission
       _ensurePermissions();
@@ -141,10 +145,26 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
     });
   }
 
+  /// Checks startup permission status and, when policy calls for it, opens
+  /// the next relevant settings screen — accessibility input before
+  /// notification access, and never while an OS runtime-permission dialog
+  /// is still pending (avoids stacking prompts on top of it).
   Future<void> _ensurePermissions() async {
     try {
       final status = await NativeBridge.call<Map<dynamic, dynamic>>('ensureStartupPermissions');
       AppLogger.instance.i('Startup permission check: $status', tag: 'PERMISSION');
+      if (status == null) return;
+
+      final requestedRuntimePermissions = status['requestedRuntimePermissions'];
+      final hasPendingRuntimeRequest =
+          requestedRuntimePermissions is List && requestedRuntimePermissions.isNotEmpty;
+      if (hasPendingRuntimeRequest) return;
+
+      if (status['accessibilityInputGranted'] != true) {
+        await NativeBridge.call<bool>('openAccessibilitySettings');
+      } else if (status['notificationListenerGranted'] != true) {
+        await NativeBridge.call<bool>('openNotificationAccessSettings');
+      }
     } catch (error, stackTrace) {
       AppLogger.instance.e('Startup permission check failed', tag: 'PERMISSION', error: error, stackTrace: stackTrace);
     }

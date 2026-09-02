@@ -384,6 +384,77 @@ class VehicleTrackingSyncClient {
     int page = 0,
     int size = 50,
   }) async {
+    return _listTrackingPoints(
+      endpoint: endpoint,
+      relativePath: 'devices/$deviceId/tracking-points',
+      from: from,
+      to: to,
+      page: page,
+      size: size,
+      what: 'Tracking points list',
+    );
+  }
+
+  /// Fetch the newest tracking point for a vehicle.
+  ///
+  /// Uses the current vehicle-scoped client API
+  /// (`GET /client-api/v1/vehicles/{vehicleId}/tracking-points/latest`);
+  /// returns null on 204 No Content.
+  Future<TrackingPoint?> getLatestVehicleTrackingPoint({
+    required String endpoint,
+    required String vehicleId,
+  }) async {
+    final response = await _httpClient.get(
+      UrlUtils.vehicleUri(
+        endpoint,
+        'vehicles/$vehicleId/tracking-points/latest',
+      ),
+    );
+    if (response.statusCode == 204 || response.statusCode == 404) return null;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError(
+        'Latest tracking point fetch failed: HTTP ${response.statusCode}',
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return TrackingPoint.fromJson(decoded);
+    }
+    throw StateError('Latest tracking point fetch failed: unexpected shape');
+  }
+
+  /// Fetch a paginated list of tracking points for a vehicle.
+  ///
+  /// Uses the current vehicle-scoped client API
+  /// (`GET /client-api/v1/vehicles/{vehicleId}/tracking-points`).
+  Future<List<TrackingPoint>> listVehicleTrackingPoints({
+    required String endpoint,
+    required String vehicleId,
+    DateTime? from,
+    DateTime? to,
+    int page = 0,
+    int size = 50,
+  }) async {
+    return _listTrackingPoints(
+      endpoint: endpoint,
+      relativePath: 'vehicles/$vehicleId/tracking-points',
+      from: from,
+      to: to,
+      page: page,
+      size: size,
+      what: 'Vehicle tracking points list',
+    );
+  }
+
+  Future<List<TrackingPoint>> _listTrackingPoints({
+    required String endpoint,
+    required String relativePath,
+    required DateTime? from,
+    required DateTime? to,
+    required int page,
+    required int size,
+    required String what,
+  }) async {
     final queryParams = <String, String>{
       'page': page.toString(),
       'size': size.toString(),
@@ -393,14 +464,12 @@ class VehicleTrackingSyncClient {
     final response = await _httpClient.get(
       UrlUtils.vehicleUri(
         endpoint,
-        'devices/$deviceId/tracking-points',
+        relativePath,
         queryParameters: queryParams,
       ),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError(
-        'Tracking points list failed: HTTP ${response.statusCode}',
-      );
+      throw StateError('$what failed: HTTP ${response.statusCode}');
     }
     final decoded = jsonDecode(response.body);
     final raw = decoded is List

@@ -28,22 +28,33 @@ class TrackingRepository {
     return point;
   }
 
-  /// Fetch the latest tracking point for a device from the server.
-  Future<TrackingPoint?> getLatestTrackingPoint(String deviceId) async {
-    return _syncClient.getLatestTrackingPoint(endpoint: syncEndpoint, deviceId: deviceId);
+  /// Fetch the latest tracking point for a vehicle from the server.
+  ///
+  /// Reads the current vehicle-scoped client API
+  /// (`GET /client-api/v1/vehicles/{vehicleId}/tracking-points/latest`).
+  Future<TrackingPoint?> getLatestTrackingPoint(String vehicleId) async {
+    if (vehicleId.isEmpty) return null;
+    return _syncClient.getLatestVehicleTrackingPoint(
+      endpoint: syncEndpoint,
+      vehicleId: vehicleId,
+    );
   }
 
-  /// Fetch a paginated list of tracking points from the server.
+  /// Fetch a paginated list of tracking points for a vehicle from the server.
+  ///
+  /// Reads the current vehicle-scoped client API
+  /// (`GET /client-api/v1/vehicles/{vehicleId}/tracking-points`).
   Future<List<TrackingPoint>> listTrackingPoints(
-    String deviceId, {
+    String vehicleId, {
     DateTime? from,
     DateTime? to,
     int page = 0,
     int size = 50,
   }) async {
-    return _syncClient.listTrackingPoints(
+    if (vehicleId.isEmpty) return const [];
+    return _syncClient.listVehicleTrackingPoints(
       endpoint: syncEndpoint,
-      deviceId: deviceId,
+      vehicleId: vehicleId,
       from: from,
       to: to,
       page: page,

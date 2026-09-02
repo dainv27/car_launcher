@@ -11,21 +11,21 @@ final trackingRepositoryProvider = Provider<TrackingRepository>((ref) {
   return getIt<TrackingRepository>(param1: tracking.syncEndpoint);
 });
 
-/// Latest tracking point for a given device.
+/// Latest tracking point for a given **vehicle** (vehicle-scoped client API).
 final latestTrackingPointProvider =
-    FutureProvider.family<TrackingPoint?, String>((ref, deviceId) async {
+    FutureProvider.family<TrackingPoint?, String>((ref, vehicleId) async {
   final repo = ref.watch(trackingRepositoryProvider);
-  return repo.getLatestTrackingPoint(deviceId);
+  return repo.getLatestTrackingPoint(vehicleId);
 });
 
-/// Paginated tracking history for a given device.
+/// Paginated tracking history for a given **vehicle**.
 ///
-/// The family argument is a record of (deviceId, from, to).
+/// The family argument is a record of (vehicleId, from, to).
 final trackingHistoryProvider =
     FutureProvider.family<List<TrackingPoint>, (String, DateTime?, DateTime?)>(
   (ref, args) async {
-    final (deviceId, from, to) = args;
+    final (vehicleId, from, to) = args;
     final repo = ref.watch(trackingRepositoryProvider);
-    return repo.listTrackingPoints(deviceId, from: from, to: to);
+    return repo.listTrackingPoints(vehicleId, from: from, to: to);
   },
 );

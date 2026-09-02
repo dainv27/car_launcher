@@ -32,6 +32,14 @@ class NativeBridge {
     }
   }
 
+  /// Registers the handler for calls native makes *into* Flutter on this
+  /// channel. Currently used for `startupRuntimePermissionsResult`, sent
+  /// after the OS runtime-permission dialog resolves so Flutter can decide
+  /// what (if anything) to open next — native only reports the OS event.
+  static void setIncomingCallHandler(Future<void> Function(String method) handler) {
+    _channel.setMethodCallHandler((call) => handler(call.method));
+  }
+
   /// Listen to native events
   static Stream<dynamic> get events => _eventChannel.receiveBroadcastStream();
 

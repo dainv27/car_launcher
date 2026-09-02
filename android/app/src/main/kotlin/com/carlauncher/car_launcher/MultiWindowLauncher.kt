@@ -9,11 +9,28 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 
+/**
+ * Launches Maps full-screen with YouTube layered on top in a smaller window.
+ *
+ * Window sizing/timing (fractions, minimum pixel size, margin, stagger delay)
+ * is a product/layout decision, not platform glue — the caller (Flutter)
+ * supplies it via [WindowLayoutConfig]. This object only knows how to *ask*
+ * the OS for a freeform window of the given bounds.
+ */
+data class WindowLayoutConfig(
+    val widthFraction: Float = 0.38f,
+    val heightFraction: Float = 0.72f,
+    val marginDp: Float = 16f,
+    val minWidthPx: Int = 480,
+    val minHeightPx: Int = 360,
+    val secondWindowDelayMs: Long = 700,
+)
+
 object MultiWindowLauncher {
     private const val TAG = "MultiWindowLauncher"
     private const val WINDOWING_MODE_FREEFORM = 5
 
-    fun launchMapsWithYoutubeOnTop(context: Context): Boolean {
+    fun launchMapsWithYoutubeOnTop(context: Context, layout: WindowLayoutConfig = WindowLayoutConfig()): Boolean {
         val packageManager = context.packageManager
         val mapsIntent = packageManager.getLaunchIntentForPackage("com.google.android.apps.maps")
             ?: return false
@@ -30,11 +47,11 @@ object MultiWindowLauncher {
             context.startActivity(mapsIntent)
             Handler(Looper.getMainLooper()).postDelayed(
                 {
-                    if (!launchYoutubeFreeform(context, youtubeIntent)) {
+                    if (!launchYoutubeFreeform(context, youtubeIntent, layout)) {
                         launchYoutubeAdjacent(context, youtubeIntent)
                     }
                 },
-                700,
+                layout.secondWindowDelayMs,
             )
             true
         } catch (e: Exception) {
@@ -43,15 +60,15 @@ object MultiWindowLauncher {
         }
     }
 
-    private fun launchYoutubeFreeform(context: Context, intent: Intent): Boolean {
+    private fun launchYoutubeFreeform(context: Context, intent: Intent, layout: WindowLayoutConfig): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
 
         val metrics = context.resources.displayMetrics
         val width = metrics.widthPixels
         val height = metrics.heightPixels
-        val windowWidth = (width * 0.38f).toInt().coerceAtLeast(480)
-        val windowHeight = (height * 0.72f).toInt().coerceAtLeast(360)
-        val margin = (16 * metrics.density).toInt()
+        val windowWidth = (width * layout.widthFraction).toInt().coerceAtLeast(layout.minWidthPx)
+        val windowHeight = (height * layout.heightFraction).toInt().coerceAtLeast(layout.minHeightPx)
+        val margin = (layout.marginDp * metrics.density).toInt()
         val bounds = Rect(
             (width - windowWidth - margin).coerceAtLeast(0),
             margin,

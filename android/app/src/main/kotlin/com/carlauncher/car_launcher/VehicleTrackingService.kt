@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit
 class VehicleTrackingService : Service(), LocationListener {
     override fun onCreate() {
         super.onCreate()
+        instance = this
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         trackingDatabase = VehicleTrackingDatabase(this)
         syncExecutor = Executors.newSingleThreadScheduledExecutor()
@@ -61,6 +62,7 @@ class VehicleTrackingService : Service(), LocationListener {
     override fun onDestroy() {
         stopTracking()
         syncExecutor.shutdownNow()
+        if (instance === this) instance = null
         super.onDestroy()
     }
 
@@ -172,17 +174,15 @@ class VehicleTrackingService : Service(), LocationListener {
     private fun syncPendingPoints() {
         val prefs = getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
-        val endpoint = prefs.getString(KEY_SYNC_ENDPOINT, "")?.trim().orEmpty()
+        val url = prefs.getString(KEY_TRACKING_POINTS_URL, "")?.trim().orEmpty()
         var token = prefs.getString(KEY_ACCESS_TOKEN, "")?.trim().orEmpty()
-        val vehicle = prefs.getString(KEY_VEHICLE_PROFILE, "")?.trim().orEmpty()
-        val vehicleId = vehicleIdFromProfile(vehicle)
-        if (token.isEmpty() || vehicleId.isEmpty()) return
+        if (token.isEmpty() || url.isEmpty()) return
 
         try {
             while (true) {
                 val batch = readPendingBatch()
                 if (batch.isEmpty()) return
-                val newToken = postBatchWithRefresh(endpoint, token, vehicleId, batch)
+                val newToken = postBatchWithRefresh(url, token, batch)
                 if (newToken != null && newToken != token) {
                     token = newToken
                 }
@@ -218,12 +218,10 @@ class VehicleTrackingService : Service(), LocationListener {
     ///
     /// Returns null if no refresh was needed (original token is still valid).
     private fun postBatchWithRefresh(
-        endpoint: String,
+        url: String,
         token: String,
-        vehicleId: String,
         points: List<TrackedPoint>,
     ): String? {
-        val url = locationTrackingUrl(endpoint, vehicleId)
         var refreshedToken: String? = null
         points.forEachIndexed { index, point ->
             val payload = JSONObject()
@@ -308,8 +306,7 @@ class VehicleTrackingService : Service(), LocationListener {
                         latch.countDown()
                         return@post
                     }
-                    activity.methodChannelForServices.invokeMethod(
-                        "refreshVehicleToken",
+                    activity.requestVehicleTokenRefresh(
                         oldToken,
                         object : MethodChannel.Result {
                             override fun success(result: Any?) {
@@ -321,7 +318,7 @@ class VehicleTrackingService : Service(), LocationListener {
                                 latch.countDown()
                             }
                             override fun notImplemented() {
-                                Log.w(TAG, "refreshVehicleToken not implemented on Flutter side")
+                                Log.w(TAG, "Token refresh not handled by Flutter")
                                 latch.countDown()
                             }
                         },
@@ -338,36 +335,6 @@ class VehicleTrackingService : Service(), LocationListener {
             Log.w(TAG, "Token refresh request failed", error)
             null
         }
-    }
-
-    private fun vehicleIdFromProfile(vehicle: String): String {
-        if (vehicle.isEmpty()) return ""
-        return try {
-            val json = JSONObject(vehicle)
-            json.optString("vehicleId").ifBlank { json.optString("id") }
-        } catch (_: Exception) {
-            ""
-        }
-    }
-
-    private fun locationTrackingUrl(endpoint: String, vehicleId: String): String {
-        val base = vehicleServiceBase(endpoint)
-        return "${base}/vehicles/${vehicleId}/tracking-points"
-    }
-
-    private fun vehicleServiceBase(endpoint: String): String {
-        if (endpoint.isBlank()) return DEFAULT_VEHICLE_SERVICE_BASE
-        val trimmed = endpoint.trimEnd('/')
-        val serviceMarker = "/vehicle-service"
-        val serviceIndex = trimmed.indexOf(serviceMarker)
-        if (serviceIndex >= 0) {
-            val versionIndex = trimmed.indexOf("/v1", serviceIndex)
-            if (versionIndex >= 0) {
-                return trimmed.substring(0, versionIndex + "/v1".length)
-            }
-            return trimmed.substring(0, serviceIndex + serviceMarker.length) + "/client-api/v1"
-        }
-        return trimmed
     }
 
     private fun markBatchSynced(points: List<TrackedPoint>) {
@@ -528,6 +495,25 @@ class VehicleTrackingService : Service(), LocationListener {
     companion object {
         const val ACTION_START = "com.carlauncher.car_launcher.vehicle_tracking.START"
         const val ACTION_STOP = "com.carlauncher.car_launcher.vehicle_tracking.STOP"
+
+        @Volatile
+        private var instance: VehicleTrackingService? = null
+
+        /**
+         * Nudges an immediate sync attempt on the running service instance.
+         *
+         * This is the only network-sync entry point in the app — Flutter never
+         * uploads tracking points itself, it only asks this offline-first
+         * service (which already durably stores points locally regardless of
+         * connectivity) to attempt an upload sooner than its next periodic
+         * cycle. Returns false when tracking isn't currently running (nothing
+         * to nudge); the periodic cycle will still run once it is.
+         */
+        fun triggerSyncNow(): Boolean {
+            val service = instance ?: return false
+            service.syncNow()
+            return true
+        }
         private const val TAG = "VehicleTrackingService"
         private const val CHANNEL_ID = "vehicle_tracking"
         private const val NOTIFICATION_ID = 4208
@@ -537,16 +523,14 @@ class VehicleTrackingService : Service(), LocationListener {
         private const val SYNC_BATCH_SIZE = 100
         private const val MAX_SYNCED_POINTS = 10000
         private const val HTTP_TIMEOUT_MS = 15_000
-        private const val DEFAULT_VEHICLE_SERVICE_BASE = "https://car-apis.202corp.com/vehicle-service/client-api/v1"
         const val DATABASE_NAME = "vehicle_tracking.sqlite"
         private const val DATABASE_VERSION = 1
         private const val PENDING_TABLE = "pending_points"
         private const val SYNCED_TABLE = "synced_points"
         private const val FLUTTER_PREFS = "FlutterSharedPreferences"
         private const val KEY_ENABLED = "flutter.vehicle_tracking_enabled"
-        private const val KEY_SYNC_ENDPOINT = "flutter.vehicle_tracking_sync_endpoint"
+        private const val KEY_TRACKING_POINTS_URL = "flutter.vehicle_tracking_points_url"
         private const val KEY_ACCESS_TOKEN = "flutter.vehicle_tracking_access_token"
-        private const val KEY_VEHICLE_PROFILE = "flutter.vehicle_profile"
         private val isoFormat = ThreadLocal.withInitial {
             SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")

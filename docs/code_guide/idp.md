@@ -1,15 +1,15 @@
 ```json
 {
-    "issuer": "https://dev-idp.202corp.com/realms/card_management",
-    "authorization_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/auth",
-    "token_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/token",
-    "introspection_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/token/introspect",
-    "userinfo_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/userinfo",
-    "end_session_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/logout",
+    "issuer": "https://dev-idp.202corp.com/realms/car_management",
+    "authorization_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/auth",
+    "token_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/token",
+    "introspection_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/token/introspect",
+    "userinfo_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/userinfo",
+    "end_session_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/logout",
     "frontchannel_logout_session_supported": true,
     "frontchannel_logout_supported": true,
-    "jwks_uri": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/certs",
-    "check_session_iframe": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/login-status-iframe.html",
+    "jwks_uri": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/certs",
+    "check_session_iframe": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/login-status-iframe.html",
     "grant_types_supported": [
         "authorization_code",
         "client_credentials",
@@ -151,7 +151,7 @@
         "form_post.jwt",
         "jwt"
     ],
-    "registration_endpoint": "https://dev-idp.202corp.com/realms/card_management/clients-registrations/openid-connect",
+    "registration_endpoint": "https://dev-idp.202corp.com/realms/car_management/clients-registrations/openid-connect",
     "token_endpoint_auth_methods_supported": [
         "private_key_jwt",
         "client_secret_basic",
@@ -267,7 +267,7 @@
         "S256"
     ],
     "tls_client_certificate_bound_access_tokens": true,
-    "revocation_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/revoke",
+    "revocation_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/revoke",
     "revocation_endpoint_auth_methods_supported": [
         "private_key_jwt",
         "client_secret_basic",
@@ -292,12 +292,12 @@
     ],
     "backchannel_logout_supported": true,
     "backchannel_logout_session_supported": true,
-    "device_authorization_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/auth/device",
+    "device_authorization_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/auth/device",
     "backchannel_token_delivery_modes_supported": [
         "poll",
         "ping"
     ],
-    "backchannel_authentication_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/ext/ciba/auth",
+    "backchannel_authentication_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/ext/ciba/auth",
     "backchannel_authentication_request_signing_alg_values_supported": [
         "PS384",
         "RS384",
@@ -311,16 +311,16 @@
         "RS512"
     ],
     "require_pushed_authorization_requests": false,
-    "pushed_authorization_request_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/ext/par/request",
+    "pushed_authorization_request_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/ext/par/request",
     "mtls_endpoint_aliases": {
-        "token_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/token",
-        "revocation_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/revoke",
-        "introspection_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/token/introspect",
-        "device_authorization_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/auth/device",
-        "registration_endpoint": "https://dev-idp.202corp.com/realms/card_management/clients-registrations/openid-connect",
-        "userinfo_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/userinfo",
-        "pushed_authorization_request_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/ext/par/request",
-        "backchannel_authentication_endpoint": "https://dev-idp.202corp.com/realms/card_management/protocol/openid-connect/ext/ciba/auth"
+        "token_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/token",
+        "revocation_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/revoke",
+        "introspection_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/token/introspect",
+        "device_authorization_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/auth/device",
+        "registration_endpoint": "https://dev-idp.202corp.com/realms/car_management/clients-registrations/openid-connect",
+        "userinfo_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/userinfo",
+        "pushed_authorization_request_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/ext/par/request",
+        "backchannel_authentication_endpoint": "https://dev-idp.202corp.com/realms/car_management/protocol/openid-connect/ext/ciba/auth"
     },
     "authorization_response_iss_parameter_supported": true
 }

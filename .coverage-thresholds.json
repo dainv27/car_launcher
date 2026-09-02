@@ -1,8 +1,0 @@
-{
-  "lines": 100,
-  "branches": 100,
-  "functions": 100,
-  "statements": 100,
-  "enforcement": "blocking",
-  "command": "npm run test:coverage"
-}

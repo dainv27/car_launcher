@@ -1,7 +1,11 @@
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
+import 'package:car_launcher/features/vehicle/domain/device.dart';
+import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
+import 'package:car_launcher/features/vehicle/presentation/providers/device_providers.dart';
+import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_dialog.dart';
 import 'package:flutter/material.dart';
@@ -152,76 +156,10 @@ class _VehicleDetailContent extends ConsumerWidget {
           ),
           const SizedBox(height: CarPlayTheme.widgetGap),
 
-          // Latest location section (placeholder)
-          _GlassPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.my_location_outlined,
-                      size: 20,
-                      color: CarPlayTheme.neonCyan,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Latest Location',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: CarPlayTheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'No location data available',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _LatestLocationSection(deviceId: vehicle.deviceId),
           const SizedBox(height: CarPlayTheme.widgetGap),
 
-          // Attached devices section (placeholder)
-          _GlassPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.devices_outlined,
-                      size: 20,
-                      color: CarPlayTheme.neonCyan,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Attached Devices',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: CarPlayTheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'No devices',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _AttachedDevicesSection(vehicleId: vehicle.id),
         ],
       ),
     );
@@ -252,6 +190,200 @@ class _VehicleDetailContent extends ConsumerWidget {
         }
       }
     }
+  }
+}
+
+class _LatestLocationSection extends ConsumerWidget {
+  const _LatestLocationSection({required this.deviceId});
+
+  final String deviceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final header = Row(
+      children: [
+        Icon(Icons.my_location_outlined, size: 20, color: CarPlayTheme.neonCyan),
+        const SizedBox(width: 8),
+        Text(
+          'Latest Location',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: CarPlayTheme.onSurface,
+          ),
+        ),
+      ],
+    );
+
+    if (deviceId.isEmpty) {
+      return _GlassPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header,
+            const SizedBox(height: 8),
+            Text(
+              'No device assigned to this vehicle',
+              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final latestAsync = ref.watch(latestTrackingPointProvider(deviceId));
+
+    return _GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 8),
+          latestAsync.when(
+            loading: () => const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: CarPlayTheme.neonCyan,
+                strokeWidth: 2,
+              ),
+            ),
+            error: (error, _) => Text(
+              'Failed to load latest location',
+              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+            ),
+            data: (point) => point == null
+                ? Text(
+                    'No location data available',
+                    style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+                  )
+                : _LatestLocationDetails(point: point),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LatestLocationDetails extends StatelessWidget {
+  const _LatestLocationDetails({required this.point});
+
+  final TrackingPoint point;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InfoRow(
+          label: 'Coords',
+          value:
+              '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}',
+        ),
+        const SizedBox(height: 8),
+        _InfoRow(label: 'Updated', value: _formatTimestamp(point.eventTime)),
+        if (point.speedKph != null) ...[
+          const SizedBox(height: 8),
+          _InfoRow(label: 'Speed', value: '${point.speedKph!.toStringAsFixed(1)} km/h'),
+        ],
+      ],
+    );
+  }
+
+  static String _formatTimestamp(DateTime time) {
+    final local = time.toLocal();
+    final y = local.year.toString();
+    final mo = local.month.toString().padLeft(2, '0');
+    final d = local.day.toString().padLeft(2, '0');
+    final h = local.hour.toString().padLeft(2, '0');
+    final mi = local.minute.toString().padLeft(2, '0');
+    return '$y-$mo-$d $h:$mi';
+  }
+}
+
+class _AttachedDevicesSection extends ConsumerWidget {
+  const _AttachedDevicesSection({required this.vehicleId});
+
+  final String vehicleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final header = Row(
+      children: [
+        Icon(Icons.devices_outlined, size: 20, color: CarPlayTheme.neonCyan),
+        const SizedBox(width: 8),
+        Text(
+          'Attached Devices',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: CarPlayTheme.onSurface,
+          ),
+        ),
+      ],
+    );
+
+    final devicesAsync = ref.watch(devicesForVehicleProvider(vehicleId));
+
+    return _GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 8),
+          devicesAsync.when(
+            loading: () => const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: CarPlayTheme.neonCyan,
+                strokeWidth: 2,
+              ),
+            ),
+            error: (error, _) => Text(
+              'Failed to load devices',
+              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+            ),
+            data: (devices) => devices.isEmpty
+                ? Text(
+                    'No devices',
+                    style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final device in devices) _DeviceTile(device: device),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceTile extends StatelessWidget {
+  const _DeviceTile({required this.device});
+
+  final Device device;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.smartphone_outlined, size: 18, color: CarPlayTheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              device.displayName,
+              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurface),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

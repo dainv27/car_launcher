@@ -125,9 +125,9 @@ Background tracking writes location points into `pending_points`. Sync moves suc
 Implemented API mapping:
 
 ```text
-POST /vehicles/:id/tracking-points
-GET  /vehicles/:id/tracking-points?from&to&page=0&size=50
-GET  /vehicles/:id/tracking-points/latest
+POST /devices/:deviceId/tracking-points
+GET  /devices/:deviceId/tracking-points?from&to&page=0&size=50
+GET  /devices/:deviceId/tracking-points/latest
 ```
 
 Sync sends pending records in local batches, but each HTTP request follows the
@@ -145,14 +145,35 @@ vehicle service single-point request schema:
 }
 ```
 
-## Background Sync
+## Background Sync (Offline-First)
 
-Native Android `VehicleTrackingService` performs background sync every 30 seconds while tracking is enabled.
+Native Android `VehicleTrackingService` is the **only** component that captures
+location and uploads tracking points. It is offline-first: points are written
+to `pending_points` immediately regardless of connectivity, then uploaded
+opportunistically — every 30 seconds, right after each new point, and on
+request via `syncVehicleTrackingNow`. A failed upload simply leaves the point
+in `pending_points` for the next attempt; nothing is lost.
+
+Flutter's `VehicleTrackingNotifier` does **not** capture location or upload
+points itself. It only:
+
+- pushes the ready-to-POST tracking-points URL and bearer token to native
+  (`updateVehicleTrackingSyncConfig`) whenever the endpoint, vehicle, or token
+  changes;
+- periodically re-reads `pending_points`/`synced_points` to reflect state in
+  the UI (distance, point count, pending count);
+- optionally nudges native to sync sooner (`syncVehicleTrackingNow`) — e.g.
+  the Settings "Sync now" button.
+
+This single-writer design exists because Flutter and native previously ran
+independent capture-and-sync loops against the same SQLite file, which could
+double-record the same trip and race each other uploading to the server.
 
 Sync only runs when:
 
 - tracking is enabled;
-- a vehicle is assigned to this device;
+- a device is assigned to this vehicle (Flutter only pushes a tracking-points
+  URL once a device is assigned — see [Assigning Vehicle To Device](#assigning-vehicle-to-device));
 - an access token has been pushed from Flutter to native;
 - pending points exist.
 

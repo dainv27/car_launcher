@@ -33,10 +33,12 @@ class _AlertRuleFormDialogState extends State<AlertRuleFormDialog> {
     super.initState();
     final r = widget.rule;
     _type = r?.type ?? AlertType.overspeed;
-    _speedCtrl =
-        TextEditingController(text: r?.speedLimitKph?.toStringAsFixed(0) ?? '');
-    _minDurationCtrl =
-        TextEditingController(text: r?.minDurationSeconds?.toString() ?? '0');
+    _speedCtrl = TextEditingController(
+      text: r?.speedLimitKph?.toStringAsFixed(0) ?? '',
+    );
+    _minDurationCtrl = TextEditingController(
+      text: r?.minDurationSeconds?.toString() ?? '0',
+    );
     _idleCtrl = TextEditingController(text: r?.idleMinutes?.toString() ?? '');
     _active = r?.active ?? true;
   }
@@ -71,6 +73,7 @@ class _AlertRuleFormDialogState extends State<AlertRuleFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       backgroundColor: CarPlayTheme.surface,
       title: Text(
         _isEdit ? 'Edit alert rule' : 'New alert rule',
@@ -78,80 +81,76 @@ class _AlertRuleFormDialogState extends State<AlertRuleFormDialog> {
       ),
       content: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SegmentedButton<AlertType>(
-                segments: const [
-                  ButtonSegment(
-                    value: AlertType.overspeed,
-                    label: Text('Speeding'),
-                    icon: Icon(Icons.speed),
-                  ),
-                  ButtonSegment(
-                    value: AlertType.idle,
-                    label: Text('Idle'),
-                    icon: Icon(Icons.timelapse),
-                  ),
-                ],
-                selected: {_type},
-                onSelectionChanged: _isEdit
-                    ? null
-                    : (s) => setState(() => _type = s.first),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<AlertType>(
+              segments: const [
+                ButtonSegment(
+                  value: AlertType.overspeed,
+                  label: Text('Speeding'),
+                  icon: Icon(Icons.speed),
+                ),
+                ButtonSegment(
+                  value: AlertType.idle,
+                  label: Text('Idle'),
+                  icon: Icon(Icons.timelapse),
+                ),
+              ],
+              selected: {_type},
+              onSelectionChanged: _isEdit
+                  ? null
+                  : (s) => setState(() => _type = s.first),
+            ),
+            const SizedBox(height: 16),
+            if (_type == AlertType.overspeed) ...[
+              TextFormField(
+                controller: _speedCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Speed limit (km/h)',
+                ),
+                validator: (v) {
+                  final n = double.tryParse((v ?? '').trim());
+                  if (n == null || n < 1) return 'Enter a speed ≥ 1';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
-              if (_type == AlertType.overspeed) ...[
-                TextFormField(
-                  controller: _speedCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Speed limit (km/h)',
-                  ),
-                  validator: (v) {
-                    final n = double.tryParse((v ?? '').trim());
-                    if (n == null || n < 1) return 'Enter a speed ≥ 1';
-                    return null;
-                  },
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _minDurationCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Sustain for (seconds), 0 = immediate',
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _minDurationCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Sustain for (seconds), 0 = immediate',
-                  ),
-                  validator: (v) {
-                    final n = int.tryParse((v ?? '').trim());
-                    if (n == null || n < 0) return 'Enter 0 or more';
-                    return null;
-                  },
-                ),
-              ] else
-                TextFormField(
-                  controller: _idleCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Idle minutes',
-                  ),
-                  validator: (v) {
-                    final n = int.tryParse((v ?? '').trim());
-                    if (n == null || n < 1) return 'Enter 1 or more';
-                    return null;
-                  },
-                ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Active',
-                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
-                ),
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
+                validator: (v) {
+                  final n = int.tryParse((v ?? '').trim());
+                  if (n == null || n < 0) return 'Enter 0 or more';
+                  return null;
+                },
               ),
-            ],
-          ),
+            ] else
+              TextFormField(
+                controller: _idleCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Idle minutes'),
+                validator: (v) {
+                  final n = int.tryParse((v ?? '').trim());
+                  if (n == null || n < 1) return 'Enter 1 or more';
+                  return null;
+                },
+              ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                'Active',
+                style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
+              ),
+              value: _active,
+              onChanged: (v) => setState(() => _active = v),
+            ),
+          ],
         ),
       ),
       actions: [

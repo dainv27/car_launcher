@@ -107,8 +107,9 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
     final tracking = ref.watch(vehicleTrackingProvider);
     final notifier = ref.read(vehicleTrackingProvider.notifier);
     final lastPoint = tracking.lastPoint;
-    final isLoggedIn =
-        ref.watch(accountSessionProvider.select((s) => s.valueOrNull != null));
+    final isLoggedIn = ref.watch(
+      accountSessionProvider.select((s) => s.valueOrNull != null),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,10 +236,10 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
               key: const Key('vehicle-profile-register'),
               onPressed: isLoggedIn
                   ? () => _showVehicleProfileDialog(
-                        context,
-                        notifier,
-                        tracking.vehicle,
-                      )
+                      context,
+                      notifier,
+                      tracking.vehicle,
+                    )
                   : () => context.push('/login'),
               icon: const Icon(Icons.directions_car_outlined),
               label: const Text('Manage vehicle'),
@@ -249,15 +250,13 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
                   ? () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                            'Sign in to load your vehicles.',
-                          ),
+                          content: Text('Sign in to load your vehicles.'),
                         ),
                       );
                     }
                   : tracking.isLoadingVehicles
-                      ? null
-                      : notifier.loadVehicles,
+                  ? null
+                  : notifier.loadVehicles,
               icon: tracking.isLoadingVehicles
                   ? const SizedBox(
                       width: 16,
@@ -310,6 +309,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         backgroundColor: CarPlayTheme.surfaceContainer,
         title: const Text(
           'Register vehicle',
@@ -317,25 +317,23 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
         ),
         content: SizedBox(
           width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _VehicleTextField(
-                  key: const Key('vehicle-profile-plate-input'),
-                  controller: plateNumber,
-                  label: 'Plate number',
-                ),
-                _VehicleTextField(controller: name, label: 'Vehicle name'),
-                _VehicleTextField(controller: make, label: 'Make'),
-                _VehicleTextField(controller: model, label: 'Model'),
-                _VehicleTextField(
-                  controller: year,
-                  label: 'Year',
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _VehicleTextField(
+                key: const Key('vehicle-profile-plate-input'),
+                controller: plateNumber,
+                label: 'Plate number',
+              ),
+              _VehicleTextField(controller: name, label: 'Vehicle name'),
+              _VehicleTextField(controller: make, label: 'Make'),
+              _VehicleTextField(controller: model, label: 'Model'),
+              _VehicleTextField(
+                controller: year,
+                label: 'Year',
+                keyboardType: TextInputType.number,
+              ),
+            ],
           ),
         ),
         actions: [

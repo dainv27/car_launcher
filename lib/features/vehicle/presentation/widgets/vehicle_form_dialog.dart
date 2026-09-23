@@ -63,6 +63,7 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       backgroundColor: CarPlayTheme.surfaceContainer,
       title: Text(
         _isEditing ? 'Edit vehicle' : 'Add vehicle',
@@ -70,37 +71,35 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
       ),
       content: SizedBox(
         width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _VehicleTextField(
-                controller: _plateController,
-                label: 'Plate number',
-                key: const Key('vehicle-form-plate'),
-              ),
-              _VehicleTextField(
-                controller: _nameController,
-                label: 'Vehicle name',
-                key: const Key('vehicle-form-name'),
-              ),
-              _BrandField(
-                controller: _brandController,
-                key: const Key('vehicle-form-brand'),
-              ),
-              _VehicleTextField(
-                controller: _modelController,
-                label: 'Model',
-                key: const Key('vehicle-form-model'),
-              ),
-              _VehicleTextField(
-                controller: _yearController,
-                label: 'Year',
-                keyboardType: TextInputType.number,
-                key: const Key('vehicle-form-year'),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _VehicleTextField(
+              controller: _plateController,
+              label: 'Plate number',
+              key: const Key('vehicle-form-plate'),
+            ),
+            _VehicleTextField(
+              controller: _nameController,
+              label: 'Vehicle name',
+              key: const Key('vehicle-form-name'),
+            ),
+            _BrandField(
+              controller: _brandController,
+              key: const Key('vehicle-form-brand'),
+            ),
+            _VehicleTextField(
+              controller: _modelController,
+              label: 'Model',
+              key: const Key('vehicle-form-model'),
+            ),
+            _VehicleTextField(
+              controller: _yearController,
+              label: 'Year',
+              keyboardType: TextInputType.number,
+              key: const Key('vehicle-form-year'),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -108,10 +107,7 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
           onPressed: () => Navigator.of(context).pop(null),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }

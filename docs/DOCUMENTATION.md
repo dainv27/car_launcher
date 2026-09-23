@@ -81,3 +81,10 @@ Flutter validation should include:
 flutter test
 flutter analyze
 ```
+
+## Design documentation
+
+Per-feature design docs (goals, UX flow, architecture, data flow, state
+management, native/API integration, persistence, trade-offs, edge cases, tests)
+live in [`docs/design/features/`](design/features/README.md). Static UI mockups
+are in [`docs/design/`](design/).

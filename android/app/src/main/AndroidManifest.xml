@@ -51,16 +51,26 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:resizeableActivity="true"
             android:windowSoftInputMode="adjustNothing">
 
-            <!-- Normal app launcher intent filter -->
+            <!-- Home launcher: replaces the device's default launcher.
+                 HOME + DEFAULT make this app selectable as the Home app
+                 (Settings > Apps > Default apps > Home app) on any device with
+                 no root. The platform-signed `system` build can additionally set
+                 the HOME role programmatically, like CarCar.
+                 singleTask + stateNotNeeded are the standard launcher settings:
+                 pressing Home returns to the existing instance and the activity
+                 can start before state restore. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 

@@ -13,6 +13,7 @@ import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tra
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
+import 'package:car_launcher/features/settings/presentation/providers/notification_sound_provider.dart';
 import 'package:car_launcher/features/settings/presentation/widgets/weather_settings_dialog.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
@@ -913,6 +914,8 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
   Widget _buildQuickSettingsCard() {
     final brightnessSettings = ref.watch(brightnessProvider);
     final brightnessNotifier = ref.read(brightnessProvider.notifier);
+    final soundSettings = ref.watch(notificationSoundProvider);
+    final soundNotifier = ref.read(notificationSoundProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -937,6 +940,38 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
           subtitle: 'Match album art color',
           value: _dynamicAccents,
           onChanged: (v) => setState(() => _dynamicAccents = v),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Notification Sound',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: CarPlayTheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    soundSettings.displayTitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: CarPlayTheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            OutlinedButton(
+              key: const Key('settings-pick-notification-sound'),
+              onPressed: () => soundNotifier.pick(),
+              child: const Text('Change'),
+            ),
+          ],
         ),
       ],
     );
@@ -1000,13 +1035,6 @@ class _WallpaperThumbnail extends StatelessWidget {
   final LauncherBackgroundStyle style;
   final VoidCallback onTap;
 
-  // Placeholder gradient colors for wallpaper previews
-  static const _gradients = [
-    [Color(0xFF1A1A1A), Color(0xFF4A4A4A)], // Glass grey
-    [Color(0xFF1A0A2E), Color(0xFF8B5CF6)], // Electric violet
-    [Color(0xFF0A0B0C), Color(0xFF00E5FF)], // Dark cyan
-  ];
-
   @override
   Widget build(BuildContext context) {
     final accent = CarPlayTheme.accent(context);
@@ -1024,11 +1052,25 @@ class _WallpaperThumbnail extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: _gradients[style.index],
+              colors: style.gradient,
             ),
           ),
-          child: isSelected
-              ? Center(
+          child: Stack(
+            children: [
+              Positioned(
+                left: 8,
+                bottom: 6,
+                child: Text(
+                  style.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Center(
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -1037,8 +1079,9 @@ class _WallpaperThumbnail extends StatelessWidget {
                     ),
                     child: Icon(Icons.check_circle, color: accent, size: 24),
                   ),
-                )
-              : null,
+                ),
+            ],
+          ),
         ),
       ),
     );

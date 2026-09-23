@@ -69,6 +69,20 @@ class NativeBridge {
   static Future<bool> setAutoBrightness(bool enabled) async {
     return await call<bool>('setAutoBrightness', {'enabled': enabled}) ?? false;
   }
+
+  /// Opens the Android system notification-sound picker. Returns the chosen
+  /// sound's `uri` and display `title`, or null if the user cancelled.
+  /// Uses `RingtoneManager` so no audio files need to be bundled in the app.
+  static Future<Map<String, String>?> pickNotificationSound({
+    String? currentUri,
+  }) async {
+    final result = await call<Map<Object?, Object?>>(
+      'pickNotificationSound',
+      {'currentUri': currentUri},
+    );
+    if (result == null) return null;
+    return result.map((key, value) => MapEntry(key.toString(), value?.toString() ?? ''));
+  }
 }
 
 /// Exception from native bridge

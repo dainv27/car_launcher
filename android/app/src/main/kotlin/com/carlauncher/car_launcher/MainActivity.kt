@@ -23,6 +23,7 @@ import android.media.session.PlaybackState
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
+import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -68,6 +69,7 @@ class MainActivity : FlutterActivity() {
     private var navEventSink: EventChannel.EventSink? = null
     private var mediaEventSink: EventChannel.EventSink? = null
     private var appPackageChangedReceiver: BroadcastReceiver? = null
+    private var pendingRingtoneResult: MethodChannel.Result? = null
 
     private var mediaSessionManager: MediaSessionManager? = null
     private var mediaControllerCallback: MediaController.Callback? = null
@@ -103,6 +105,60 @@ class MainActivity : FlutterActivity() {
             // Let Flutter decide what (if anything) to open next — native only
             // reports that the runtime-permission dialog was resolved.
             methodChannel.invokeMethod("startupRuntimePermissionsResult", null)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == RINGTONE_PICKER_REQUEST) {
+            val pending = pendingRingtoneResult
+            pendingRingtoneResult = null
+            val uri = data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            pending?.success(
+                mapOf(
+                    "uri" to (uri?.toString() ?: ""),
+                    "title" to ringtoneTitle(uri),
+                )
+            )
+        }
+    }
+
+    /// Opens the system notification-sound picker (RingtoneManager). The
+    /// result — uri + display title — is delivered to Flutter from
+    /// onActivityResult once the user picks a sound or cancels (uri "" =
+    /// default/silent).
+    private fun pickNotificationSound(currentUri: String?, result: MethodChannel.Result) {
+        if (pendingRingtoneResult != null) {
+            result.error("BUSY", "A sound picker is already open", null)
+            return
+        }
+        pendingRingtoneResult = result
+        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+            putExtra(
+                RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            )
+            if (!currentUri.isNullOrEmpty()) {
+                putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(currentUri))
+            }
+        }
+        try {
+            startActivityForResult(intent, RINGTONE_PICKER_REQUEST)
+        } catch (e: Exception) {
+            pendingRingtoneResult = null
+            result.error("NO_PICKER", "Unable to open the sound picker", e.message)
+        }
+    }
+
+    private fun ringtoneTitle(uri: Uri?): String {
+        if (uri == null) return ""
+        return try {
+            RingtoneManager.getRingtone(this, uri)?.getTitle(this) ?: ""
+        } catch (_: Exception) {
+            ""
         }
     }
 
@@ -301,6 +357,9 @@ class MainActivity : FlutterActivity() {
                     } else {
                         result.error("INVALID_ARG", "Missing level", null)
                     }
+                }
+                "pickNotificationSound" -> {
+                    pickNotificationSound(call.argument<String>("currentUri"), result)
                 }
                 "getSystemReadiness" -> result.success(getSystemReadiness())
                 "getScreenBrightness" -> result.success(getScreenBrightness())
@@ -1174,6 +1233,7 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val LOCATION_PERMISSION_REQUEST = 3102
         private const val STARTUP_PERMISSION_REQUEST = 3103
+        private const val RINGTONE_PICKER_REQUEST = 3104
 
         /** Set in onCreate; lets services call back into Flutter. */
         @JvmStatic

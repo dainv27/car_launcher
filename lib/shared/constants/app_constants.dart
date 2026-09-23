@@ -29,6 +29,9 @@ class AppConstants {
   // Brightness
   static const keyScreenBrightness = 'screen_brightness';
   static const keyAutoBrightness = 'auto_brightness';
+  // Notification sound
+  static const keyNotificationSoundUri = 'notification_sound_uri';
+  static const keyNotificationSoundTitle = 'notification_sound_title';
   // Weather
   static const keyWeatherApiKey = 'weather_api_key';
   static const keyWeatherCity = 'weather_city';

@@ -1,5 +1,7 @@
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
+import 'package:car_launcher/features/vehicle/domain/vehicle_brand.dart';
+import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_brand_badge.dart';
 import 'package:flutter/material.dart';
 
 /// Dialog for creating or editing a vehicle.
@@ -82,9 +84,8 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
                 label: 'Vehicle name',
                 key: const Key('vehicle-form-name'),
               ),
-              _VehicleTextField(
+              _BrandField(
                 controller: _brandController,
-                label: 'Brand',
                 key: const Key('vehicle-form-brand'),
               ),
               _VehicleTextField(
@@ -112,6 +113,62 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
           child: const Text('Save'),
         ),
       ],
+    );
+  }
+}
+
+/// Brand input: quick-select chips for common brands (badge + name, no
+/// manufacturer logos) plus a free-text field for anything else.
+class _BrandField extends StatelessWidget {
+  const _BrandField({super.key, required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 40,
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) => ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: VehicleBrands.all.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final brand = VehicleBrands.all[index];
+                  final isSelected = controller.text == brand;
+                  return ChoiceChip(
+                    key: Key('vehicle-form-brand-chip-$brand'),
+                    avatar: VehicleBrandBadge(brand: brand, size: 20),
+                    label: Text(brand),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      controller.text = brand;
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              labelText: 'Brand',
+              labelStyle: TextStyle(color: Colors.white70),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

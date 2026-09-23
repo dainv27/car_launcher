@@ -38,12 +38,15 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
     super.initState();
     final g = widget.geofence;
     _nameCtrl = TextEditingController(text: g?.name ?? '');
-    _centerLatCtrl =
-        TextEditingController(text: g?.centerLat?.toStringAsFixed(6) ?? '');
-    _centerLonCtrl =
-        TextEditingController(text: g?.centerLon?.toStringAsFixed(6) ?? '');
-    _radiusCtrl =
-        TextEditingController(text: g?.radiusMeters?.toStringAsFixed(0) ?? '200');
+    _centerLatCtrl = TextEditingController(
+      text: g?.centerLat?.toStringAsFixed(6) ?? '',
+    );
+    _centerLonCtrl = TextEditingController(
+      text: g?.centerLon?.toStringAsFixed(6) ?? '',
+    );
+    _radiusCtrl = TextEditingController(
+      text: g?.radiusMeters?.toStringAsFixed(0) ?? '200',
+    );
     _shape = g?.shape ?? GeofenceShape.circle;
     _vertices = [
       for (final p in (g?.polygon ?? const <GeoPoint>[]))
@@ -120,6 +123,7 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       backgroundColor: CarPlayTheme.surface,
       title: Text(
         _isEdit ? 'Edit geofence' : 'New geofence',
@@ -129,71 +133,72 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
         width: 360,
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
-                ),
-                const SizedBox(height: 12),
-                SegmentedButton<GeofenceShape>(
-                  segments: const [
-                    ButtonSegment(
-                      value: GeofenceShape.circle,
-                      label: Text('Circle'),
-                      icon: Icon(Icons.circle_outlined),
-                    ),
-                    ButtonSegment(
-                      value: GeofenceShape.polygon,
-                      label: Text('Polygon'),
-                      icon: Icon(Icons.pentagon_outlined),
-                    ),
-                  ],
-                  selected: {_shape},
-                  onSelectionChanged: _isEdit
-                      ? null
-                      : (s) => setState(() => _shape = s.first),
-                ),
-                const SizedBox(height: 12),
-                if (_shape == GeofenceShape.circle) ...[
-                  _numberField(_centerLatCtrl, 'Center latitude', -90, 90),
-                  const SizedBox(height: 8),
-                  _numberField(_centerLonCtrl, 'Center longitude', -180, 180),
-                  const SizedBox(height: 8),
-                  _numberField(_radiusCtrl, 'Radius (m)', 1, 1000000),
-                ] else
-                  _polygonEditor(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<GeofenceShape>(
+                segments: const [
+                  ButtonSegment(
+                    value: GeofenceShape.circle,
+                    label: Text('Circle'),
+                    icon: Icon(Icons.circle_outlined),
+                  ),
+                  ButtonSegment(
+                    value: GeofenceShape.polygon,
+                    label: Text('Polygon'),
+                    icon: Icon(Icons.pentagon_outlined),
+                  ),
+                ],
+                selected: {_shape},
+                onSelectionChanged: _isEdit
+                    ? null
+                    : (s) => setState(() => _shape = s.first),
+              ),
+              const SizedBox(height: 12),
+              if (_shape == GeofenceShape.circle) ...[
+                _numberField(_centerLatCtrl, 'Center latitude', -90, 90),
                 const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Notify on enter',
-                      style: TextStyle(
-                          color: CarPlayTheme.onSurface, fontSize: 14)),
-                  value: _notifyEnter,
-                  onChanged: (v) => setState(() => _notifyEnter = v),
+                _numberField(_centerLonCtrl, 'Center longitude', -180, 180),
+                const SizedBox(height: 8),
+                _numberField(_radiusCtrl, 'Radius (m)', 1, 1000000),
+              ] else
+                _polygonEditor(),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Notify on enter',
+                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Notify on exit',
-                      style: TextStyle(
-                          color: CarPlayTheme.onSurface, fontSize: 14)),
-                  value: _notifyExit,
-                  onChanged: (v) => setState(() => _notifyExit = v),
+                value: _notifyEnter,
+                onChanged: (v) => setState(() => _notifyEnter = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Notify on exit',
+                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Active',
-                      style: TextStyle(
-                          color: CarPlayTheme.onSurface, fontSize: 14)),
-                  value: _active,
-                  onChanged: (v) => setState(() => _active = v),
+                value: _notifyExit,
+                onChanged: (v) => setState(() => _notifyExit = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Active',
+                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
                 ),
-              ],
-            ),
+                value: _active,
+                onChanged: (v) => setState(() => _active = v),
+              ),
+            ],
           ),
         ),
       ),
@@ -240,7 +245,10 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
           alignment: Alignment.centerLeft,
           child: Text(
             'Vertices (ordered)',
-            style: TextStyle(color: CarPlayTheme.onSurfaceVariant, fontSize: 12),
+            style: TextStyle(
+              color: CarPlayTheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
           ),
         ),
         for (var i = 0; i < _vertices.length; i++)
@@ -249,21 +257,30 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
             child: Row(
               children: [
                 Expanded(
-                  child: _numberField(_vertices[i].lat, 'Lat ${i + 1}', -90, 90),
+                  child: _numberField(
+                    _vertices[i].lat,
+                    'Lat ${i + 1}',
+                    -90,
+                    90,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _numberField(
-                      _vertices[i].lon, 'Lon ${i + 1}', -180, 180),
+                    _vertices[i].lon,
+                    'Lon ${i + 1}',
+                    -180,
+                    180,
+                  ),
                 ),
                 IconButton(
                   onPressed: _vertices.length <= 3
                       ? null
                       : () => setState(() {
-                            _vertices[i].lat.dispose();
-                            _vertices[i].lon.dispose();
-                            _vertices.removeAt(i);
-                          }),
+                          _vertices[i].lat.dispose();
+                          _vertices[i].lon.dispose();
+                          _vertices.removeAt(i);
+                        }),
                   icon: const Icon(Icons.remove_circle_outline, size: 18),
                 ),
               ],

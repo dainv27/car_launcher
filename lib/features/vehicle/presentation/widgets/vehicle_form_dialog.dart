@@ -78,42 +78,35 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
       ),
       content: SizedBox(
         width: 420,
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _VehicleTextField(
-                  controller: _plateController,
-                  label: 'Plate number',
-                  key: const Key('vehicle-form-plate'),
-                  validator: _requiredValidator,
-                ),
-                _VehicleTextField(
-                  controller: _nameController,
-                  label: 'Vehicle name',
-                  key: const Key('vehicle-form-name'),
-                  validator: _requiredValidator,
-                ),
-                _BrandField(
-                  controller: _brandController,
-                  key: const Key('vehicle-form-brand'),
-                ),
-                _VehicleTextField(
-                  controller: _modelController,
-                  label: 'Model',
-                  key: const Key('vehicle-form-model'),
-                ),
-                _VehicleTextField(
-                  controller: _yearController,
-                  label: 'Year',
-                  keyboardType: TextInputType.number,
-                  key: const Key('vehicle-form-year'),
-                ),
-              ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _VehicleTextField(
+              controller: _plateController,
+              label: 'Plate number',
+              key: const Key('vehicle-form-plate'),
             ),
-          ),
+            _VehicleTextField(
+              controller: _nameController,
+              label: 'Vehicle name',
+              key: const Key('vehicle-form-name'),
+            ),
+            _BrandField(
+              controller: _brandController,
+              key: const Key('vehicle-form-brand'),
+            ),
+            _VehicleTextField(
+              controller: _modelController,
+              label: 'Model',
+              key: const Key('vehicle-form-model'),
+            ),
+            _VehicleTextField(
+              controller: _yearController,
+              label: 'Year',
+              keyboardType: TextInputType.number,
+              key: const Key('vehicle-form-year'),
+            ),
+          ],
         ),
       ),
       actions: [

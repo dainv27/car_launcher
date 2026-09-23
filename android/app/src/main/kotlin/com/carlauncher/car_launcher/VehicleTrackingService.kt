@@ -78,16 +78,21 @@ class VehicleTrackingService : Service(), LocationListener {
     override fun onProviderDisabled(provider: String) = Unit
 
     private fun startTracking() {
-        if (!hasLocationPermission()) {
-            Log.w(TAG, "Location permission missing; cannot start tracking service")
-            stopSelf()
-            return
-        }
-
+        // Must call startForeground() before any early return — the service
+        // was already promoted via startForegroundService() by the caller
+        // (e.g. BootReceiver), and Android kills the whole app if that
+        // contract isn't honored within its timeout, regardless of whether
+        // we intend to stop right back away.
         try {
             startForeground(NOTIFICATION_ID, buildNotification())
         } catch (error: SecurityException) {
             Log.w(TAG, "Unable to start foreground service for vehicle tracking", error)
+            stopSelf()
+            return
+        }
+
+        if (!hasLocationPermission()) {
+            Log.w(TAG, "Location permission missing; cannot start tracking service")
             stopSelf()
             return
         }

@@ -70,6 +70,7 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       backgroundColor: CarPlayTheme.surfaceContainer,
       title: Text(
         _isEditing ? 'Edit vehicle' : 'Add vehicle',
@@ -120,10 +121,7 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
           onPressed: () => Navigator.of(context).pop(null),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }

@@ -6,11 +6,14 @@ Updated: 2026-06-16
 
 Car Launcher registers as a Home launcher (`MAIN` + `HOME` + `DEFAULT` +
 `LAUNCHER` intent categories) and can replace the device's default launcher.
-On any device the user selects it under Settings > Apps > Default apps > Home
-app — no root required. The platform-signed `system` build can additionally
-take the HOME role programmatically. The activity uses `singleTask` +
-`stateNotNeeded` and a boot receiver so it comes up as the home surface after
-boot. It does not create persistent system overlays or a native taskbar.
+On any device the user can either go to Settings > Apps > Default apps > Home
+app, or use the in-app "Set as Default Launcher" button under Settings >
+System Info, which triggers the standard `RoleManager` Home-role prompt on
+Android 10+ (falling back to the same system settings screen otherwise) — no
+root or platform signing required for either path. The activity uses
+`singleTask` + `stateNotNeeded` and a boot receiver so it comes up as the
+home surface after boot. It does not create persistent system overlays or a
+native taskbar.
 
 ## Dashboard
 

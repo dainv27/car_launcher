@@ -132,6 +132,19 @@ class LauncherService {
     }).toList();
   }
 
+  /// Whether this app is currently the device's default Home app.
+  Future<bool> isDefaultLauncher() async {
+    return await NativeBridge.call<bool>('isDefaultLauncher') ?? false;
+  }
+
+  /// Prompts the user to make this app the default Home app. Returns true
+  /// only when the OS reports it was granted immediately (RoleManager
+  /// flow); a settings-screen fallback returns false and the caller should
+  /// re-check [isDefaultLauncher] once the app resumes.
+  Future<bool> requestDefaultLauncher() async {
+    return await NativeBridge.call<bool>('requestDefaultLauncher') ?? false;
+  }
+
   /// Get theme mode
   AppThemeMode get themeMode {
     final value = _prefs.getString(AppConstants.keyTheme) ?? 'auto';

@@ -13,6 +13,7 @@ import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tra
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
+import 'package:car_launcher/features/settings/presentation/providers/default_launcher_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/notification_sound_provider.dart';
 import 'package:car_launcher/features/settings/presentation/widgets/weather_settings_dialog.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
@@ -2216,6 +2217,8 @@ class _SystemInfoSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hiddenApps = ref.watch(hiddenAppsProvider);
+    final isDefaultLauncher =
+        ref.watch(defaultLauncherStatusProvider).valueOrNull ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(right: 8, bottom: CarPlayTheme.margin),
@@ -2239,6 +2242,58 @@ class _SystemInfoSection extends ConsumerWidget {
                   label: 'Hidden Apps',
                   value: '${hiddenApps.length} apps',
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: CarPlayTheme.widgetGap),
+          _GlassPanel(
+            key: const Key('settings-default-launcher-card'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Default Launcher',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: CarPlayTheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isDefaultLauncher
+                      ? 'Car Launcher is your device\'s Home app.'
+                      : 'Replace the stock launcher so Car Launcher opens on Home and after reboot.',
+                  key: const Key('settings-default-launcher-status'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDefaultLauncher
+                        ? CarPlayTheme.neonCyan
+                        : CarPlayTheme.onSurfaceVariant,
+                  ),
+                ),
+                if (!isDefaultLauncher) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      key: const Key('settings-set-default-launcher'),
+                      onPressed: () =>
+                          ref.read(launcherServiceProvider).requestDefaultLauncher(),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withAlpha(51)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Set as Default Launcher',
+                        style: TextStyle(color: CarPlayTheme.neonCyan),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

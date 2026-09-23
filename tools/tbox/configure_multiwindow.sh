@@ -27,6 +27,12 @@ shell pm grant "$PACKAGE" android.permission.ADD_TRUSTED_DISPLAY 2>/dev/null || 
 shell pm grant "$PACKAGE" android.permission.ACTIVITY_EMBEDDING 2>/dev/null || true
 
 echo
+echo "Granting WRITE_SECURE_SETTINGS (works on unrooted, non-privileged installs"
+echo "via ADB's shell UID — lets the app silently enable its own input-fallback"
+echo "accessibility service without a Settings UI trip on every device)."
+shell pm grant "$PACKAGE" android.permission.WRITE_SECURE_SETTINGS 2>/dev/null || true
+
+echo
 echo "Current settings:"
 echo "enable_freeform_support=$(shell settings get global enable_freeform_support)"
 echo "force_resizable_activities=$(shell settings get global force_resizable_activities)"

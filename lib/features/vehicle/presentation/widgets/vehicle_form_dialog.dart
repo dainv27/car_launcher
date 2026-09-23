@@ -18,6 +18,7 @@ class VehicleFormDialog extends StatefulWidget {
 }
 
 class _VehicleFormDialogState extends State<VehicleFormDialog> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _plateController;
   late final TextEditingController _nameController;
   late final TextEditingController _brandController;
@@ -48,6 +49,8 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
   }
 
   void _save() {
+    if (!_formKey.currentState!.validate()) return;
+
     final year = _yearController.text.trim();
     final vehicle = Vehicle(
       id: widget.vehicle?.id ?? '',
@@ -58,6 +61,10 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
       metadata: year.isNotEmpty ? {'year': year} : const {},
     );
     Navigator.of(context).pop(vehicle);
+  }
+
+  String? _requiredValidator(String? value) {
+    return (value == null || value.trim().isEmpty) ? 'Required' : null;
   }
 
   @override
@@ -71,35 +78,40 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _VehicleTextField(
-                controller: _plateController,
-                label: 'Plate number',
-                key: const Key('vehicle-form-plate'),
-              ),
-              _VehicleTextField(
-                controller: _nameController,
-                label: 'Vehicle name',
-                key: const Key('vehicle-form-name'),
-              ),
-              _BrandField(
-                controller: _brandController,
-                key: const Key('vehicle-form-brand'),
-              ),
-              _VehicleTextField(
-                controller: _modelController,
-                label: 'Model',
-                key: const Key('vehicle-form-model'),
-              ),
-              _VehicleTextField(
-                controller: _yearController,
-                label: 'Year',
-                keyboardType: TextInputType.number,
-                key: const Key('vehicle-form-year'),
-              ),
-            ],
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _VehicleTextField(
+                  controller: _plateController,
+                  label: 'Plate number',
+                  key: const Key('vehicle-form-plate'),
+                  validator: _requiredValidator,
+                ),
+                _VehicleTextField(
+                  controller: _nameController,
+                  label: 'Vehicle name',
+                  key: const Key('vehicle-form-name'),
+                  validator: _requiredValidator,
+                ),
+                _BrandField(
+                  controller: _brandController,
+                  key: const Key('vehicle-form-brand'),
+                ),
+                _VehicleTextField(
+                  controller: _modelController,
+                  label: 'Model',
+                  key: const Key('vehicle-form-model'),
+                ),
+                _VehicleTextField(
+                  controller: _yearController,
+                  label: 'Year',
+                  keyboardType: TextInputType.number,
+                  key: const Key('vehicle-form-year'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -179,19 +191,22 @@ class _VehicleTextField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.keyboardType,
+    this.validator,
   });
 
   final TextEditingController controller;
   final String label;
   final TextInputType? keyboardType;
+  final FormFieldValidator<String>? validator;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        validator: validator,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           labelText: label,

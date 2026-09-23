@@ -567,9 +567,14 @@ class VehicleTrackingSyncClient {
   }) async {
     final response = await _httpClient.post(
       UrlUtils.vehicleUri(endpoint, 'vehicles'),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(vehicle.toRegistrationJson()),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      AppLogger.instance.w(
+        'Vehicle save rejected: HTTP ${response.statusCode} — ${response.body}',
+        tag: 'VEHICLE',
+      );
       throw StateError('Vehicle save failed: HTTP ${response.statusCode}');
     }
     if (response.body.trim().isEmpty) {

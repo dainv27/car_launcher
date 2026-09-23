@@ -52,14 +52,13 @@ void main() {
   );
 
   test(
-    'Android manifest exposes a normal app without launcher or overlays',
+    'Android manifest registers as a Home launcher without overlays',
     () {
       final source = manifest.readAsStringSync();
 
       expect(source, contains('android.intent.category.LAUNCHER'));
-      expect(source, isNot(contains('android.intent.category.HOME')));
+      expect(source, contains('android.intent.category.HOME'));
       expect(source, isNot(contains('android.permission.SYSTEM_ALERT_WINDOW')));
-      expect(source, isNot(contains('android.permission.FOREGROUND_SERVICE')));
       expect(source, isNot(contains('.SystemSidebarService')));
       expect(source, isNot(contains('.MediaOverlayService')));
     },
@@ -95,11 +94,11 @@ void main() {
     expect(jobServiceSource, contains('launchMainActivity'));
   });
 
-  test('native activity has no launcher-role or overlay API', () {
+  test('native activity offers the Home-role API but no overlay API', () {
     final source = mainActivity.readAsStringSync();
 
-    expect(source, isNot(contains('"isDefaultLauncher"')));
-    expect(source, isNot(contains('"setDefaultLauncher"')));
+    expect(source, contains('"isDefaultLauncher"'));
+    expect(source, contains('"requestDefaultLauncher"'));
     expect(source, isNot(contains('"showSystemSidebar"')));
     expect(source, isNot(contains('"showMediaOverlay"')));
     expect(source, isNot(contains('SystemSidebarService')));
@@ -150,7 +149,7 @@ void main() {
     );
     expect(appDrawer.readAsStringSync(), contains("Key('apps-settings')"));
     expect(mediaCenter.readAsStringSync(), contains("Key('media-settings')"));
-    expect(source, contains('android:launchMode="singleTop"'));
+    expect(source, contains('android:launchMode="singleTask"'));
     expect(source, isNot(contains('android:taskAffinity=')));
     expect(source, isNot(contains('android:alwaysRetainTaskState=')));
     expect(source, isNot(contains('android:clearTaskOnLaunch=')));

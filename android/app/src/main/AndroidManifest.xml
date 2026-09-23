@@ -22,6 +22,14 @@
     <uses-permission android:name="android.permission.ACTIVITY_EMBEDDING"
         tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.REORDER_TASKS"/>
+    <!-- Not granted by normal install. Lets a provisioned device silently
+         turn on our own EmbeddedInputAccessibilityService (no Settings UI)
+         once granted via `adb shell pm grant <pkg>
+         android.permission.WRITE_SECURE_SETTINGS` — see
+         tools/tbox/configure_multiwindow.sh and
+         MainActivity.ensureAccessibilityServiceEnabled. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions"/>
 <!--    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>-->
 <!--    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES"/>-->
 <!--    <uses-permission android:name="android.permission.MANAGE_USERS"/>-->
@@ -61,9 +69,10 @@
 
             <!-- Home launcher: replaces the device's default launcher.
                  HOME + DEFAULT make this app selectable as the Home app
-                 (Settings > Apps > Default apps > Home app) on any device with
-                 no root. The platform-signed `system` build can additionally set
-                 the HOME role programmatically, like CarCar.
+                 (Settings > Apps > Default apps > Home app, or the in-app
+                 "Set as Default Launcher" button which drives the same
+                 RoleManager/settings flow — see MainActivity.isDefaultLauncher/
+                 requestDefaultLauncher) on any device with no root.
                  singleTask + stateNotNeeded are the standard launcher settings:
                  pressing Home returns to the existing instance and the activity
                  can start before state restore. -->

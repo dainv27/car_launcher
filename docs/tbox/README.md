@@ -2,10 +2,13 @@
 
 This folder documents the TBox target for the current normal-app architecture.
 
-Car Launcher is installed and opened as a regular Android application. It does
-not register as HOME, does not auto-start from boot, and does not draw a
-persistent taskbar or system overlay. TBox-specific work focuses on embedded
-app surfaces, fullscreen fallbacks, platform signing, debugging, and recovery.
+Car Launcher registers as a Home launcher (`MAIN`+`HOME`+`DEFAULT`+`LAUNCHER`)
+and can replace the device's default launcher without root, via Settings >
+Apps > Default apps > Home app or the in-app "Set as Default Launcher" button
+under Settings > System Info. A `BootReceiver` relaunches it after boot once
+the user is unlocked. It does not draw a persistent taskbar or system overlay.
+TBox-specific work focuses on embedded app surfaces, fullscreen fallbacks,
+platform signing, debugging, and recovery.
 
 ## Documents
 

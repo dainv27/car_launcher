@@ -1,6 +1,7 @@
 package com.carlauncher.car_launcher
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -70,6 +71,7 @@ class MainActivity : FlutterActivity() {
     private var mediaEventSink: EventChannel.EventSink? = null
     private var appPackageChangedReceiver: BroadcastReceiver? = null
     private var pendingRingtoneResult: MethodChannel.Result? = null
+    private var pendingRoleRequestResult: MethodChannel.Result? = null
 
     private var mediaSessionManager: MediaSessionManager? = null
     private var mediaControllerCallback: MediaController.Callback? = null
@@ -120,6 +122,11 @@ class MainActivity : FlutterActivity() {
                     "title" to ringtoneTitle(uri),
                 )
             )
+        }
+        if (requestCode == ROLE_REQUEST_HOME) {
+            val pending = pendingRoleRequestResult
+            pendingRoleRequestResult = null
+            pending?.success(resultCode == RESULT_OK)
         }
     }
 
@@ -361,6 +368,8 @@ class MainActivity : FlutterActivity() {
                 "pickNotificationSound" -> {
                     pickNotificationSound(call.argument<String>("currentUri"), result)
                 }
+                "isDefaultLauncher" -> result.success(isDefaultLauncher())
+                "requestDefaultLauncher" -> requestDefaultLauncher(result)
                 "getSystemReadiness" -> result.success(getSystemReadiness())
                 "getScreenBrightness" -> result.success(getScreenBrightness())
                 "isAutoBrightnessEnabled" -> result.success(isAutoBrightnessEnabled())
@@ -631,6 +640,65 @@ class MainActivity : FlutterActivity() {
         return enabled.split(':').any { it == componentName.flattenToString() }
     }
 
+    /// Whether this app is the currently active Home app, per the OS's own
+    /// HOME-intent resolver (not a self-reported flag).
+    private fun isDefaultLauncher(): Boolean {
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolved = packageManager.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
+        return resolved?.activityInfo?.packageName == packageName
+    }
+
+    /// Prompts the user to make this app the Home app. On Android 10+ this
+    /// uses RoleManager's system dialog (result delivered via
+    /// onActivityResult → ROLE_REQUEST_HOME); older versions, or a device
+    /// where the role API isn't available, fall back to opening the
+    /// Default apps > Home app settings screen directly.
+    private fun requestDefaultLauncher(result: MethodChannel.Result) {
+        if (isDefaultLauncher()) {
+            result.success(true)
+            return
+        }
+        if (pendingRoleRequestResult != null) {
+            result.error("BUSY", "A default-launcher request is already open", null)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager != null &&
+                roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
+                !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
+            ) {
+                try {
+                    pendingRoleRequestResult = result
+                    startActivityForResult(
+                        roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME),
+                        ROLE_REQUEST_HOME,
+                    )
+                    return
+                } catch (e: Exception) {
+                    pendingRoleRequestResult = null
+                    // Fall through to the settings fallback below.
+                }
+            }
+        }
+        openDefaultLauncherSettings(result)
+    }
+
+    private fun openDefaultLauncherSettings(result: MethodChannel.Result) {
+        try {
+            startActivity(
+                Intent(Settings.ACTION_HOME_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            )
+            // No direct callback from this screen — Flutter re-checks
+            // isDefaultLauncher when the app resumes.
+            result.success(false)
+        } catch (e: Exception) {
+            result.error("NO_SETTINGS", "Unable to open default-launcher settings", e.message)
+        }
+    }
+
     private fun openNotificationAccessSettings(): Boolean {
         return try {
             startActivity(
@@ -654,6 +722,45 @@ class MainActivity : FlutterActivity() {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
         return enabled.split(':').any { it.equals(componentName.flattenToString(), ignoreCase = true) }
+    }
+
+    /// Silently turns on the embedded-input accessibility service — no
+    /// Settings UI, no user tap — when this install has been provisioned
+    /// with WRITE_SECURE_SETTINGS (`adb shell pm grant <pkg>
+    /// android.permission.WRITE_SECURE_SETTINGS`, see
+    /// tools/tbox/configure_multiwindow.sh). That grant is a one-time
+    /// fleet-provisioning step; without it Android has no API for an app to
+    /// enable its own accessibility service, and callers fall back to
+    /// [openAccessibilitySettings]. Merges into the existing enabled-services
+    /// list rather than overwriting it, so other accessibility services the
+    /// user already has on stay on.
+    private fun ensureAccessibilityServiceEnabled(): Boolean {
+        if (hasInputAccessibilityAccess()) return true
+        if (!hasPermission("android.permission.WRITE_SECURE_SETTINGS")) return false
+
+        return try {
+            val componentName = android.content.ComponentName(
+                this,
+                EmbeddedInputAccessibilityService::class.java,
+            ).flattenToString()
+            val existing = Settings.Secure.getString(
+                contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            )
+            val services = existing?.split(':')?.filter { it.isNotBlank() } ?: emptyList()
+            val updated = (services + componentName).distinct().joinToString(":")
+
+            Settings.Secure.putString(
+                contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                updated,
+            )
+            Settings.Secure.putInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+            hasInputAccessibilityAccess()
+        } catch (e: Exception) {
+            Log.w("MainActivity", "Unable to auto-enable accessibility service", e)
+            false
+        }
     }
 
     private fun openAccessibilitySettings(): Boolean {
@@ -738,7 +845,7 @@ class MainActivity : FlutterActivity() {
 
         return mapOf(
             "requestedRuntimePermissions" to missingRuntimePermissions,
-            "accessibilityInputGranted" to hasInputAccessibilityAccess(),
+            "accessibilityInputGranted" to ensureAccessibilityServiceEnabled(),
             "notificationListenerGranted" to hasNotificationListenerAccess(),
             "privilegedPermissions" to mapOf(
                 "addTrustedDisplay" to hasPermission("android.permission.ADD_TRUSTED_DISPLAY"),
@@ -1234,6 +1341,7 @@ class MainActivity : FlutterActivity() {
         private const val LOCATION_PERMISSION_REQUEST = 3102
         private const val STARTUP_PERMISSION_REQUEST = 3103
         private const val RINGTONE_PICKER_REQUEST = 3104
+        private const val ROLE_REQUEST_HOME = 3105
 
         /** Set in onCreate; lets services call back into Flutter. */
         @JvmStatic

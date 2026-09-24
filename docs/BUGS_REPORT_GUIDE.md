@@ -1,6 +1,6 @@
 # Bug Report Guide
 
-Updated: 2026-06-16
+Updated: 2026-09-24
 
 Use this template for bugs in the current normal-app architecture.
 
@@ -53,6 +53,7 @@ Build type:
 
 ## Out-Of-Scope Bug Categories
 
-Do not file bugs requesting the removed launcher model unless the product scope
-changes explicitly. Removed areas include default HOME replacement, boot-start
-behavior, persistent taskbar/sidebar services, and system overlay controls.
+Do not file bugs requesting a persistent native taskbar/sidebar service or
+`SYSTEM_ALERT_WINDOW`/system overlay UI — those remain out of scope. HOME/
+default-launcher registration and boot-start behavior are supported features,
+not bugs — see [Plan](PLAN.md).

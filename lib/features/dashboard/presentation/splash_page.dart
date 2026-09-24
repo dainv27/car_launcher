@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Animated splash screen shown briefly before navigating to the dashboard.
+/// Hand-off from the native launch screen to the dashboard.
+///
+/// It shows the same splash asset as the native launch background, so the
+/// transition is seamless, then fades straight into the dashboard after the
+/// first frame. There is deliberately no fixed hold: every millisecond here
+/// delays the launcher, and the dashboard's embedded panes wait for their
+/// own readiness.
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -31,26 +38,20 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 250),
     );
     _fadeAnimation = Tween<double>(
       begin: 1.0,
       end: 0.0,
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
-    _startFlow();
-  }
-
-  Future<void> _startFlow() async {
     _logoController.forward();
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    _performFadeOutAndNavigate();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fadeOutAndNavigate());
   }
 
-  Future<void> _performFadeOutAndNavigate() async {
-    _fadeController.forward();
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<void> _fadeOutAndNavigate() async {
+    if (!mounted) return;
+    await _fadeController.forward();
     if (!mounted) return;
     context.go('/');
   }
@@ -71,11 +72,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
           return Opacity(opacity: _fadeAnimation.value, child: child);
         },
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.bottomLeft,
               end: Alignment.topRight,
-              colors: [Color(0xFF0A0A0A), Color(0xFF1A1A2E), Color(0xFF0D1B2A)],
+              colors: [context.palette.background, context.palette.surface],
             ),
           ),
           child: Center(

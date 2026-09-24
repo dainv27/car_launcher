@@ -1,5 +1,5 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Shared presentational primitives for the vehicle feature screens, factored
 /// out of the per-page `_GlassPanel` / `_InfoRow` / error-view copies.
@@ -14,9 +14,9 @@ class GlassPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: CarPlayTheme.surfaceVariant,
+        color: context.palette.surfaceRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(26)),
+        border: Border.all(color: context.palette.border),
       ),
       padding: padding ?? const EdgeInsets.all(20),
       child: child,
@@ -34,14 +34,14 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: CarPlayTheme.neonCyan),
+        Icon(icon, size: 20, color: context.palette.accent),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -76,7 +76,7 @@ class InfoRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
               ),
             ),
           ),
@@ -86,7 +86,7 @@ class InfoRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: valueColor ?? CarPlayTheme.onSurface,
+                color: valueColor ?? context.palette.textPrimary,
               ),
             ),
           ),
@@ -102,9 +102,9 @@ class VehicleLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: CircularProgressIndicator(
-        color: CarPlayTheme.neonCyan,
+        color: context.palette.accent,
         strokeWidth: 2,
       ),
     );
@@ -133,14 +133,14 @@ class VehicleErrorView extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 48,
-            color: CarPlayTheme.hazardRed.withValues(alpha: 0.7),
+            color: context.palette.danger.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 12),
           Text(
             message,
             style: TextStyle(
               fontSize: 16,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
           if (detail != null) ...[
@@ -152,8 +152,8 @@ class VehicleErrorView extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: CarPlayTheme.onSurfaceVariant,
+                style: TextStyle(
+                  color: context.palette.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -189,7 +189,7 @@ class VehicleEmptyView extends StatelessWidget {
           Icon(
             icon,
             size: 48,
-            color: CarPlayTheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: context.palette.textSecondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
           Text(
@@ -197,7 +197,7 @@ class VehicleEmptyView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
         ],

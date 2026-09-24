@@ -6,6 +6,7 @@ import 'package:car_launcher/features/account/presentation/providers/account_pro
 import 'package:flutter/material.dart' hide Notification; // hide to avoid clash with go_router's Notification
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Keycloak OIDC login page — dark theme matching car_launcher.
 /// Uses browser-based OAuth 2.0 / OIDC — no in-app form.
@@ -82,11 +83,11 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> with Widget
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
-            colors: [Color(0xFF0A0A0A), Color(0xFF1A1A2E), Color(0xFF0D1B2A)],
+            colors: [context.palette.background, context.palette.surface],
           ),
         ),
         child: SafeArea(
@@ -108,35 +109,30 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> with Widget
                   const SizedBox(height: 32),
                   Text(
                     'Sign in to Car Launcher',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white.withAlpha(230)),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: context.palette.textPrimary),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Use your account to sign in',
-                    style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128)),
+                    style: TextStyle(fontSize: 13, color: context.palette.textSecondary),
                   ),
                   const SizedBox(height: 40),
 
                   // Keycloak OIDC login — opens browser
                   SizedBox(
-                    height: 48,
+                    height: 56,
                     child: ElevatedButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _run(() => ref.read(accountSessionProvider.notifier).loginWithOidc(context)),
                       icon: _busy
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: context.palette.onAccent),
                             )
                           : const Icon(Icons.login_rounded, size: 20),
                       label: Text(_busy ? 'Signing in…' : 'Sign in'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
                     ),
                   ),
                 ],

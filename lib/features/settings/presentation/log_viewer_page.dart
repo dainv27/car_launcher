@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:car_launcher/core/logging/logging.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// In-app log viewer for debugging and maintenance.
 ///
@@ -64,14 +64,14 @@ class _LogViewerPageState extends State<LogViewerPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: CarPlayTheme.surfaceContainer,
-        title: const Text(
+        backgroundColor: context.palette.surface,
+        title: Text(
           'Clear Logs',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.palette.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           'Delete all log entries?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.palette.textSecondary),
         ),
         actions: [
           TextButton(
@@ -80,7 +80,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            child: Text('Clear', style: TextStyle(color: context.palette.danger)),
           ),
         ],
       ),
@@ -118,12 +118,12 @@ class _LogViewerPageState extends State<LogViewerPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'System Logs',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.palette.textPrimary),
         ),
         actions: [
           // Level filter dropdown
@@ -132,8 +132,8 @@ class _LogViewerPageState extends State<LogViewerPage> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _filterLevel,
-                dropdownColor: CarPlayTheme.surfaceContainer,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                dropdownColor: context.palette.surface,
+                style: TextStyle(color: context.palette.textPrimary, fontSize: 13),
                 items: _levels.map((l) => DropdownMenuItem(
                   value: l,
                   child: Text(l, style: TextStyle(
@@ -148,17 +148,17 @@ class _LogViewerPageState extends State<LogViewerPage> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70, size: 20),
+            icon: Icon(Icons.refresh, color: context.palette.textSecondary, size: 20),
             onPressed: _loadLogs,
             tooltip: 'Refresh',
           ),
           IconButton(
-            icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
+            icon: Icon(Icons.copy, color: context.palette.textSecondary, size: 20),
             onPressed: _copyToClipboard,
             tooltip: 'Copy all',
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.white70, size: 20),
+            icon: Icon(Icons.delete_outline, color: context.palette.textSecondary, size: 20),
             onPressed: _clearLogs,
             tooltip: 'Clear logs',
           ),
@@ -176,7 +176,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
                   '$lineCount entries',
                   style: TextStyle(
                     fontSize: 12,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const Spacer(),
@@ -186,7 +186,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
                       AppLogger.instance.logFilePath!,
                       style: TextStyle(
                         fontSize: 10,
-                        color: CarPlayTheme.onSurfaceVariant,
+                        color: context.palette.textSecondary,
                       ),
                       textAlign: TextAlign.end,
                       overflow: TextOverflow.ellipsis,
@@ -195,14 +195,14 @@ class _LogViewerPageState extends State<LogViewerPage> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.white12),
+          Divider(height: 1, color: context.palette.foreground.withValues(alpha: 0.12)),
           // Log content
           Expanded(
             child: filtered.isEmpty
                 ? Center(
                     child: Text(
                       '(no entries matching filter)',
-                      style: TextStyle(color: CarPlayTheme.onSurfaceVariant),
+                      style: TextStyle(color: context.palette.textSecondary),
                     ),
                   )
                 : SingleChildScrollView(
@@ -210,11 +210,11 @@ class _LogViewerPageState extends State<LogViewerPage> {
                     padding: const EdgeInsets.all(12),
                     child: SelectableText(
                       filtered,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11,
                         height: 1.5,
-                        color: Colors.white70,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ),
@@ -227,15 +227,15 @@ class _LogViewerPageState extends State<LogViewerPage> {
   Color _levelColor(String level) {
     switch (level) {
       case 'ERROR':
-        return Colors.redAccent;
+        return context.palette.danger;
       case 'WARN':
-        return Colors.orangeAccent;
+        return context.palette.warning;
       case 'INFO':
-        return Colors.lightBlueAccent;
+        return context.palette.accent;
       case 'DEBUG':
-        return Colors.grey;
+        return context.palette.textTertiary;
       default:
-        return Colors.white;
+        return context.palette.textPrimary;
     }
   }
 }

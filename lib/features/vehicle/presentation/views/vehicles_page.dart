@@ -1,4 +1,3 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
@@ -8,6 +7,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Standalone page listing all vehicles at /vehicles.
 class VehiclesPage extends ConsumerWidget {
@@ -30,20 +30,20 @@ class VehiclesPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: CarPlayTheme.deepObsidian,
-        title: const Text(
+        backgroundColor: context.palette.background,
+        title: Text(
           'Vehicles',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
       body: vehiclesAsync.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(
-            color: CarPlayTheme.neonCyan,
+            color: context.palette.accent,
             strokeWidth: 2,
           ),
         ),
@@ -56,8 +56,8 @@ class VehiclesPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         key: const Key('vehicles-add-fab'),
         onPressed: () => _showCreateDialog(context, ref),
-        backgroundColor: CarPlayTheme.neonCyan,
-        child: const Icon(Icons.add, color: CarPlayTheme.deepObsidian),
+        backgroundColor: context.palette.accent,
+        child: Icon(Icons.add, color: context.palette.onAccent),
       ),
     );
   }
@@ -96,14 +96,14 @@ class _VehicleListContent extends ConsumerWidget {
             Icon(
               Icons.directions_car_outlined,
               size: 64,
-              color: CarPlayTheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: context.palette.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'No vehicles registered',
               style: TextStyle(
                 fontSize: 18,
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -111,7 +111,7 @@ class _VehicleListContent extends ConsumerWidget {
               'Tap + to add your first vehicle',
               style: TextStyle(
                 fontSize: 14,
-                color: CarPlayTheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: context.palette.textSecondary.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -120,7 +120,7 @@ class _VehicleListContent extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      color: CarPlayTheme.neonCyan,
+      color: context.palette.accent,
       onRefresh: () => ref.read(vehicleListProvider.notifier).refresh(),
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
@@ -153,9 +153,9 @@ class _VehicleListTile extends StatelessWidget {
         onTap: () => context.push('/vehicles/${vehicle.id}'),
         child: Container(
           decoration: BoxDecoration(
-            color: CarPlayTheme.surfaceVariant,
+            color: context.palette.surfaceRaised,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withAlpha(26)),
+            border: Border.all(color: context.palette.border),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
@@ -166,12 +166,12 @@ class _VehicleListTile extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: CarPlayTheme.neonCyan.withAlpha(26),
+                        color: context.palette.accent.withAlpha(26),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.directions_car,
-                        color: CarPlayTheme.neonCyan,
+                        color: context.palette.accent,
                         size: 24,
                       ),
                     ),
@@ -182,8 +182,8 @@ class _VehicleListTile extends StatelessWidget {
                   children: [
                     Text(
                       vehicle.displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.palette.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -192,8 +192,8 @@ class _VehicleListTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: CarPlayTheme.onSurfaceVariant,
+                        style: TextStyle(
+                          color: context.palette.textSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -203,7 +203,7 @@ class _VehicleListTile extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
                 size: 22,
               ),
             ],
@@ -229,14 +229,14 @@ class _VehicleErrorWidget extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 48,
-            color: CarPlayTheme.hazardRed.withValues(alpha: 0.7),
+            color: context.palette.danger.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 12),
           Text(
             'Failed to load vehicles',
             style: TextStyle(
               fontSize: 16,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -247,8 +247,8 @@ class _VehicleErrorWidget extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: CarPlayTheme.onSurfaceVariant,
+              style: TextStyle(
+                color: context.palette.textSecondary,
                 fontSize: 12,
               ),
             ),

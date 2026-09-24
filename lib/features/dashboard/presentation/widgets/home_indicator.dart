@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// iOS-style home indicator bar at the bottom of the screen.
 class HomeIndicator extends StatelessWidget {
@@ -15,7 +15,7 @@ class HomeIndicator extends StatelessWidget {
           width: 120,
           height: 4,
           decoration: BoxDecoration(
-            color: CarPlayTheme.homeIndicator.withValues(alpha: 0.85),
+            color: context.palette.textPrimary.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

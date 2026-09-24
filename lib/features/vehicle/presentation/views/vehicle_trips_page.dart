@@ -1,4 +1,3 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/trip.dart';
@@ -7,6 +6,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_ui.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Page at `/vehicles/:id/trips` — the vehicle's segmented trips.
 class VehicleTripsPage extends ConsumerStatefulWidget {
@@ -44,13 +44,13 @@ class _VehicleTripsPageState extends ConsumerState<VehicleTripsPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: CarPlayTheme.deepObsidian,
-        title: const Text(
+        backgroundColor: context.palette.background,
+        title: Text(
           'Trips',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
@@ -74,7 +74,7 @@ class _VehicleTripsPageState extends ConsumerState<VehicleTripsPage> {
                       message: 'No trips in this view',
                     )
                   : RefreshIndicator(
-                      color: CarPlayTheme.neonCyan,
+                      color: context.palette.accent,
                       onRefresh: () async =>
                           ref.invalidate(tripListProvider(query)),
                       child: ListView.builder(
@@ -107,10 +107,10 @@ class _StatusFilterBar extends StatelessWidget {
           label: Text(label),
           selected: active,
           onSelected: (_) => onChanged(value),
-          selectedColor: CarPlayTheme.neonCyan.withValues(alpha: 0.25),
-          backgroundColor: CarPlayTheme.surfaceVariant,
+          selectedColor: context.palette.accent.withValues(alpha: 0.25),
+          backgroundColor: context.palette.surfaceRaised,
           labelStyle: TextStyle(
-            color: active ? CarPlayTheme.onSurface : CarPlayTheme.onSurfaceVariant,
+            color: active ? context.palette.textPrimary : context.palette.textSecondary,
             fontSize: 13,
           ),
         ),
@@ -162,16 +162,16 @@ class _TripTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: (trip.isOpen
-                          ? CarPlayTheme.toggleOn
-                          : CarPlayTheme.neonCyan)
+                          ? context.palette.success
+                          : context.palette.accent)
                       .withAlpha(30),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   trip.isOpen ? Icons.play_arrow_rounded : Icons.route,
                   color: trip.isOpen
-                      ? CarPlayTheme.toggleOn
-                      : CarPlayTheme.neonCyan,
+                      ? context.palette.success
+                      : context.palette.accent,
                   size: 22,
                 ),
               ),
@@ -182,8 +182,8 @@ class _TripTile extends StatelessWidget {
                   children: [
                     Text(
                       when,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.palette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -191,8 +191,8 @@ class _TripTile extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: CarPlayTheme.onSurfaceVariant,
+                      style: TextStyle(
+                        color: context.palette.textSecondary,
                         fontSize: 12.5,
                       ),
                     ),
@@ -200,12 +200,12 @@ class _TripTile extends StatelessWidget {
                 ),
               ),
               if (trip.isOpen)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(right: 4),
                   child: Text(
                     'OPEN',
                     style: TextStyle(
-                      color: CarPlayTheme.toggleOn,
+                      color: context.palette.success,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -213,7 +213,7 @@ class _TripTile extends StatelessWidget {
                 ),
               Icon(
                 Icons.chevron_right,
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
                 size: 22,
               ),
             ],

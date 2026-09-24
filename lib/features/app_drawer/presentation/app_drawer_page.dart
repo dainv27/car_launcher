@@ -7,6 +7,7 @@ import 'package:car_launcher/features/dashboard/presentation/providers/dashboard
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Nova Drive App Drawer — full-screen grid with sidebar nav and top search bar.
 class AppDrawerPage extends ConsumerStatefulWidget {
@@ -67,7 +68,7 @@ class _AppDrawerPageState extends ConsumerState<AppDrawerPage> {
               child: Container(
                 width: 600,
                 height: 600,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: CarPlayTheme.neonCyan.withValues(alpha: 0.05)),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: context.palette.accent.withValues(alpha: 0.05)),
               ),
             ),
           ),
@@ -80,7 +81,7 @@ class _AppDrawerPageState extends ConsumerState<AppDrawerPage> {
                 height: 400,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: CarPlayTheme.primaryContainer.withValues(alpha: 0.05),
+                  color: context.palette.accent.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -159,30 +160,30 @@ class _SearchBar extends StatelessWidget {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: CarPlayTheme.glassSurface,
+        color: context.palette.glass,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: CarPlayTheme.safetyWhite.withValues(alpha: 0.1)),
+        border: Border.all(color: context.palette.textPrimary.withValues(alpha: 0.1)),
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: const TextStyle(
-          color: CarPlayTheme.onSurface,
+        style: TextStyle(
+          color: context.palette.textPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w400,
           height: 20 / 14,
         ),
         decoration: InputDecoration(
           hintText: 'Search applications...',
-          hintStyle: TextStyle(color: CarPlayTheme.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 12),
-          prefixIcon: const Icon(Icons.search, color: CarPlayTheme.onSurfaceVariant),
+          hintStyle: TextStyle(color: context.palette.textSecondary.withValues(alpha: 0.4), fontSize: 12),
+          prefixIcon: Icon(Icons.search, color: context.palette.textSecondary),
           suffixIcon: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
             builder: (context, value, _) {
               if (value.text.isEmpty) return const SizedBox.shrink();
               return IconButton(
                 onPressed: onClear,
-                icon: const Icon(Icons.close, color: CarPlayTheme.onSurfaceVariant),
+                icon: Icon(Icons.close, color: context.palette.textSecondary),
               );
             },
           ),
@@ -269,17 +270,17 @@ class _AppsLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
             width: 40,
             height: 40,
-            child: CircularProgressIndicator(strokeWidth: 3, color: CarPlayTheme.neonCyan),
+            child: CircularProgressIndicator(strokeWidth: 3, color: context.palette.accent),
           ),
           SizedBox(height: 16),
-          Text('Loading apps…', style: TextStyle(color: CarPlayTheme.onSurfaceVariant, fontSize: 16)),
+          Text('Loading apps…', style: TextStyle(color: context.palette.textSecondary, fontSize: 16)),
         ],
       ),
     );
@@ -301,22 +302,22 @@ class _AppsEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.apps_rounded, color: CarPlayTheme.onSurfaceVariant, size: 56),
+          Icon(Icons.apps_rounded, color: context.palette.textSecondary, size: 56),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No apps found',
-            style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 18, fontWeight: FontWeight.w500),
+            style: TextStyle(color: context.palette.textPrimary, fontSize: 18, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Try a different search or refresh the list',
-            style: TextStyle(color: CarPlayTheme.onSurfaceVariant, fontSize: 14),
+            style: TextStyle(color: context.palette.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 20),
           TextButton.icon(
             onPressed: onRefresh,
-            icon: const Icon(Icons.refresh_rounded, color: CarPlayTheme.neonCyan),
-            label: const Text('Refresh', style: TextStyle(color: CarPlayTheme.neonCyan, fontSize: 16)),
+            icon: Icon(Icons.refresh_rounded, color: context.palette.accent),
+            label: Text('Refresh', style: TextStyle(color: context.palette.accent, fontSize: 16)),
           ),
         ],
       ),

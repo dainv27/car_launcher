@@ -7,6 +7,7 @@ import 'package:car_launcher/features/media/domain/media_session_model.dart';
 import 'package:car_launcher/features/media/data/media_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Full-screen Media Center page.
 class MediaCenterPage extends ConsumerStatefulWidget {
@@ -52,7 +53,7 @@ class _MediaCenterPageState extends ConsumerState<MediaCenterPage> {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: [
-              CarPlayTheme.neonCyan.withValues(alpha: 0.05),
+              context.palette.accent.withValues(alpha: 0.05),
               Colors.transparent,
             ],
           ),
@@ -120,18 +121,12 @@ class _AlbumArtSection extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: CarPlayTheme.glassSurface,
+            color: context.palette.glass,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: context.palette.foreground.withValues(alpha: 0.1),
               width: 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
+            boxShadow: context.palette.cardShadow,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -139,31 +134,32 @@ class _AlbumArtSection extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 // Album art image or placeholder
-                _buildAlbumArtImage(),
-                // Gradient overlay at bottom
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 120,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          CarPlayTheme.deepObsidian.withValues(alpha: 0.6),
-                        ],
+                _buildAlbumArtImage(context),
+                // Gradient overlay at bottom, only over real artwork
+                if (session.albumArtUrl.isNotEmpty)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 120,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
                 // Dolby Atmos / Playing indicator overlay
                 Positioned(
                   bottom: 24,
                   right: 24,
-                  child: _buildPlaybackIndicator(),
+                  child: _buildPlaybackIndicator(context),
                 ),
               ],
             ),
@@ -173,43 +169,45 @@ class _AlbumArtSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAlbumArtImage() {
+  Widget _buildAlbumArtImage(BuildContext context) {
     if (session.albumArtUrl.isNotEmpty) {
       return Image.network(
         session.albumArtUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildPlaceholder(),
+        errorBuilder: (_, _, _) => _buildPlaceholder(context),
       );
     }
-    return _buildPlaceholder();
+    return _buildPlaceholder(context);
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Container(
-      color: CarPlayTheme.surfaceContainerLow,
+      color: context.palette.surface,
       child: Center(
         child: Icon(
           Icons.music_note,
           size: 80,
-          color: Colors.white.withValues(alpha: 0.15),
+          color: context.palette.foreground.withValues(alpha: 0.15),
         ),
       ),
     );
   }
 
-  Widget _buildPlaybackIndicator() {
+  Widget _buildPlaybackIndicator(BuildContext context) {
     if (!isPlaying) {
       return const SizedBox.shrink();
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: CarPlayTheme.neonCyan.withValues(alpha: 0.2),
+        color: context.palette.accent.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: CarPlayTheme.neonCyan.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: context.palette.accent.withValues(alpha: 0.3),
+        ),
         boxShadow: [
           BoxShadow(
-            color: CarPlayTheme.neonCyan.withValues(alpha: 0.15),
+            color: context.palette.accent.withValues(alpha: 0.15),
             blurRadius: 12,
           ),
         ],
@@ -222,7 +220,7 @@ class _AlbumArtSection extends StatelessWidget {
           Text(
             'Dolby Atmos',
             style: TextStyle(
-              color: CarPlayTheme.neonCyan,
+              color: context.palette.accent,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               letterSpacing: 1.0,
@@ -296,7 +294,7 @@ class _AnimatedBarsState extends State<_AnimatedBars>
                 width: 3,
                 height: 12 * _animations[i].value,
                 decoration: BoxDecoration(
-                  color: CarPlayTheme.neonCyan,
+                  color: context.palette.accent,
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -347,7 +345,7 @@ class _ControlsSection extends StatelessWidget {
           Text(
             'Currently Streaming',
             style: TextStyle(
-              color: CarPlayTheme.neonCyan,
+              color: context.palette.accent,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               letterSpacing: 2.0,
@@ -358,7 +356,7 @@ class _ControlsSection extends StatelessWidget {
           Text(
             session.title.isNotEmpty ? session.title : 'No Track',
             style: TextStyle(
-              color: CarPlayTheme.safetyWhite,
+              color: context.palette.textPrimary,
               fontSize: compact ? 42 : 64,
               fontWeight: FontWeight.bold,
               height: 1.05,
@@ -374,7 +372,7 @@ class _ControlsSection extends StatelessWidget {
                 ? '${session.artist}${session.album.isNotEmpty ? ' • ${session.album}' : ''}'
                 : 'Unknown Artist',
             style: TextStyle(
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
               fontSize: 20,
               fontWeight: FontWeight.w400,
             ),
@@ -452,7 +450,7 @@ class _ProgressBarSection extends StatelessWidget {
                   width: constraints.maxWidth,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: context.palette.foreground.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Stack(
@@ -461,11 +459,11 @@ class _ProgressBarSection extends StatelessWidget {
                         widthFactor: session.progress,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: CarPlayTheme.neonCyan,
+                            color: context.palette.accent,
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: [
                               BoxShadow(
-                                color: CarPlayTheme.neonCyan.withValues(
+                                color: context.palette.accent.withValues(
                                   alpha: 0.5,
                                 ),
                                 blurRadius: 15,
@@ -484,11 +482,11 @@ class _ProgressBarSection extends StatelessWidget {
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: CarPlayTheme.neonCyan,
+                              color: context.palette.accent,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: CarPlayTheme.neonCyan.withValues(
+                                  color: context.palette.accent.withValues(
                                     alpha: 0.6,
                                   ),
                                   blurRadius: 10,
@@ -513,7 +511,7 @@ class _ProgressBarSection extends StatelessWidget {
             Text(
               session.positionFormatted,
               style: TextStyle(
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -521,7 +519,7 @@ class _ProgressBarSection extends StatelessWidget {
             Text(
               session.durationFormatted,
               style: TextStyle(
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -611,7 +609,9 @@ class _SideButton extends StatelessWidget {
       onPressed: onPressed,
       icon: Icon(
         icon,
-        color: isActive ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
+        color: isActive
+            ? context.palette.accent
+            : context.palette.textSecondary,
         size: 36,
       ),
       splashRadius: 28,
@@ -638,12 +638,12 @@ class _RoundButton extends StatelessWidget {
       width: size,
       height: size,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: context.palette.foreground.withValues(alpha: 0.05),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
-          child: Icon(icon, color: CarPlayTheme.safetyWhite, size: iconSize),
+          child: Icon(icon, color: context.palette.textPrimary, size: iconSize),
         ),
       ),
     );
@@ -662,14 +662,14 @@ class _PlayPauseButton extends StatelessWidget {
       width: 96,
       height: 96,
       child: Material(
-        color: CarPlayTheme.neonCyan,
+        color: context.palette.accent,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
           child: Icon(
             isPlaying ? Icons.pause : Icons.play_arrow,
-            color: CarPlayTheme.deepObsidian,
+            color: context.palette.onAccent,
             size: 56,
             fill: 1.0,
           ),
@@ -696,14 +696,14 @@ class _VolumeAndActionsRow extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 24),
       decoration: BoxDecoration(
-        color: CarPlayTheme.glassSurface,
+        color: context.palette.glass,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
           // Volume icon
-          Icon(Icons.volume_up, color: CarPlayTheme.onSurfaceVariant, size: 28),
+          Icon(Icons.volume_up, color: context.palette.textSecondary, size: 28),
           const SizedBox(width: 16),
           // Volume slider
           Expanded(
@@ -715,7 +715,7 @@ class _VolumeAndActionsRow extends StatelessWidget {
               width: 1,
               height: 40,
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              color: Colors.white.withValues(alpha: 0.1),
+              color: context.palette.foreground.withValues(alpha: 0.1),
             ),
           // Save / Favorite
           if (!compact)
@@ -777,7 +777,7 @@ class _VolumeSlider extends StatelessWidget {
                   child: Container(
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: context.palette.foreground.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -790,7 +790,7 @@ class _VolumeSlider extends StatelessWidget {
                     height: 12,
                     width: value * constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: CarPlayTheme.neonCyan,
+                      color: context.palette.accent,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -803,11 +803,11 @@ class _VolumeSlider extends StatelessWidget {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: CarPlayTheme.neonCyan,
+                      color: context.palette.accent,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: CarPlayTheme.neonCyan.withValues(alpha: 0.6),
+                          color: context.palette.accent.withValues(alpha: 0.6),
                           blurRadius: 10,
                         ),
                       ],
@@ -844,12 +844,12 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: CarPlayTheme.onSurfaceVariant, size: 28),
+            Icon(icon, color: context.palette.textSecondary, size: 28),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

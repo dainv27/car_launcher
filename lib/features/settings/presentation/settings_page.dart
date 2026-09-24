@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Settings page — two-panel layout matching Settings.html design
@@ -209,13 +210,13 @@ class _CompactCategoryBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: selected
-                    ? CarPlayTheme.neonCyan.withValues(alpha: 0.14)
-                    : CarPlayTheme.surfaceVariant,
+                    ? context.palette.accent.withValues(alpha: 0.14)
+                    : context.palette.surfaceRaised,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: selected
-                      ? CarPlayTheme.neonCyan
-                      : Colors.white.withValues(alpha: 0.1),
+                      ? context.palette.accent
+                      : context.palette.foreground.withValues(alpha: 0.1),
                 ),
               ),
               child: Row(
@@ -223,16 +224,16 @@ class _CompactCategoryBar extends StatelessWidget {
                   Icon(
                     item.icon,
                     color: selected
-                        ? CarPlayTheme.neonCyan
-                        : CarPlayTheme.onSurfaceVariant,
+                        ? context.palette.accent
+                        : context.palette.textSecondary,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     item.label,
                     style: TextStyle(
                       color: selected
-                          ? CarPlayTheme.safetyWhite
-                          : CarPlayTheme.onSurfaceVariant,
+                          ? context.palette.textPrimary
+                          : context.palette.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -276,10 +277,10 @@ class _CategoryButton extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: isSelected
-              ? CarPlayTheme.surfaceBright
-              : CarPlayTheme.surfaceVariant,
+              ? context.palette.surfaceRaised
+              : context.palette.surfaceRaised,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withAlpha(26)),
+          border: Border.all(color: context.palette.border),
         ),
         child: Stack(
           children: [
@@ -290,10 +291,10 @@ class _CategoryButton extends StatelessWidget {
                   width: 4,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: CarPlayTheme.surfaceVariant,
+                    color: context.palette.surfaceRaised,
                     boxShadow: [
                       BoxShadow(
-                        color: CarPlayTheme.neonCyan.withAlpha(180),
+                        color: context.palette.accent.withAlpha(180),
                         blurRadius: 15,
                       ),
                     ],
@@ -309,8 +310,8 @@ class _CategoryButton extends StatelessWidget {
                     item.icon,
                     size: 32,
                     color: isSelected
-                        ? CarPlayTheme.neonCyan
-                        : CarPlayTheme.onSurfaceVariant,
+                        ? context.palette.accent
+                        : context.palette.textSecondary,
                   ),
                   const SizedBox(width: 16),
                   Text(
@@ -319,8 +320,8 @@ class _CategoryButton extends StatelessWidget {
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
                       color: isSelected
-                          ? CarPlayTheme.safetyWhite
-                          : CarPlayTheme.onSurfaceVariant,
+                          ? context.palette.textPrimary
+                          : context.palette.textSecondary,
                     ),
                   ),
                 ],
@@ -348,9 +349,10 @@ class _GlassPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: CarPlayTheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(26)),
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.palette.border),
+        boxShadow: context.palette.cardShadow,
       ),
       padding: padding,
       child: child,
@@ -380,7 +382,7 @@ class _SectionHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w600,
-              color: CarPlayTheme.onSurface,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -388,7 +390,7 @@ class _SectionHeader extends StatelessWidget {
             description,
             style: TextStyle(
               fontSize: 16,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
         ],
@@ -417,18 +419,10 @@ class _NeonToggle extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           color: value
-              ? CarPlayTheme.neonCyan
-              : CarPlayTheme.surfaceContainerHigh,
+              ? context.palette.accent
+              : context.palette.toggleTrackOff,
           borderRadius: BorderRadius.circular(15),
-          boxShadow: value
-              ? [
-                  BoxShadow(
-                    color: CarPlayTheme.neonCyan.withAlpha(77),
-                    blurRadius: 15,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : null,
+          boxShadow: value ? context.palette.accentGlow : null,
         ),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
@@ -437,9 +431,17 @@ class _NeonToggle extends StatelessWidget {
             width: 24,
             height: 24,
             margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
+              // The thumb stays white in both modes, like a physical switch.
               color: Colors.white,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: context.palette.shadow.withValues(alpha: 0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
           ),
         ),
@@ -485,14 +487,14 @@ class _NeonSliderState extends State<_NeonSlider> {
       children: [
         Row(
           children: [
-            Icon(widget.icon, size: 18, color: CarPlayTheme.onSurfaceVariant),
+            Icon(widget.icon, size: 18, color: context.palette.textSecondary),
             const SizedBox(width: 8),
             Text(
               widget.label,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: CarPlayTheme.onSurface,
+                color: context.palette.textPrimary,
               ),
             ),
             const Spacer(),
@@ -501,7 +503,7 @@ class _NeonSliderState extends State<_NeonSlider> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: CarPlayTheme.neonCyan,
+                color: context.palette.accent,
               ),
             ),
           ],
@@ -523,7 +525,7 @@ class _NeonSliderState extends State<_NeonSlider> {
                       height: 10,
                       width: width,
                       decoration: BoxDecoration(
-                        color: CarPlayTheme.surfaceContainerHigh,
+                        color: context.palette.surfaceRaised,
                         borderRadius: BorderRadius.circular(5),
                       ),
                     ),
@@ -532,11 +534,11 @@ class _NeonSliderState extends State<_NeonSlider> {
                       height: 10,
                       width: width * _value / 100,
                       decoration: BoxDecoration(
-                        color: CarPlayTheme.neonCyan,
+                        color: context.palette.accent,
                         borderRadius: BorderRadius.circular(5),
                         boxShadow: [
                           BoxShadow(
-                            color: CarPlayTheme.neonCyan.withAlpha(77),
+                            color: context.palette.accent.withAlpha(77),
                             blurRadius: 10,
                           ),
                         ],
@@ -548,8 +550,8 @@ class _NeonSliderState extends State<_NeonSlider> {
                       child: Container(
                         width: 20,
                         height: 20,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: context.palette.textPrimary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -646,7 +648,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                         Icon(
                           Icons.light_mode_outlined,
                           size: 18,
-                          color: CarPlayTheme.onSurfaceVariant,
+                          color: context.palette.textSecondary,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -654,7 +656,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: CarPlayTheme.onSurface,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                         const Spacer(),
@@ -664,7 +666,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: CarPlayTheme.neonCyan.withAlpha(26),
+                            color: context.palette.accent.withAlpha(26),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -672,7 +674,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: CarPlayTheme.neonCyan,
+                              color: context.palette.accent,
                             ),
                           ),
                         ),
@@ -683,7 +685,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                       'Disable Auto Brightness to manually adjust.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: CarPlayTheme.onSurfaceVariant,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ],
@@ -790,28 +792,21 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
-                color: CarPlayTheme.onSurface,
+                color: context.palette.textPrimary,
               ),
             ),
             if (compact) const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: CarPlayTheme.deepObsidian,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withAlpha(26)),
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final theme in LauncherThemeStyle.values)
-                    _PillButton(
-                      label: theme.label,
-                      isSelected: appearance.themeStyle == theme,
-                      onTap: () => notifier.setThemeStyle(theme),
-                    ),
-                ],
-              ),
+            _PillTrack(
+              compact: compact,
+              children: [
+                for (final theme in LauncherThemeStyle.values)
+                  _PillButton(
+                    label: theme.label,
+                    swatch: theme.accentFor(context.palette.brightness),
+                    isSelected: appearance.themeStyle == theme,
+                    onTap: () => notifier.setThemeStyle(theme),
+                  ),
+              ],
             ),
           ],
         ),
@@ -828,29 +823,21 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: CarPlayTheme.onSurface,
+                color: context.palette.textPrimary,
               ),
             ),
             if (compact) const SizedBox(height: 12),
-            Container(
+            _PillTrack(
               key: const Key('settings-theme-mode-picker'),
-              decoration: BoxDecoration(
-                color: CarPlayTheme.deepObsidian,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withAlpha(26)),
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final mode in AppThemeMode.values)
-                    _PillButton(
-                      label: mode.label,
-                      isSelected: themeMode == mode,
-                      onTap: () => themeModeNotifier.setMode(mode),
-                    ),
-                ],
-              ),
+              compact: compact,
+              children: [
+                for (final mode in AppThemeMode.values)
+                  _PillButton(
+                    label: mode.label,
+                    isSelected: themeMode == mode,
+                    onTap: () => themeModeNotifier.setMode(mode),
+                  ),
+              ],
             ),
           ],
         ),
@@ -860,7 +847,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
             'Auto follows the system Dark setting, or day/night hours when that setting isn\'t meaningful on this device.',
             style: TextStyle(
               fontSize: 12,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
         ],
@@ -925,7 +912,7 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w600,
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 20),
@@ -954,14 +941,14 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: CarPlayTheme.onSurface,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   Text(
                     soundSettings.displayTitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: CarPlayTheme.onSurfaceVariant,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ],
@@ -983,38 +970,94 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
 // Pill Button (theme selector)
 // ═════════════════════════════════════════════════════════════════════════════
 
+/// Rounded segmented track holding [_PillButton]s. Scrolls horizontally
+/// instead of overflowing when a wide layout runs short of room.
+class _PillTrack extends StatelessWidget {
+  const _PillTrack({super.key, required this.compact, required this.children});
+
+  final bool compact;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final track = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.palette.surfaceSunken,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: context.palette.border),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+    // A horizontal parent must bound the track's width; a vertical one
+    // already gives it the full row.
+    return compact ? track : Flexible(child: track);
+  }
+}
+
 class _PillButton extends StatelessWidget {
   const _PillButton({
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.swatch,
   });
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
+  /// Optional colour dot previewing an accent preset.
+  final Color? swatch;
+
   @override
   Widget build(BuildContext context) {
-    final accent = CarPlayTheme.accent(context);
+    final accent = context.palette.accent;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        constraints: const BoxConstraints(minHeight: 44),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: isSelected ? accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(999),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? CarPlayTheme.deepObsidian
-                : CarPlayTheme.onSurfaceVariant,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (swatch case final swatch?) ...[
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: swatch,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected
+                        ? context.palette.onAccent
+                        : context.palette.border,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? context.palette.onAccent
+                    : context.palette.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1038,22 +1081,28 @@ class _WallpaperThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = CarPlayTheme.accent(context);
+    final palette = context.palette;
+    final accent = palette.accent;
+    final gradient = style.gradientFor(palette.brightness);
+    final labelColor =
+        ThemeData.estimateBrightnessForColor(gradient.last) == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF0F1115);
     return GestureDetector(
       onTap: onTap,
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? accent : Colors.white.withAlpha(13),
+              color: isSelected ? accent : palette.border,
               width: isSelected ? 2 : 1,
             ),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: style.gradient,
+              colors: gradient,
             ),
           ),
           child: Stack(
@@ -1063,10 +1112,10 @@ class _WallpaperThumbnail extends StatelessWidget {
                 bottom: 6,
                 child: Text(
                   style.label,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white70,
+                    color: labelColor.withValues(alpha: 0.85),
                   ),
                 ),
               ),
@@ -1119,7 +1168,7 @@ class _ToggleRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1127,7 +1176,7 @@ class _ToggleRow extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 13,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
             ],
@@ -1169,10 +1218,10 @@ class _IconToggleRow extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: CarPlayTheme.neonCyan.withAlpha(26),
+            color: context.palette.accent.withAlpha(26),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 22, color: CarPlayTheme.neonCyan),
+          child: Icon(icon, size: 22, color: context.palette.accent),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1184,7 +1233,7 @@ class _IconToggleRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1192,7 +1241,7 @@ class _IconToggleRow extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
             ],
@@ -1237,7 +1286,7 @@ class _DashboardSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1281,7 +1330,7 @@ class _DashboardSection extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: CarPlayTheme.onSurface,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1289,7 +1338,7 @@ class _DashboardSection extends ConsumerWidget {
                     'Assign apps to each pane',
                     style: TextStyle(
                       fontSize: 13,
-                      color: CarPlayTheme.onSurfaceVariant,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1326,8 +1375,8 @@ class _DashboardPreviewTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected
-                ? CarPlayTheme.neonCyan
-                : Colors.white.withAlpha(26),
+                ? context.palette.accent
+                : context.palette.foreground.withAlpha(26),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1341,7 +1390,7 @@ class _DashboardPreviewTile extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 16 / 10,
                 child: Container(
-                  color: const Color(0xFF1A1A2E),
+                  color: context.palette.surfaceRaised,
                   child: _buildPreview(),
                 ),
               ),
@@ -1352,8 +1401,8 @@ class _DashboardPreviewTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? CarPlayTheme.neonCyan.withAlpha(20)
-                    : CarPlayTheme.surfaceContainerHigh,
+                    ? context.palette.accent.withAlpha(20)
+                    : context.palette.surfaceRaised,
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(9),
                 ),
@@ -1367,8 +1416,8 @@ class _DashboardPreviewTile extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: isSelected
-                          ? CarPlayTheme.neonCyan
-                          : CarPlayTheme.onSurface,
+                          ? context.palette.accent
+                          : context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1379,7 +1428,7 @@ class _DashboardPreviewTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 10,
-                      color: CarPlayTheme.onSurfaceVariant,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ],
@@ -1413,7 +1462,7 @@ class _PreviewDashboard01 extends StatelessWidget {
     return Stack(
       children: [
         // Map fills the whole area
-        Positioned.fill(child: Container(color: const Color(0xFF0D1B2A))),
+        Positioned.fill(child: Container(color: context.palette.surfaceSunken)),
         // YouTube overlay (right side)
         Positioned(
           right: 4,
@@ -1422,15 +1471,15 @@ class _PreviewDashboard01 extends StatelessWidget {
           width: 50,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF16213E),
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(3),
-              border: Border.all(color: const Color(0xFF0F3460), width: 0.5),
+              border: Border.all(color: context.palette.border, width: 0.5),
             ),
-            child: const Center(
+            child: Center(
               child: Icon(
                 Icons.play_circle_outline,
                 size: 14,
-                color: Colors.white54,
+                color: context.palette.textSecondary,
               ),
             ),
           ),
@@ -1441,7 +1490,7 @@ class _PreviewDashboard01 extends StatelessWidget {
           top: 0,
           bottom: 0,
           width: 8,
-          child: Container(color: Colors.black45),
+          child: Container(color: context.palette.scrim.withValues(alpha: 0.3)),
         ),
       ],
     );
@@ -1454,7 +1503,10 @@ class _PreviewDashboard02 extends StatelessWidget {
     return Row(
       children: [
         // Sidebar
-        Container(width: 6, color: Colors.black45),
+        Container(
+          width: 6,
+          color: context.palette.scrim.withValues(alpha: 0.3),
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(3),
@@ -1465,7 +1517,7 @@ class _PreviewDashboard02 extends StatelessWidget {
                   flex: 6,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D1B2A),
+                      color: context.palette.surfaceSunken,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1479,14 +1531,14 @@ class _PreviewDashboard02 extends StatelessWidget {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A2E),
+                            color: context.palette.surfaceRaised,
                             borderRadius: BorderRadius.circular(2),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.music_note,
                               size: 10,
-                              color: Colors.white38,
+                              color: context.palette.textTertiary,
                             ),
                           ),
                         ),
@@ -1495,14 +1547,14 @@ class _PreviewDashboard02 extends StatelessWidget {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF16213E),
+                            color: context.palette.surface,
                             borderRadius: BorderRadius.circular(2),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.cloud,
                               size: 10,
-                              color: Colors.white38,
+                              color: context.palette.textTertiary,
                             ),
                           ),
                         ),
@@ -1525,7 +1577,10 @@ class _PreviewDashboard03 extends StatelessWidget {
     return Row(
       children: [
         // Sidebar
-        Container(width: 6, color: Colors.black45),
+        Container(
+          width: 6,
+          color: context.palette.scrim.withValues(alpha: 0.3),
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(3),
@@ -1535,7 +1590,7 @@ class _PreviewDashboard03 extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D1B2A),
+                      color: context.palette.surfaceSunken,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1545,18 +1600,18 @@ class _PreviewDashboard03 extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF16213E),
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(2),
                       border: Border.all(
-                        color: const Color(0xFF0F3460),
+                        color: context.palette.border,
                         width: 0.5,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.play_circle_outline,
                         size: 12,
-                        color: Colors.white54,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ),
@@ -1576,7 +1631,10 @@ class _PreviewMultiApp extends StatelessWidget {
     return Row(
       children: [
         // Sidebar
-        Container(width: 6, color: Colors.black45),
+        Container(
+          width: 6,
+          color: context.palette.scrim.withValues(alpha: 0.3),
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(3),
@@ -1585,13 +1643,16 @@ class _PreviewMultiApp extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A2E),
+                      color: context.palette.surfaceRaised,
                       borderRadius: BorderRadius.circular(2),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'App 1',
-                        style: TextStyle(fontSize: 8, color: Colors.white38),
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: context.palette.textTertiary,
+                        ),
                       ),
                     ),
                   ),
@@ -1600,13 +1661,16 @@ class _PreviewMultiApp extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF16213E),
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(2),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'App 2',
-                        style: TextStyle(fontSize: 8, color: Colors.white38),
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: context.palette.textTertiary,
+                        ),
                       ),
                     ),
                   ),
@@ -1656,7 +1720,7 @@ class _PaneAppTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: CarPlayTheme.surfaceContainerHigh,
+              color: context.palette.surfaceRaised,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -1665,7 +1729,7 @@ class _PaneAppTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: CarPlayTheme.neonCyan,
+                  color: context.palette.accent,
                 ),
               ),
             ),
@@ -1678,14 +1742,14 @@ class _PaneAppTile extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: app != null
-                    ? CarPlayTheme.onSurface
-                    : CarPlayTheme.onSurfaceVariant,
+                    ? context.palette.textPrimary
+                    : context.palette.textSecondary,
               ),
             ),
           ),
           Icon(
             Icons.chevron_right,
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             size: 20,
           ),
         ],
@@ -1722,7 +1786,7 @@ class _NavigationSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1730,7 +1794,7 @@ class _NavigationSection extends ConsumerWidget {
                   _navAppName(defaultNav),
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1739,15 +1803,11 @@ class _NavigationSection extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _showNavAppPicker(context, ref),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                     child: Text(
                       'Change Navigation App',
-                      style: TextStyle(color: CarPlayTheme.neonCyan),
+                      style: TextStyle(color: context.palette.accent),
                     ),
                   ),
                 ),
@@ -1769,7 +1829,7 @@ class _NavigationSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1777,7 +1837,7 @@ class _NavigationSection extends ConsumerWidget {
                   'Dynamic clock, 24-hour format, VPN status',
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1786,15 +1846,11 @@ class _NavigationSection extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => context.push('/settings/clock-network'),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                     child: Text(
                       'Configure Clock & Network',
-                      style: TextStyle(color: CarPlayTheme.neonCyan),
+                      style: TextStyle(color: context.palette.accent),
                     ),
                   ),
                 ),
@@ -1845,16 +1901,19 @@ class _NavigationSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: CarPlayTheme.surfaceContainer,
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: context.palette.surface,
+        title: Text(
+          title,
+          style: TextStyle(color: context.palette.textPrimary),
+        ),
         content: SizedBox(
           width: 300,
           height: 400,
           child: apps.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No apps found',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(color: context.palette.textTertiary),
                   ),
                 )
               : ListView.builder(
@@ -1864,12 +1923,12 @@ class _NavigationSection extends ConsumerWidget {
                     return ListTile(
                       title: Text(
                         app['appName'] ?? '',
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: context.palette.textPrimary),
                       ),
                       subtitle: Text(
                         app['packageName'] ?? '',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: context.palette.textTertiary,
                           fontSize: 11,
                         ),
                       ),
@@ -1884,9 +1943,9 @@ class _NavigationSection extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => GoRouter.of(context).pop(),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: context.palette.textSecondary),
             ),
           ),
         ],
@@ -1923,7 +1982,7 @@ class _MediaSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1931,7 +1990,7 @@ class _MediaSection extends ConsumerWidget {
                   _mediaAppName(defaultMedia),
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1940,15 +1999,11 @@ class _MediaSection extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _showMediaAppPicker(context, ref),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                     child: Text(
                       'Change Media App',
-                      style: TextStyle(color: CarPlayTheme.neonCyan),
+                      style: TextStyle(color: context.palette.accent),
                     ),
                   ),
                 ),
@@ -1965,7 +2020,7 @@ class _MediaSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1973,7 +2028,7 @@ class _MediaSection extends ConsumerWidget {
                   'Configure weather API and location',
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1985,15 +2040,11 @@ class _MediaSection extends ConsumerWidget {
                       builder: (_) => WeatherSettingsDialog(),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                     child: Text(
                       'Configure Weather',
-                      style: TextStyle(color: CarPlayTheme.neonCyan),
+                      style: TextStyle(color: context.palette.accent),
                     ),
                   ),
                 ),
@@ -2042,16 +2093,19 @@ class _MediaSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: CarPlayTheme.surfaceContainer,
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: context.palette.surface,
+        title: Text(
+          title,
+          style: TextStyle(color: context.palette.textPrimary),
+        ),
         content: SizedBox(
           width: 300,
           height: 400,
           child: apps.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No apps found',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(color: context.palette.textTertiary),
                   ),
                 )
               : ListView.builder(
@@ -2061,12 +2115,12 @@ class _MediaSection extends ConsumerWidget {
                     return ListTile(
                       title: Text(
                         app['appName'] ?? '',
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: context.palette.textPrimary),
                       ),
                       subtitle: Text(
                         app['packageName'] ?? '',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: context.palette.textTertiary,
                           fontSize: 11,
                         ),
                       ),
@@ -2081,9 +2135,9 @@ class _MediaSection extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => GoRouter.of(context).pop(),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: context.palette.textSecondary),
             ),
           ),
         ],
@@ -2117,7 +2171,9 @@ class _ConnectivitySection extends ConsumerWidget {
                 _ConnectivityRow(
                   icon: Icons.wifi,
                   label: 'Wi-Fi',
-                  value: connectivity.extra['wifi'] == true ? 'Connected' : 'Off',
+                  value: connectivity.extra['wifi'] == true
+                      ? 'Connected'
+                      : 'Off',
                   isOn: connectivity.extra['wifi'] == true,
                 ),
                 const SizedBox(height: 16),
@@ -2169,14 +2225,16 @@ class _ConnectivityRow extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: isOn
-                ? CarPlayTheme.neonCyan.withAlpha(26)
-                : CarPlayTheme.surfaceContainerHigh,
+                ? context.palette.accent.withAlpha(26)
+                : context.palette.surfaceRaised,
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
             size: 20,
-            color: isOn ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
+            color: isOn
+                ? context.palette.accent
+                : context.palette.textSecondary,
           ),
         ),
         const SizedBox(width: 12),
@@ -2189,7 +2247,7 @@ class _ConnectivityRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               Text(
@@ -2197,8 +2255,8 @@ class _ConnectivityRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   color: isOn
-                      ? CarPlayTheme.neonCyan
-                      : CarPlayTheme.onSurfaceVariant,
+                      ? context.palette.accent
+                      : context.palette.textSecondary,
                 ),
               ),
             ],
@@ -2256,7 +2314,7 @@ class _SystemInfoSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2268,8 +2326,8 @@ class _SystemInfoSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 14,
                     color: isDefaultLauncher
-                        ? CarPlayTheme.neonCyan
-                        : CarPlayTheme.onSurfaceVariant,
+                        ? context.palette.accent
+                        : context.palette.textSecondary,
                   ),
                 ),
                 if (!isDefaultLauncher) ...[
@@ -2278,18 +2336,15 @@ class _SystemInfoSection extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       key: const Key('settings-set-default-launcher'),
-                      onPressed: () =>
-                          ref.read(launcherServiceProvider).requestDefaultLauncher(),
+                      onPressed: () => ref
+                          .read(launcherServiceProvider)
+                          .requestDefaultLauncher(),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withAlpha(51)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
                       ),
                       child: Text(
                         'Set as Default Launcher',
-                        style: TextStyle(color: CarPlayTheme.neonCyan),
+                        style: TextStyle(color: context.palette.accent),
                       ),
                     ),
                   ),
@@ -2307,7 +2362,7 @@ class _SystemInfoSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2315,7 +2370,7 @@ class _SystemInfoSection extends ConsumerWidget {
                   'Manage hidden applications',
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2324,15 +2379,11 @@ class _SystemInfoSection extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _showHiddenApps(context, ref),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                     child: Text(
                       'Manage Hidden Apps',
-                      style: TextStyle(color: CarPlayTheme.neonCyan),
+                      style: TextStyle(color: context.palette.accent),
                     ),
                   ),
                 ),
@@ -2349,7 +2400,7 @@ class _SystemInfoSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2357,7 +2408,7 @@ class _SystemInfoSection extends ConsumerWidget {
                   'View application logs for debugging and maintenance.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2368,12 +2419,8 @@ class _SystemInfoSection extends ConsumerWidget {
                     icon: const Icon(Icons.article_outlined, size: 18),
                     label: const Text('View Logs'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: CarPlayTheme.neonCyan,
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
+                      foregroundColor: context.palette.accent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                   ),
                 ),
@@ -2390,16 +2437,19 @@ class _SystemInfoSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: CarPlayTheme.surfaceContainer,
-        title: const Text('Hidden Apps', style: TextStyle(color: Colors.white)),
+        backgroundColor: context.palette.surface,
+        title: Text(
+          'Hidden Apps',
+          style: TextStyle(color: context.palette.textPrimary),
+        ),
         content: SizedBox(
           width: 300,
           height: 400,
           child: hiddenApps.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No hidden apps',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(color: context.palette.textTertiary),
                   ),
                 )
               : ListView.builder(
@@ -2408,12 +2458,12 @@ class _SystemInfoSection extends ConsumerWidget {
                     return ListTile(
                       title: Text(
                         hiddenApps[index],
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: context.palette.textPrimary),
                       ),
                       trailing: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.visibility,
-                          color: Colors.white54,
+                          color: context.palette.textSecondary,
                         ),
                         onPressed: () {
                           ref
@@ -2428,7 +2478,10 @@ class _SystemInfoSection extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => GoRouter.of(context).pop(),
-            child: const Text('Done', style: TextStyle(color: Colors.white54)),
+            child: Text(
+              'Done',
+              style: TextStyle(color: context.palette.textSecondary),
+            ),
           ),
         ],
       ),
@@ -2449,14 +2502,14 @@ class _InfoRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 15, color: CarPlayTheme.onSurfaceVariant),
+          style: TextStyle(fontSize: 15, color: context.palette.textSecondary),
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -2517,7 +2570,7 @@ class _AccountSection extends ConsumerWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: CarPlayTheme.neonCyan.withAlpha(30),
+                  color: context.palette.accent.withAlpha(30),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -2526,7 +2579,7 @@ class _AccountSection extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: CarPlayTheme.neonCyan,
+                      color: context.palette.accent,
                     ),
                   ),
                 ),
@@ -2541,7 +2594,7 @@ class _AccountSection extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: CarPlayTheme.onSurface,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -2549,23 +2602,23 @@ class _AccountSection extends ConsumerWidget {
                       user.email,
                       style: TextStyle(
                         fontSize: 13,
-                        color: CarPlayTheme.onSurfaceVariant,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.mail_outline,
                           size: 14,
-                          color: CarPlayTheme.onSurfaceVariant,
+                          color: context.palette.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Signed in with ${user.authProvider.label}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: CarPlayTheme.onSurfaceVariant,
+                            color: context.palette.textSecondary,
                           ),
                         ),
                       ],
@@ -2586,7 +2639,7 @@ class _AccountSection extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -2594,7 +2647,7 @@ class _AccountSection extends ConsumerWidget {
                 'You are signed in to Keycloak.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -2615,12 +2668,11 @@ class _AccountSection extends ConsumerWidget {
                   icon: const Icon(Icons.logout, size: 18),
                   label: const Text('Sign Out'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: BorderSide(color: Colors.redAccent.withAlpha(80)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    foregroundColor: context.palette.danger,
+                    side: BorderSide(
+                      color: context.palette.danger.withAlpha(80),
                     ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -2648,13 +2700,13 @@ class _AccountSection extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: CarPlayTheme.neonCyan.withAlpha(26),
+                      color: context.palette.accent.withAlpha(26),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.person_outline,
                       size: 22,
-                      color: CarPlayTheme.neonCyan,
+                      color: context.palette.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2667,7 +2719,7 @@ class _AccountSection extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: CarPlayTheme.onSurface,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                         Text(
@@ -2677,8 +2729,8 @@ class _AccountSection extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 13,
                             color: error
-                                ? Colors.amber.withAlpha(180)
-                                : CarPlayTheme.onSurfaceVariant,
+                                ? context.palette.warning
+                                : context.palette.textSecondary,
                           ),
                         ),
                       ],
@@ -2689,18 +2741,11 @@ class _AccountSection extends ConsumerWidget {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/login'),
                   icon: const Icon(Icons.login_rounded, size: 20),
                   label: const Text('Sign In'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -2720,8 +2765,9 @@ class _VehicleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoggedIn =
-        ref.watch(accountSessionProvider.select((s) => s.valueOrNull != null));
+    final isLoggedIn = ref.watch(
+      accountSessionProvider.select((s) => s.valueOrNull != null),
+    );
 
     if (!isLoggedIn) {
       return SingleChildScrollView(
@@ -2749,7 +2795,7 @@ class _VehicleSection extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2757,7 +2803,7 @@ class _VehicleSection extends ConsumerWidget {
                   'View, add, and edit vehicle profiles',
                   style: TextStyle(
                     fontSize: 14,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2768,12 +2814,8 @@ class _VehicleSection extends ConsumerWidget {
                     icon: const Icon(Icons.directions_car_outlined, size: 18),
                     label: const Text('Manage Vehicles'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: CarPlayTheme.neonCyan,
-                      side: BorderSide(color: Colors.white.withAlpha(51)),
+                      foregroundColor: context.palette.accent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                   ),
                 ),
@@ -2795,8 +2837,9 @@ class _TrackingSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoggedIn =
-        ref.watch(accountSessionProvider.select((s) => s.valueOrNull != null));
+    final isLoggedIn = ref.watch(
+      accountSessionProvider.select((s) => s.valueOrNull != null),
+    );
 
     if (!isLoggedIn) {
       return SingleChildScrollView(

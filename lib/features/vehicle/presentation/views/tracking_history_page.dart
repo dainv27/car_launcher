@@ -1,4 +1,3 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
@@ -9,6 +8,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_ui.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Page at `/history/:vehicleId` — a vehicle's tracking history, shown either
 /// as a simplified route on a map or as a list of raw points, filtered by an
@@ -45,13 +45,13 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: CarPlayTheme.deepObsidian,
-        title: const Text(
+        backgroundColor: context.palette.background,
+        title: Text(
           'Tracking History',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
@@ -134,7 +134,7 @@ class _ControlBar extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: CarPlayTheme.onSurfaceVariant,
+                color: context.palette.textSecondary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -211,7 +211,7 @@ class _MapBody extends ConsumerWidget {
                 '${route.distanceKm.toStringAsFixed(1)} km',
                 style: TextStyle(
                   fontSize: 12.5,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
           ],
@@ -270,9 +270,9 @@ class _TrackingPointTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: CarPlayTheme.surfaceVariant,
+        color: context.palette.surfaceRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(26)),
+        border: Border.all(color: context.palette.border),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -283,10 +283,10 @@ class _TrackingPointTile extends StatelessWidget {
               children: [
                 Text(
                   formatVehicleTimestamp(point.eventTime),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -295,7 +295,7 @@ class _TrackingPointTile extends StatelessWidget {
                   '${point.longitude.toStringAsFixed(6)}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
               ],
@@ -306,10 +306,10 @@ class _TrackingPointTile extends StatelessWidget {
             children: [
               Text(
                 speedLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -317,7 +317,7 @@ class _TrackingPointTile extends StatelessWidget {
                 headingLabel,
                 style: TextStyle(
                   fontSize: 13,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
             ],

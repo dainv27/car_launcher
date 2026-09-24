@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/app_drawer/presentation/widgets/app_icon_tile.dart';
 import 'package:car_launcher/features/app_drawer/presentation/widgets/apps_grid_layout.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Horizontal pager of app grids — swipe left/right between pages.
 class AppsHorizontalPager extends StatefulWidget {
@@ -182,8 +182,8 @@ class _PageDots extends StatelessWidget {
           height: active ? 8 : 6,
           decoration: BoxDecoration(
             color: active
-                ? Colors.white
-                : CarPlayTheme.tertiaryText.withValues(alpha: 0.6),
+                ? context.palette.textPrimary
+                : context.palette.textTertiary.withValues(alpha: 0.6),
             shape: BoxShape.circle,
           ),
         );

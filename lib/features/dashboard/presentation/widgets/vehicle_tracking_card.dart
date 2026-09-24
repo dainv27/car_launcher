@@ -1,9 +1,9 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 class VehicleTrackingBadge extends ConsumerWidget {
   const VehicleTrackingBadge({super.key});
@@ -17,20 +17,14 @@ class VehicleTrackingBadge extends ConsumerWidget {
     return DecoratedBox(
       key: const Key('vehicle-tracking-badge'),
       decoration: BoxDecoration(
-        color: CarPlayTheme.deepObsidian.withValues(alpha: 0.82),
+        color: context.palette.glass,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: tracking.enabled
-              ? CarPlayTheme.neonCyan.withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.14),
+              ? context.palette.accent.withValues(alpha: 0.45)
+              : context.palette.foreground.withValues(alpha: 0.14),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.36),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: context.palette.cardShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -40,8 +34,8 @@ class VehicleTrackingBadge extends ConsumerWidget {
             Icon(
               tracking.enabled ? Icons.gps_fixed : Icons.gps_off_outlined,
               color: tracking.enabled
-                  ? CarPlayTheme.neonCyan
-                  : CarPlayTheme.onSurfaceVariant,
+                  ? context.palette.accent
+                  : context.palette.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -51,8 +45,8 @@ class VehicleTrackingBadge extends ConsumerWidget {
               children: [
                 Text(
                   tracking.enabled ? 'Tracking vehicle' : 'Tracking paused',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -60,8 +54,8 @@ class VehicleTrackingBadge extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${tracking.formattedDistance} | ${tracking.pendingSyncCount} pending',
-                  style: const TextStyle(
-                    color: CarPlayTheme.onSurfaceVariant,
+                  style: TextStyle(
+                    color: context.palette.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -73,8 +67,8 @@ class VehicleTrackingBadge extends ConsumerWidget {
                       lastPoint!.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: CarPlayTheme.onSurfaceVariant,
+                      style: TextStyle(
+                        color: context.palette.textSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -119,8 +113,8 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
             Icon(
               Icons.route_outlined,
               color: tracking.enabled
-                  ? CarPlayTheme.neonCyan
-                  : CarPlayTheme.onSurfaceVariant,
+                  ? context.palette.accent
+                  : context.palette.textSecondary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -130,7 +124,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
                   Text(
                     'Vehicle Tracking',
                     style: TextStyle(
-                      color: CarPlayTheme.onSurface,
+                      color: context.palette.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -141,7 +135,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
                         ? 'Background service records GPS points offline and syncs when internet is validated.'
                         : 'Tracking is paused. Start it to record vehicle movement.',
                     style: TextStyle(
-                      color: CarPlayTheme.onSurfaceVariant,
+                      color: context.palette.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -186,7 +180,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
                 : lastPoint.displayName,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: CarPlayTheme.onSurfaceVariant),
+            style: TextStyle(color: context.palette.textSecondary),
           ),
         ],
         const SizedBox(height: 14),
@@ -197,7 +191,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
             tracking.lastVehicleError!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12),
+            style: TextStyle(color: context.palette.danger, fontSize: 12),
           ),
         ],
         if (tracking.lastSyncError != null) ...[
@@ -206,7 +200,7 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
             tracking.lastSyncError!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFFFC857), fontSize: 12),
+            style: TextStyle(color: context.palette.warning, fontSize: 12),
           ),
         ],
         if (tracking.vehicles.isNotEmpty) ...[
@@ -310,10 +304,10 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        backgroundColor: CarPlayTheme.surfaceContainer,
-        title: const Text(
+        backgroundColor: context.palette.surface,
+        title: Text(
           'Register vehicle',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.palette.textPrimary),
         ),
         content: SizedBox(
           width: 420,
@@ -395,21 +389,21 @@ class _VehicleSummary extends StatelessWidget {
         Text(
           'Registered vehicle',
           style: TextStyle(
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           vehicle.displayName,
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 15),
         ),
         const SizedBox(height: 2),
         Text(
           subtitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: CarPlayTheme.onSurfaceVariant),
+          style: TextStyle(color: context.palette.textSecondary),
         ),
       ],
     );
@@ -435,12 +429,14 @@ class _VehicleTextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: context.palette.textPrimary),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white70),
-          enabledBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.white24),
+          labelStyle: TextStyle(color: context.palette.textSecondary),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: context.palette.foreground.withValues(alpha: 0.24),
+            ),
           ),
         ),
       ),
@@ -460,17 +456,17 @@ class _TrackingMetric extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 112),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: context.palette.foreground.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: CarPlayTheme.onSurfaceVariant,
+            style: TextStyle(
+              color: context.palette.textSecondary,
               fontSize: 11,
               letterSpacing: 0.8,
             ),
@@ -478,8 +474,8 @@ class _TrackingMetric extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.palette.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),

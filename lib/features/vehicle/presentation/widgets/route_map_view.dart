@@ -1,6 +1,6 @@
 import 'package:car_launcher/core/api/geo_utils.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Lightweight, tile-free route preview: fits an ordered list of
 /// `(lat, lon)` points to the canvas and draws them as a polyline with
@@ -32,7 +32,7 @@ class RouteMapView extends StatelessWidget {
       child: Container(
         height: height,
         width: double.infinity,
-        color: CarPlayTheme.surfaceContainerLowest,
+        color: context.palette.surfaceSunken,
         child: points.length < 2
             ? Center(
                 child: Text(
@@ -41,7 +41,7 @@ class RouteMapView extends StatelessWidget {
                       : 'Not enough points to draw a route',
                   style: TextStyle(
                     fontSize: 13,
-                    color: CarPlayTheme.onSurfaceVariant,
+                    color: context.palette.textSecondary,
                   ),
                 ),
               )
@@ -49,7 +49,7 @@ class RouteMapView extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: CustomPaint(
-                      painter: _RoutePainter(points),
+                      painter: _RoutePainter(points, context.palette),
                     ),
                   ),
                   if (distanceKm != null)
@@ -62,15 +62,15 @@ class RouteMapView extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: CarPlayTheme.deepObsidian.withValues(alpha: 0.7),
+                          color: context.palette.glass,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           '${distanceKm!.toStringAsFixed(1)} km',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: CarPlayTheme.onSurface,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
@@ -83,9 +83,10 @@ class RouteMapView extends StatelessWidget {
 }
 
 class _RoutePainter extends CustomPainter {
-  _RoutePainter(this.points);
+  _RoutePainter(this.points, this.palette);
 
   final List<({double lat, double lon})> points;
+  final LauncherPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -104,19 +105,19 @@ class _RoutePainter extends CustomPainter {
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = CarPlayTheme.neonCyan,
+        ..color = palette.accent,
     );
 
-    // Start (green) and end (magenta) markers.
+    // Start (green) and end (outlined accent) markers.
     canvas.drawCircle(
       projected.first,
       6,
-      Paint()..color = CarPlayTheme.toggleOn,
+      Paint()..color = palette.success,
     );
     canvas.drawCircle(
       projected.last,
       6,
-      Paint()..color = CarPlayTheme.neonMagenta,
+      Paint()..color = palette.accent,
     );
     canvas.drawCircle(
       projected.last,
@@ -124,11 +125,12 @@ class _RoutePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..color = CarPlayTheme.safetyWhite,
+        ..color = palette.surface,
     );
   }
 
   @override
   bool shouldRepaint(_RoutePainter oldDelegate) =>
-      !identical(oldDelegate.points, points);
+      !identical(oldDelegate.points, points) ||
+      oldDelegate.palette != palette;
 }

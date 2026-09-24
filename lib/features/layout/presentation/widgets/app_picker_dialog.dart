@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/app_drawer/presentation/providers/app_drawer_providers.dart';
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Callback for when an app is selected from the picker
 typedef AppSelectedCallback = Future<void> Function(PaneApp app);
@@ -44,7 +45,7 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
           }).toList();
 
     return Dialog(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: context.palette.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 480,
@@ -62,8 +63,8 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
                           widget.currentApp!.packageName.isNotEmpty
                       ? 'Change Pane ${widget.paneIndex + 1} App'
                       : 'Assign App to Pane ${widget.paneIndex + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -71,23 +72,23 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
                 if (widget.onRemove != null)
                   TextButton.icon(
                     onPressed: widget.onRemove,
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: Colors.redAccent, size: 18),
-                    label: const Text('Remove',
-                        style: TextStyle(color: Colors.redAccent)),
+                    icon: Icon(Icons.remove_circle_outline,
+                        color: context.palette.danger, size: 18),
+                    label: Text('Remove',
+                        style: TextStyle(color: context.palette.danger)),
                   ),
               ],
             ),
             const SizedBox(height: 12),
             // Search bar
             TextField(
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: context.palette.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search apps...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                hintStyle: TextStyle(color: context.palette.textTertiary),
+                prefixIcon: Icon(Icons.search, color: context.palette.textSecondary),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.08),
+                fillColor: context.palette.foreground.withValues(alpha: 0.08),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
@@ -100,16 +101,16 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
             // App list
             Expanded(
               child: appsLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Colors.white54))
+                  ? Center(
+                      child: CircularProgressIndicator(color: context.palette.textSecondary))
                   : filtered.isEmpty
                       ? Center(
                           child: Text(
                             apps.isEmpty
                                 ? 'No apps found'
                                 : 'No matching apps',
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 14),
+                            style: TextStyle(
+                                color: context.palette.textTertiary, fontSize: 14),
                           ),
                         )
                       : ListView.builder(
@@ -126,18 +127,18 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: context.palette.foreground.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.android,
-                                    color: Colors.greenAccent, size: 24),
+                                child: Icon(Icons.android,
+                                    color: context.palette.success, size: 24),
                               ),
                               title: Text(
                                 appName,
                                 style: TextStyle(
                                   color: isSelected
-                                      ? Colors.greenAccent
-                                      : Colors.white,
+                                      ? context.palette.success
+                                      : context.palette.textPrimary,
                                   fontSize: 14,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
@@ -147,13 +148,13 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
                               ),
                               subtitle: Text(
                                 pkgName,
-                                style: const TextStyle(
-                                    color: Colors.white38, fontSize: 11),
+                                style: TextStyle(
+                                    color: context.palette.textTertiary, fontSize: 11),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               trailing: isSelected
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.greenAccent, size: 20)
+                                  ? Icon(Icons.check_circle,
+                                      color: context.palette.success, size: 20)
                                   : null,
                               onTap: () async {
                                 await widget.onAppSelected(PaneApp(
@@ -174,8 +175,8 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel',
-                    style: TextStyle(color: Colors.white54)),
+                child: Text('Cancel',
+                    style: TextStyle(color: context.palette.textSecondary)),
               ),
             ),
           ],

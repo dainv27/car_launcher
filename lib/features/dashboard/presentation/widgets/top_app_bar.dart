@@ -6,6 +6,7 @@ import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Responsive top bar containing all primary in-app destinations.
 class TopAppBar extends ConsumerWidget {
@@ -37,7 +38,7 @@ class TopAppBar extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Expanded(child: _buildLeftSection(location)),
+                Expanded(child: _buildLeftSection(context, location)),
                 const SizedBox(width: CarPlayTheme.widgetGap),
                 _buildRightSection(
                   context,
@@ -56,7 +57,10 @@ class TopAppBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildLeftSection(AsyncValue<LocationInfo?> location) {
+  Widget _buildLeftSection(
+    BuildContext context,
+    AsyncValue<LocationInfo?> location,
+  ) {
     final placeName = location.valueOrNull?.displayName;
     return Row(
       children: [
@@ -73,13 +77,13 @@ class TopAppBar extends ConsumerWidget {
         Container(
           width: 1,
           height: 24,
-          color: CarPlayTheme.neonCyan.withValues(alpha: 0.32),
+          color: context.palette.border,
         ),
         const SizedBox(width: 16),
         if (title.isEmpty) ...[
-          const Icon(
+          Icon(
             Icons.navigation,
-            color: CarPlayTheme.neonMagenta,
+            color: context.palette.accent,
             size: 14,
           ),
           const SizedBox(width: 8),
@@ -96,11 +100,11 @@ class TopAppBar extends ConsumerWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: CarPlayTheme.neonCyan,
-              fontSize: 14,
+            style: TextStyle(
+              color: context.palette.textPrimary,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
-              letterSpacing: 1.0,
+              letterSpacing: 0.2,
             ),
           ),
         ),
@@ -143,7 +147,7 @@ class TopAppBar extends ConsumerWidget {
               NativeBridge.call<bool>('openNotificationAccessSettings'),
           icon: Icon(
             hasMediaAccess ? Icons.library_music : Icons.music_off_outlined,
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             size: 20,
           ),
           padding: EdgeInsets.zero,
@@ -153,9 +157,9 @@ class TopAppBar extends ConsumerWidget {
         IconButton(
           tooltip: 'Voice assistant',
           onPressed: () => NativeBridge.call<bool>('launchVoiceAssistant'),
-          icon: const Icon(
+          icon: Icon(
             Icons.mic_outlined,
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             size: 20,
           ),
           padding: EdgeInsets.zero,
@@ -182,13 +186,17 @@ class _TrackingStatusDot extends StatefulWidget {
 
 class _TrackingStatusDotState extends State<_TrackingStatusDot>
     with SingleTickerProviderStateMixin {
+  /// Only durations are read in [initState], before inherited widgets are
+  /// available, so any palette works there.
+  static final _fallbackPalette = LauncherPalette.dark(const Color(0x00000000));
+
   late final AnimationController _controller;
   late final Animation<double> _pulse;
 
   @override
   void initState() {
     super.initState();
-    final style = _TrackingDotStyle.from(widget.tracking);
+    final style = _TrackingDotStyle.from(widget.tracking, _fallbackPalette);
     _controller = AnimationController(vsync: this, duration: style.duration);
     _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _syncAnimation(style);
@@ -197,7 +205,7 @@ class _TrackingStatusDotState extends State<_TrackingStatusDot>
   @override
   void didUpdateWidget(covariant _TrackingStatusDot oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncAnimation(_TrackingDotStyle.from(widget.tracking));
+    _syncAnimation(_TrackingDotStyle.from(widget.tracking, context.palette));
   }
 
   void _syncAnimation(_TrackingDotStyle style) {
@@ -223,7 +231,7 @@ class _TrackingStatusDotState extends State<_TrackingStatusDot>
 
   @override
   Widget build(BuildContext context) {
-    final style = _TrackingDotStyle.from(widget.tracking);
+    final style = _TrackingDotStyle.from(widget.tracking, context.palette);
 
     return Tooltip(
       message: style.label,
@@ -245,7 +253,7 @@ class _TrackingStatusDotState extends State<_TrackingStatusDot>
                 color: style.color.withValues(alpha: opacity),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: context.palette.foreground.withValues(alpha: 0.12),
                   width: 0.6,
                 ),
                 boxShadow: style.glow
@@ -289,10 +297,13 @@ class _TrackingDotStyle {
   final double glowRadius;
   final double glowRange;
 
-  factory _TrackingDotStyle.from(VehicleTrackingState tracking) {
+  factory _TrackingDotStyle.from(
+    VehicleTrackingState tracking,
+    LauncherPalette palette,
+  ) {
     if (!tracking.enabled) {
       return _TrackingDotStyle(
-        color: CarPlayTheme.onSurfaceVariant,
+        color: palette.textSecondary,
         label: 'Vehicle tracking paused',
         duration: const Duration(milliseconds: 1800),
         animated: false,
@@ -303,8 +314,8 @@ class _TrackingDotStyle {
     }
 
     if (tracking.lastSyncError != null) {
-      return const _TrackingDotStyle(
-        color: Color(0xFFFF5C7A),
+      return _TrackingDotStyle(
+        color: palette.danger,
         label: 'Vehicle tracking active, sync needs attention',
         duration: Duration(milliseconds: 1200),
         animated: true,
@@ -316,10 +327,10 @@ class _TrackingDotStyle {
     }
 
     if (tracking.isSyncing) {
-      return const _TrackingDotStyle(
-        color: CarPlayTheme.neonCyan,
+      return _TrackingDotStyle(
+        color: palette.accent,
         label: 'Vehicle tracking syncing',
-        duration: Duration(milliseconds: 900),
+        duration: const Duration(milliseconds: 900),
         animated: true,
         baseOpacity: 0.54,
         opacityRange: 0.42,
@@ -330,7 +341,7 @@ class _TrackingDotStyle {
 
     if (tracking.pendingSyncCount > 0) {
       return _TrackingDotStyle(
-        color: const Color(0xFFFFC857),
+        color: palette.warning,
         label:
             'Vehicle tracking active, ${tracking.pendingSyncCount} pending sync',
         duration: const Duration(milliseconds: 1500),
@@ -342,8 +353,8 @@ class _TrackingDotStyle {
       );
     }
 
-    return const _TrackingDotStyle(
-      color: Color(0xFF35E89B),
+    return _TrackingDotStyle(
+      color: palette.success,
       label: 'Vehicle tracking active',
       duration: Duration(milliseconds: 2300),
       animated: true,
@@ -374,7 +385,7 @@ class _ClockDisplay extends StatelessWidget {
             width: 2,
             height: 32,
             decoration: BoxDecoration(
-              color: CarPlayTheme.neonMagenta.withValues(alpha: 0.56),
+              color: context.palette.accent,
               borderRadius: BorderRadius.circular(1),
             ),
           ),
@@ -384,13 +395,13 @@ class _ClockDisplay extends StatelessWidget {
               clock,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.palette.textPrimary,
                 fontSize: 25,
                 height: 1,
                 fontWeight: FontWeight.w500,
                 letterSpacing: -0.6,
-                fontFeatures: [FontFeature.tabularFigures()],
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -423,11 +434,9 @@ class _NavigationMenu extends StatelessWidget {
     return DecoratedBox(
       key: const Key('top-bar-navigation-menu'),
       decoration: BoxDecoration(
-        color: CarPlayTheme.surfaceContainer.withValues(alpha: 0.85),
+        color: context.palette.glass,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: CarPlayTheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -483,7 +492,7 @@ class _NavButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: selected
-                ? CarPlayTheme.neonCyan.withValues(alpha: 0.16)
+                ? context.palette.accentSoft
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -494,8 +503,8 @@ class _NavButton extends StatelessWidget {
                 destination.icon,
                 size: 16,
                 color: selected
-                    ? CarPlayTheme.neonCyan
-                    : CarPlayTheme.onSurfaceVariant,
+                    ? context.palette.accent
+                    : context.palette.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -504,8 +513,8 @@ class _NavButton extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                   color: selected
-                      ? CarPlayTheme.neonCyan
-                      : CarPlayTheme.onSurfaceVariant,
+                      ? context.palette.accent
+                      : context.palette.textSecondary,
                   letterSpacing: 0.4,
                 ),
               ),

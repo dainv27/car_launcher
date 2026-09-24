@@ -4,6 +4,7 @@ import 'package:car_launcher/features/dashboard/presentation/providers/dashboard
 import 'package:car_launcher/features/dashboard/presentation/widgets/connectivity_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Fixed footer showing live Android system state.
 ///
@@ -17,7 +18,8 @@ class BottomStatusBar extends ConsumerWidget {
   static const _gap = SizedBox(width: CarPlayTheme.widgetGap);
   static const _buttonConstraints = BoxConstraints(minWidth: 30);
 
-  Widget _destinationButton({
+  Widget _destinationButton(
+    BuildContext context, {
     required Key key,
     required String tooltip,
     required IconData icon,
@@ -27,7 +29,7 @@ class BottomStatusBar extends ConsumerWidget {
       key: key,
       tooltip: tooltip,
       onPressed: onPressed,
-      icon: Icon(icon, color: CarPlayTheme.onSurfaceVariant),
+      icon: Icon(icon, color: context.palette.textSecondary),
       padding: EdgeInsets.zero,
       constraints: _buttonConstraints,
     );
@@ -42,9 +44,7 @@ class BottomStatusBar extends ConsumerWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: CarPlayTheme.neonCyan.withValues(alpha: 0.14)),
-        ),
+        border: Border(top: BorderSide(color: context.palette.border)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: CarPlayTheme.gutter),
@@ -57,6 +57,7 @@ class BottomStatusBar extends ConsumerWidget {
                 child: Row(
                   children: [
                     _destinationButton(
+                      context,
                       key: const Key('top-bar-home'),
                       tooltip: 'Home',
                       icon: Icons.home_outlined,
@@ -120,8 +121,8 @@ class BottomStatusBar extends ConsumerWidget {
                               : Icons.cloud_off_outlined,
                           key: const Key('bottom-bar-internet-status'),
                           color: online
-                              ? CarPlayTheme.neonCyan
-                              : CarPlayTheme.onSurfaceVariant,
+                              ? context.palette.accent
+                              : context.palette.textSecondary,
                           size: 16,
                         ),
                       ),
@@ -194,12 +195,11 @@ class _PageIndicator extends StatelessWidget {
   static const double _dotSize = 8;
   static const double _activeDotWidth = 24;
   static const double _spacing = 8;
-  static const Color _activeColor = Colors.white;
-  static const Color _inactiveColor = Colors.white38;
 
   @override
   Widget build(BuildContext context) {
     if (count <= 1) return const SizedBox.shrink();
+    final palette = context.palette;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -212,7 +212,9 @@ class _PageIndicator extends StatelessWidget {
           width: index == selectedIndex ? _activeDotWidth : _dotSize,
           height: _dotSize,
           decoration: BoxDecoration(
-            color: index == selectedIndex ? _activeColor : _inactiveColor,
+            color: index == selectedIndex
+                ? palette.accent
+                : palette.foreground.withValues(alpha: 0.24),
             borderRadius: BorderRadius.circular(_dotSize),
           ),
         ),

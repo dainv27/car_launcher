@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/launcher/data/launcher_service.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/widget_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// App shortcut widget — quick launch for a single configured app
 class AppShortcutWidget extends ConsumerWidget {
@@ -30,9 +31,9 @@ class AppShortcutWidget extends ConsumerWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.4),
+          color: context.palette.glass,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: context.palette.border),
         ),
         padding: const EdgeInsets.all(8),
         child: Column(
@@ -43,20 +44,20 @@ class AppShortcutWidget extends ConsumerWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.palette.foreground.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 _getIconForApp(packageName),
-                color: Colors.white70,
+                color: context.palette.textSecondary,
                 size: 22,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               appName,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: context.palette.textSecondary,
                 fontSize: 10,
               ),
               maxLines: 1,

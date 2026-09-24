@@ -3,10 +3,10 @@ import 'dart:typed_data';
 
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/logging/logging.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/app_drawer/presentation/providers/app_drawer_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Nova Drive glass-card app icon tile.
 class AppIconTile extends ConsumerStatefulWidget {
@@ -90,11 +90,11 @@ class _AppIconTileState extends ConsumerState<AppIconTile> {
                       child: Container(
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.85),
+                          color: context.palette.surface,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 1.5),
+                          border: Border.all(color: context.palette.border, width: 1.5),
                         ),
-                        child: const Icon(Icons.star_rounded, color: CarPlayTheme.favoriteAccent, size: 14),
+                        child: Icon(Icons.star_rounded, color: context.palette.favorite, size: 14),
                       ),
                     ),
                 ],
@@ -107,7 +107,7 @@ class _AppIconTileState extends ConsumerState<AppIconTile> {
                 widget.appName,
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                   fontSize: resolvedLabelSize,
                   fontWeight: FontWeight.w600,
                   height: 20 / 16,
@@ -224,8 +224,8 @@ class _AppIconPlaceholder extends StatelessWidget {
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Center(
-        child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54)),
+      child: Center(
+        child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: context.palette.textSecondary)),
       ),
     );
   }
@@ -253,7 +253,7 @@ class _AppIconFallback extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         letter,
-        style: TextStyle(color: Colors.white, fontSize: size * 0.42, fontWeight: FontWeight.w600),
+        style: TextStyle(color: context.palette.textPrimary, fontSize: size * 0.42, fontWeight: FontWeight.w600),
       ),
     );
   }

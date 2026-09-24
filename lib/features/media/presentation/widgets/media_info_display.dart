@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/media/domain/media_session_model.dart';
 import 'package:car_launcher/features/media/presentation/providers/media_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Displays media info: album art, title, artist, and progress
 class MediaInfoDisplay extends ConsumerWidget {
@@ -38,12 +39,12 @@ class MediaInfoDisplay extends ConsumerWidget {
             width: compact ? 40 : 64,
             height: compact ? 40 : 64,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: context.palette.foreground.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.music_note,
-              color: Colors.white38,
+              color: context.palette.textTertiary,
               size: 24,
             ),
           ),
@@ -52,7 +53,7 @@ class MediaInfoDisplay extends ConsumerWidget {
             child: Text(
               'No media playing',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.palette.textTertiary,
                 fontSize: compact ? 13 : 15,
               ),
             ),
@@ -77,8 +78,8 @@ class MediaInfoDisplay extends ConsumerWidget {
             children: [
               Text(
                 session.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.palette.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -89,7 +90,7 @@ class MediaInfoDisplay extends ConsumerWidget {
                 Text(
                   session.artist,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: context.palette.textSecondary,
                     fontSize: 11,
                   ),
                   maxLines: 1,
@@ -114,8 +115,8 @@ class MediaInfoDisplay extends ConsumerWidget {
         // Title
         Text(
           session.title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.palette.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -130,7 +131,7 @@ class MediaInfoDisplay extends ConsumerWidget {
           Text(
             session.artist,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: context.palette.textSecondary,
               fontSize: 14,
             ),
             maxLines: 1,
@@ -144,7 +145,7 @@ class MediaInfoDisplay extends ConsumerWidget {
           Text(
             session.album,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: context.palette.textSecondary,
               fontSize: 12,
             ),
             maxLines: 1,
@@ -174,7 +175,7 @@ class _AlbumArt extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: context.palette.foreground.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         image: url.isNotEmpty
             ? DecorationImage(
@@ -185,7 +186,11 @@ class _AlbumArt extends StatelessWidget {
             : null,
       ),
       child: url.isEmpty
-          ? Icon(Icons.music_note, color: Colors.white38, size: size * 0.5)
+          ? Icon(
+              Icons.music_note,
+              color: context.palette.textTertiary,
+              size: size * 0.5,
+            )
           : null,
     );
   }
@@ -204,8 +209,8 @@ class _ProgressBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(2),
           child: LinearProgressIndicator(
             value: session.progress,
-            backgroundColor: Colors.white.withValues(alpha: 0.1),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1DB954)),
+            backgroundColor: context.palette.foreground.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(context.palette.accent),
             minHeight: 3,
           ),
         ),
@@ -216,14 +221,14 @@ class _ProgressBar extends StatelessWidget {
             Text(
               session.positionFormatted,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: context.palette.textSecondary,
                 fontSize: 10,
               ),
             ),
             Text(
               session.durationFormatted,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: context.palette.textSecondary,
                 fontSize: 10,
               ),
             ),

@@ -1,6 +1,6 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 class ConnectionIcon {
   static IconData bluetoothIcon(Map<String, dynamic> status) {
@@ -68,14 +68,14 @@ class ConnectivityIndicator extends StatelessWidget {
         Icon(
           ConnectionIcon.networkIcon(status.toMap(), level: networkLevel),
           size: size,
-          color: online ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
+          color: online ? context.palette.accent : context.palette.textSecondary,
         ),
         if (showLabels) ...[
           const SizedBox(width: 5),
           Text(
             ConnectionIcon.networkLabel(status.toMap(), networkLevel),
             style: TextStyle(
-              color: online ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
+              color: online ? context.palette.accent : context.palette.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -85,7 +85,7 @@ class ConnectivityIndicator extends StatelessWidget {
         Icon(
           ConnectionIcon.bluetoothIcon(status.toMap()),
           size: size,
-          color: bluetoothConnected ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant,
+          color: bluetoothConnected ? context.palette.accent : context.palette.textSecondary,
         ),
       ],
     );
@@ -104,7 +104,7 @@ class _MobileNetworkStatus extends StatelessWidget {
     final networkType = (connectivity.extra['cellularNetworkType'] as String?)?.trim() ?? '';
     final operator = (connectivity.extra['cellularOperator'] as String?)?.trim() ?? '';
     final statusText = cellular ? _activeLabel(networkType, operator, level) : 'Mobile unavailable';
-    final color = cellular ? CarPlayTheme.neonCyan : CarPlayTheme.onSurfaceVariant;
+    final color = cellular ? context.palette.accent : context.palette.textSecondary;
 
     return Tooltip(
       message: statusText,

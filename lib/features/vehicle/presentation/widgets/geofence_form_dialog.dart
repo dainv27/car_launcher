@@ -1,7 +1,7 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/vehicle/domain/geo_point.dart';
 import 'package:car_launcher/features/vehicle/domain/geofence.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Create / edit a circle or polygon geofence.
 ///
@@ -124,10 +124,10 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: true,
-      backgroundColor: CarPlayTheme.surface,
+      backgroundColor: context.palette.surface,
       title: Text(
         _isEdit ? 'Edit geofence' : 'New geofence',
-        style: const TextStyle(color: CarPlayTheme.onSurface),
+        style: TextStyle(color: context.palette.textPrimary),
       ),
       content: SizedBox(
         width: 360,
@@ -173,27 +173,36 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Notify on enter',
-                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
+                    fontSize: 14,
+                  ),
                 ),
                 value: _notifyEnter,
                 onChanged: (v) => setState(() => _notifyEnter = v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Notify on exit',
-                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
+                    fontSize: 14,
+                  ),
                 ),
                 value: _notifyExit,
                 onChanged: (v) => setState(() => _notifyExit = v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Active',
-                  style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
+                    fontSize: 14,
+                  ),
                 ),
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
@@ -241,12 +250,12 @@ class _GeofenceFormDialogState extends State<GeofenceFormDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Align(
+        Align(
           alignment: Alignment.centerLeft,
           child: Text(
             'Vertices (ordered)',
             style: TextStyle(
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
               fontSize: 12,
             ),
           ),

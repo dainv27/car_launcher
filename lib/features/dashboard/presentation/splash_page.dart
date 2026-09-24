@@ -79,19 +79,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
               colors: [context.palette.background, context.palette.surface],
             ),
           ),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedBuilder(
-                  animation: _logoController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                        scale: _logoScale.value, child: child);
-                  },
-                  child: const _LogoWidget(),
-                ),
-              ],
+          child: SizedBox.expand(
+            child: AnimatedBuilder(
+              animation: _logoController,
+              builder: (context, child) {
+                return Transform.scale(scale: _logoScale.value, child: child);
+              },
+              child: const _LogoWidget(),
             ),
           ),
         ),
@@ -105,13 +99,11 @@ class _LogoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 350,
-      child: Image.asset(
-        'assets/images/splash.png',
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-      ),
+    return Image.asset(
+      'assets/images/splash.png',
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      filterQuality: FilterQuality.high,
     );
   }
 }

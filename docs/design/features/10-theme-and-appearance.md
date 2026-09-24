@@ -74,7 +74,7 @@ rơi về cùng lịch day/night đang điều khiển màu nhấn & nền.
 `ConsumerWidget` đặt trong `builder` của `MaterialApp` (nền toàn cục, đổi route
 không nạp lại). `AnimatedContainer` nền `deepObsidian` + `_WallpaperImage`:
 `customWallpaperPath` → `Image.file` (lỗi → ảnh mặc định
-`assets/images/logo_1.png`).
+`assets/images/logo_1.webp`).
 
 ## 7. Quyết định thiết kế & đánh đổi
 

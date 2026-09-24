@@ -81,7 +81,7 @@ void main() {
       'lib/features/theme/presentation/widgets/launcher_background.dart',
     ).readAsStringSync();
 
-    expect(background, contains('assets/images/logo_1.png'));
+    expect(background, contains('assets/images/logo_1.webp'));
     expect(background, contains("Key('launcher-default-wallpaper')"));
     expect(background, contains("Key('launcher-custom-wallpaper')"));
   });

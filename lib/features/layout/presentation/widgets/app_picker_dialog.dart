@@ -95,7 +95,7 @@ class _AppPickerDialogState extends ConsumerState<AppPickerDialog> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) => setState(() => _query = v.toLowerCase()),
             ),
             const SizedBox(height: 12),
             // App list

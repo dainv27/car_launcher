@@ -16,6 +16,20 @@ abstract final class ApiConfig {
         );
   }
 
+  /// Route prefix the API gateway adds in front of `vehicle-service` (the
+  /// service itself has no context path). Override with an empty value to hit a
+  /// service running without the gateway, e.g. a local instance.
+  static String get vehicleServiceBasePath {
+    const key = 'VEHICLE_SERVICE_BASE_PATH';
+    return EnvLoader.instance.getValue(key) ??
+        const String.fromEnvironment(key, defaultValue: '/vehicle-service');
+  }
+
   static String get vehicleServiceClientApiBaseUrl =>
-      '$apiGatewayUrl/vehicle-service/client-api/v1';
+      '$apiGatewayUrl$vehicleServiceBasePath/client-api/v1';
+
+  /// Device self-service API (attestation / `X-Device-Assertion` auth, no
+  /// Keycloak session). Sibling of the client API.
+  static String get vehicleServicePublicApiBaseUrl =>
+      '$apiGatewayUrl$vehicleServiceBasePath/public-api/v1';
 }

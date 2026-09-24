@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:car_launcher/core/auth/device_identity_service.dart';
+import 'package:car_launcher/features/vehicle/data/device_enrollment_client.dart';
 import 'package:car_launcher/shared/data/device_service.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:car_launcher/features/vehicle/domain/device.dart';
@@ -10,6 +12,53 @@ import 'package:http/testing.dart';
 
 const _testEndpoint =
     'https://car-apis.202corp.com/vehicle-service/client-api/v1';
+const _publicEndpoint =
+    'https://car-apis.202corp.com/vehicle-service/public-api/v1';
+
+/// Deterministic stand-in for the native Keystore-backed identity.
+class _FakeIdentity extends DeviceIdentityService {
+  static const deviceId = 'dev-abc';
+  int assertions = 0;
+
+  @override
+  Future<DeviceIdentity> getIdentity() async => const DeviceIdentity(
+        deviceId: deviceId,
+        publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMFk=\n-----END PUBLIC KEY-----\n',
+      );
+
+  @override
+  Future<String> signEnrollmentProof({
+    required String nonce,
+    required String bootstrapPrivateKeyPem,
+  }) async =>
+      'proof($nonce)';
+
+  @override
+  Future<String> assertion() async {
+    assertions++;
+    return 'header.payload.sig';
+  }
+
+  @override
+  void invalidateAssertion() {}
+}
+
+DeviceEnrollmentClient _enrollmentClient(
+  http.Client httpClient, {
+  DeviceIdentityService? identity,
+  http.Client? assertionClient,
+}) =>
+    DeviceEnrollmentClient(
+      httpClient: httpClient,
+      publicApiBaseUrl: _publicEndpoint,
+      identity: identity ?? _FakeIdentity(),
+      // Default the post-enrol self-check (`GET /devices/me`) onto the same mock
+      // so it never touches the real network.
+      assertionClient: assertionClient ?? httpClient,
+      loadAsset: (key) async => key.endsWith('.pem')
+          ? '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n'
+          : '-----BEGIN PRIVATE KEY-----\nMIGH\n-----END PRIVATE KEY-----\n',
+    );
 
 const _nativeChannel = MethodChannel('com.carlauncher/native');
 const _deviceInfoChannel =
@@ -45,7 +94,9 @@ void main() {
 
     test('sync throws on non-2xx response', () async {
       final client = VehicleTrackingSyncClient(
-        httpClient: MockClient((req) async => http.Response('error', 500)),
+        httpClient: MockClient((req) async => http.Response('', 200)),
+        pushClient: MockClient((req) async => http.Response('error', 500)),
+        publicApiBaseUrl: _publicEndpoint,
       );
       final point = VehicleTrackPoint(
         id: 'p-1',
@@ -57,28 +108,64 @@ void main() {
         client.sync(
           endpoint: _testEndpoint,
           points: [point],
-          vehicle: const VehicleProfile(vehicleId: 'car-001', deviceId: 'dev-001'),
+          vehicle: const VehicleProfile(vehicleId: 'car-001'),
         ),
         throwsStateError,
       );
     });
 
-    test('sync succeeds on 2xx response', () async {
+    test('sync throws a linkage error on 409', () async {
       final client = VehicleTrackingSyncClient(
-        httpClient: MockClient((req) async => http.Response('{}', 200)),
+        httpClient: MockClient((req) async => http.Response('', 200)),
+        pushClient: MockClient((req) async => http.Response('', 409)),
+        publicApiBaseUrl: _publicEndpoint,
       );
-      final point = VehicleTrackPoint(
-        id: 'p-1',
-        latitude: 10.0,
-        longitude: 106.0,
-        timestamp: DateTime.utc(2026),
+      expect(
+        client.sync(
+          endpoint: _testEndpoint,
+          points: [
+            VehicleTrackPoint(
+              id: 'p-1',
+              latitude: 10,
+              longitude: 106,
+              timestamp: DateTime.utc(2026),
+            ),
+          ],
+          vehicle: const VehicleProfile(vehicleId: 'car-001'),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('not linked to a vehicle'),
+          ),
+        ),
       );
-      // Should not throw
+    });
+
+    test('sync posts each point to the device public tracking endpoint', () async {
+      final urls = <String>[];
+      final client = VehicleTrackingSyncClient(
+        httpClient: MockClient((req) async => http.Response('', 200)),
+        pushClient: MockClient((req) async {
+          urls.add(req.url.toString());
+          return http.Response('{}', 201);
+        }),
+        publicApiBaseUrl: _publicEndpoint,
+      );
       await client.sync(
         endpoint: _testEndpoint,
-        points: [point],
-        vehicle: const VehicleProfile(vehicleId: 'car-001', deviceId: 'dev-001'),
+        points: [
+          VehicleTrackPoint(
+            id: 'p-1',
+            latitude: 10,
+            longitude: 106,
+            timestamp: DateTime.utc(2026),
+          ),
+        ],
+        vehicle: const VehicleProfile(vehicleId: 'car-001'),
       );
+      expect(urls, ['$_publicEndpoint/devices/me/tracking-points']);
     });
 
     test('getLatestTrackingPoint throws on non-2xx/204 response', () async {
@@ -314,108 +401,103 @@ void main() {
       expect(result[0]['id'], 'dev-001');
     });
 
-    test('ensureDeviceRegistered skips if no stable device id derivable', () async {
-      // Empty androidId + empty serial → no device id can be derived.
+    void mockDeviceInfo() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
         if (call.method == 'getDeviceInfo') {
           return <String, dynamic>{
-            'id': '',
-            'manufacturer': '',
-            'model': '',
-            'version': <String, dynamic>{'sdkInt': 0, 'release': ''},
+            'id': 'RQ3A.210805.001',
+            'fingerprint': 'R8YY91N3TAF',
+            'manufacturer': 'samsung',
+            'model': 'SM-X133',
+            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
           };
         }
         return null;
       });
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(_androidIdChannel, (call) async {
-        if (call.method == 'getId') return '';
+        if (call.method == 'getId') return 'android-abc';
         return null;
       });
+    }
 
+    test('ensureDeviceRegistered runs the challenge → enroll handshake', () async {
+      mockDeviceInfo();
+      final paths = <String>[];
       final client = DeviceService(
         httpClient: MockClient((req) async => http.Response('', 200)),
+        enrollmentClient: _enrollmentClient(
+          MockClient((req) async {
+            paths.add(req.url.path);
+            if (req.url.path.endsWith('/enroll/challenge')) {
+              return http.Response(
+                jsonEncode({'nonce': 'n-1', 'expiresAt': '2099-01-01T00:00:00Z'}),
+                201,
+              );
+            }
+            return http.Response(
+              jsonEncode({'id': 'dev-abc', 'claimed': false}),
+              201,
+            );
+          }),
+        ),
       );
-      // Should not throw — just logs a warning and returns
-      await client.ensureDeviceRegistered();
+
+      final device = await client.ensureDeviceRegistered();
+
+      expect(device?.id, 'dev-abc');
+      expect(device?.claimed, isFalse);
+      expect(paths.take(2), [
+        '/vehicle-service/public-api/v1/devices/enroll/challenge',
+        '/vehicle-service/public-api/v1/devices/enroll',
+      ]);
+      // Post-enrol self-check reads the device back under X-Device-Assertion.
+      expect(paths, contains('/vehicle-service/public-api/v1/devices/me'));
     });
 
-    test('ensureDeviceRegistered registers device when not found', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
-        if (call.method == 'getDeviceInfo') {
-          return <String, dynamic>{
-            'id': 'RQ3A.210805.001',
-            'fingerprint': 'R8YY91N3TAF',
-            'manufacturer': 'samsung',
-            'model': 'SM-X133',
-            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
-          };
-        }
-        return null;
-      });
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_androidIdChannel, (call) async {
-        if (call.method == 'getId') return 'dev-001';
-        return null;
-      });
-
-
-      var requestCount = 0;
+    test('ensureDeviceRegistered enroll body carries the proof + device key', () async {
+      mockDeviceInfo();
+      Map<String, dynamic>? enrollBody;
       final client = DeviceService(
-        httpClient: MockClient((req) async {
-          requestCount++;
-          // GET returns 404 (device not found), POST returns 201
-          if (req.method == 'GET') {
-            return http.Response('', 404);
-          }
-          return http.Response(
-            jsonEncode({'device': {'id': 'dev-001', 'name': 'samsung SM-X133'}}),
-            201,
-          );
-        }),
+        httpClient: MockClient((req) async => http.Response('', 200)),
+        enrollmentClient: _enrollmentClient(
+          MockClient((req) async {
+            if (req.url.path.endsWith('/enroll/challenge')) {
+              return http.Response(jsonEncode({'nonce': 'n-42'}), 201);
+            }
+            enrollBody = jsonDecode(req.body) as Map<String, dynamic>;
+            return http.Response(
+              jsonEncode({'id': 'dev-abc', 'claimed': false}),
+              201,
+            );
+          }),
+        ),
       );
+
       await client.ensureDeviceRegistered();
-      // Should have made a GET check and a POST create
-      expect(requestCount, 2);
+
+      expect(enrollBody!['nonce'], 'n-42');
+      expect(enrollBody!['proof'], 'proof(n-42)');
+      expect(enrollBody!['devicePublicKey'], contains('BEGIN PUBLIC KEY'));
+      expect(enrollBody!['attestationCertChain'], isA<List<dynamic>>());
+      expect(enrollBody!['model'], 'SM-X133');
+      expect(enrollBody!['name'], 'samsung SM-X133');
     });
 
-    test('ensureDeviceRegistered skips if device already exists', () async {
+    test('ensureDeviceRegistered returns null when device info is unavailable',
+        () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(_deviceInfoChannel, (call) async {
-        if (call.method == 'getDeviceInfo') {
-          return <String, dynamic>{
-            'id': 'RQ3A.210805.001',
-            'fingerprint': 'R8YY91N3TAF',
-            'manufacturer': 'samsung',
-            'model': 'SM-X133',
-            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
-          };
-        }
-        return null;
+        throw PlatformException(code: 'unavailable');
       });
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(_androidIdChannel, (call) async {
-        if (call.method == 'getId') return 'dev-001';
-        return null;
-      });
-
-
-      var requestCount = 0;
       final client = DeviceService(
-        httpClient: MockClient((req) async {
-          requestCount++;
-          // GET returns 200 (device exists)
-          return http.Response(
-            jsonEncode({'device': {'id': 'dev-001'}}),
-            200,
-          );
-        }),
+        httpClient: MockClient((req) async => http.Response('', 200)),
+        enrollmentClient: _enrollmentClient(
+          MockClient((req) async => http.Response('should not be called', 500)),
+        ),
       );
-      await client.ensureDeviceRegistered();
-      // Only the GET check, no POST
-      expect(requestCount, 1);
+      expect(await client.ensureDeviceRegistered(), isNull);
     });
 
     test('createDevice returns existing device on 409', () async {

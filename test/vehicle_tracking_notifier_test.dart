@@ -475,9 +475,6 @@ class _NoOpSyncClient extends VehicleTrackingSyncClient {
   }) async {
     return vehicle;
   }
-
-  @override
-  Future<void> ensureDeviceRegistered() async {}
 }
 
 /// Failing sync client that always throws.

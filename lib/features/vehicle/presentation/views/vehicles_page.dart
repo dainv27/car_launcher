@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:car_launcher/core/theme/launcher_palette.dart';
+import 'package:car_launcher/shared/data/location_service.dart';
 
 /// Standalone page listing all vehicles at /vehicles.
 class VehiclesPage extends ConsumerWidget {
@@ -63,20 +64,30 @@ class VehiclesPage extends ConsumerWidget {
   }
 
   static Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<Vehicle?>(
+    // The page's `ref` can be invalidated while the dialog is open (the
+    // keyboard resizes the page); the container outlives it.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final created = await showDialog<Vehicle?>(
       context: context,
-      builder: (_) => const VehicleFormDialog(),
+      builder: (_) => VehicleFormDialog(
+        onSubmit: (vehicle) async {
+          final created = await container
+              .read(vehicleListProvider.notifier)
+              .createVehicle(vehicle);
+          // The server links the new vehicle to this head unit, so start
+          // tracking it right away unless another vehicle is already chosen.
+          if (container.read(vehicleTrackingProvider).vehicle.vehicleId.isEmpty) {
+            await container
+                .read(vehicleTrackingProvider.notifier)
+                .assignVehicle(created.toProfile());
+          }
+        },
+      ),
     );
-    if (result != null && context.mounted) {
-      try {
-        await ref.read(vehicleListProvider.notifier).createVehicle(result);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create vehicle: $e')),
-          );
-        }
-      }
+    if (created != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vehicle registered')),
+      );
     }
   }
 }

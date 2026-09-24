@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:car_launcher/core/api/api_config.dart';
 import 'package:car_launcher/core/api/url_utils.dart';
+import 'package:car_launcher/core/auth/device_assertion_client.dart';
+import 'package:car_launcher/core/auth/device_identity_service.dart';
 import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/native/native_bridge.dart';
@@ -273,10 +276,7 @@ class VehicleTrackingState {
 
   bool get hasRoute => points.length > 1;
 
-  bool get canSync =>
-      vehicle.vehicleId.isNotEmpty &&
-      vehicle.deviceId.isNotEmpty &&
-      pendingSyncCount > 0;
+  bool get canSync => vehicle.vehicleId.isNotEmpty && pendingSyncCount > 0;
 
   String get formattedDistance {
     if (distanceMeters >= 1000) {
@@ -320,33 +320,106 @@ class VehicleTrackingState {
   static const _unchanged = Object();
 }
 
-class VehicleTrackingSyncClient {
-  VehicleTrackingSyncClient({required http.Client httpClient})
-    : this._(httpClient);
+/// A non-2xx answer from `vehicle-service`, carrying the server's own
+/// human-readable `message` (localised by the backend) when it sent one.
+class VehicleServiceException implements Exception {
+  const VehicleServiceException(this.statusCode, this.message);
 
-  VehicleTrackingSyncClient._(this._httpClient);
+  /// Builds the exception from an error response, preferring the body's
+  /// `message` over [fallback].
+  factory VehicleServiceException.fromResponse(
+    http.Response response,
+    String fallback,
+  ) {
+    String? message;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final raw = decoded['message'];
+        if (raw is String && raw.trim().isNotEmpty) message = raw.trim();
+      }
+    } catch (_) {
+      // Not JSON (gateway error page, empty body) — use the fallback.
+    }
+    return VehicleServiceException(
+      response.statusCode,
+      message ?? '$fallback (HTTP ${response.statusCode})',
+    );
+  }
+
+  final int statusCode;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class VehicleTrackingSyncClient {
+  VehicleTrackingSyncClient({
+    required this._httpClient,
+    http.Client? pushClient,
+    String? publicApiBaseUrl,
+    DeviceIdentityService? identity,
+  })  : _pushClient = pushClient ?? DeviceAssertionClient(inner: http.Client()),
+        _identity = identity ?? DeviceIdentityService.instance,
+        _publicApiBaseUrl =
+            (publicApiBaseUrl ?? ApiConfig.vehicleServicePublicApiBaseUrl)
+                .replaceAll(RegExp(r'/+$'), '');
 
   final http.Client _httpClient;
 
+  /// Device-assertion-authenticated client for the public tracking API.
+  final http.Client _pushClient;
+  final DeviceIdentityService _identity;
+  final String _publicApiBaseUrl;
+
+  /// `POST/PATCH /client-api/v1/vehicles` require the enrolled (attested) device
+  /// id — it is what claims this device and links it to the vehicle. Fill it in
+  /// from the native identity when the caller did not set one.
+  Future<VehicleProfile> _withEnrolledDeviceId(VehicleProfile vehicle) async {
+    if (vehicle.deviceId.isNotEmpty) return vehicle;
+    try {
+      final identity = await _identity.getIdentity();
+      if (identity.deviceId.isEmpty) return vehicle;
+      return vehicle.copyWith(deviceId: identity.deviceId);
+    } catch (error) {
+      AppLogger.instance.w(
+        'Could not resolve enrolled device id for vehicle registration',
+        tag: 'TRACKING',
+        error: error,
+      );
+      return vehicle;
+    }
+  }
+
+  /// Pushes tracking points for *this* device via
+  /// `POST /public-api/v1/devices/me/tracking-points` (device-assertion auth).
+  /// The vehicle is derived server-side from the device link, so [endpoint] is
+  /// unused here and [vehicle] only gates on a vehicle being assigned locally.
+  ///
+  /// A 409 means the device is enrolled but not yet linked to a vehicle — the
+  /// points stay pending and this surfaces as a sync error, not a crash.
   Future<void> sync({
     required String endpoint,
     required List<VehicleTrackPoint> points,
     VehicleProfile vehicle = const VehicleProfile(),
   }) async {
-    if (vehicle.deviceId.isEmpty) {
-      throw StateError('Tracking sync requires an assigned device');
+    if (vehicle.vehicleId.isEmpty) {
+      throw StateError('Tracking sync requires an assigned vehicle');
     }
 
-    final url = UrlUtils.vehicleUri(
-      endpoint,
-      'devices/${vehicle.deviceId}/tracking-points',
-    );
+    final url = Uri.parse('$_publicApiBaseUrl/devices/me/tracking-points');
     for (final point in points) {
-      final response = await _httpClient.post(
+      final response = await _pushClient.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: const {'Content-Type': 'application/json'},
         body: jsonEncode(point.toVehicleServiceJson()),
       );
+      if (response.statusCode == 409) {
+        throw StateError(
+          'Tracking sync rejected: device is not linked to a vehicle yet',
+        );
+      }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw StateError('Tracking sync failed: HTTP ${response.statusCode}');
       }
@@ -496,7 +569,7 @@ class VehicleTrackingSyncClient {
       ),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Vehicle list failed: HTTP ${response.statusCode}');
+      throw VehicleServiceException.fromResponse(response, 'Could not load vehicles');
     }
     final decoded = jsonDecode(response.body);
     final rawVehicles = decoded is List
@@ -522,7 +595,7 @@ class VehicleTrackingSyncClient {
       UrlUtils.vehicleUri(endpoint, 'vehicles/$id'),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Vehicle get failed: HTTP ${response.statusCode}');
+      throw VehicleServiceException.fromResponse(response, 'Could not load the vehicle');
     }
     final decoded = jsonDecode(response.body);
     if (decoded is Map<String, dynamic>) {
@@ -540,15 +613,16 @@ class VehicleTrackingSyncClient {
     required String id,
     required VehicleProfile vehicle,
   }) async {
+    final withDevice = await _withEnrolledDeviceId(vehicle);
     final response = await _httpClient.patch(
       UrlUtils.vehicleUri(endpoint, 'vehicles/$id'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(vehicle.toRegistrationJson()),
+      body: jsonEncode(withDevice.toRegistrationJson()),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Vehicle update failed: HTTP ${response.statusCode}');
+      throw VehicleServiceException.fromResponse(response, 'Could not update the vehicle');
     }
-    if (response.body.trim().isEmpty) return vehicle;
+    if (response.body.trim().isEmpty) return withDevice;
     final decoded = jsonDecode(response.body);
     if (decoded is Map<String, dynamic>) {
       final raw = decoded['vehicle'];
@@ -557,7 +631,7 @@ class VehicleTrackingSyncClient {
       }
       return VehicleProfile.fromJson(decoded);
     }
-    return vehicle;
+    return withDevice;
   }
 
   Future<VehicleProfile> saveVehicle({
@@ -565,24 +639,24 @@ class VehicleTrackingSyncClient {
     required VehicleProfile vehicle,
     Map<String, dynamic> deviceInfo = const {},
   }) async {
+    final withDevice = await _withEnrolledDeviceId(vehicle);
     final response = await _httpClient.post(
       UrlUtils.vehicleUri(endpoint, 'vehicles'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(vehicle.toRegistrationJson()),
+      body: jsonEncode(withDevice.toRegistrationJson()),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       AppLogger.instance.w(
         'Vehicle save rejected: HTTP ${response.statusCode} — ${response.body}',
         tag: 'VEHICLE',
       );
-      throw StateError('Vehicle save failed: HTTP ${response.statusCode}');
+      throw VehicleServiceException.fromResponse(response, 'Could not register the vehicle');
     }
     if (response.body.trim().isEmpty) {
-      final saved = vehicle;
-      return saved;
+      return withDevice;
     }
     final decoded = jsonDecode(response.body);
-    VehicleProfile saved = vehicle;
+    VehicleProfile saved = withDevice;
     if (decoded is Map<String, dynamic>) {
       final raw = decoded['vehicle'];
       if (raw is Map<String, dynamic>) {
@@ -591,7 +665,9 @@ class VehicleTrackingSyncClient {
         saved = VehicleProfile.fromJson(decoded);
       }
     }
-    return saved;
+    return saved.deviceId.isEmpty
+        ? saved.copyWith(deviceId: withDevice.deviceId)
+        : saved;
   }
 }
 
@@ -702,15 +778,25 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
       lastSyncError: null,
     );
     await _saveSettings();
-    await _syncNativeConfig(() => auth.accessToken());
-    await _setNativeBackgroundTracking(true);
+    await _syncNativeConfig();
+    final started = await _setNativeBackgroundTracking(true);
+    if (!started && mounted) {
+      // Native refused (most often: location permission not granted). Roll the
+      // toggle back so the UI reflects reality.
+      state = state.copyWith(
+        enabled: false,
+        lastSyncError: 'Location permission is required to track this vehicle.',
+      );
+      await _saveSettings();
+      return;
+    }
     unawaited(syncNow());
   }
 
   Future<void> stop() async {
     state = state.copyWith(enabled: false, isLoading: false);
     await _saveSettings();
-    await _syncNativeConfig(() => auth.accessToken(), clearToken: true);
+    await _syncNativeConfig();
     await _setNativeBackgroundTracking(false);
   }
 
@@ -727,7 +813,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
   Future<void> setSyncEndpoint(String endpoint) async {
     state = state.copyWith(syncEndpoint: endpoint.trim(), lastSyncError: null);
     await _saveSettings();
-    await _syncNativeConfig(() => auth.accessToken());
+    await _syncNativeConfig();
     unawaited(syncNow());
   }
 
@@ -748,7 +834,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
         lastVehicleError: null,
       );
       await _store.saveVehicleProfile(saved);
-      await _syncNativeConfig(() => auth.accessToken());
+      await _syncNativeConfig();
     } catch (error) {
       state = state.copyWith(
         isLoadingVehicles: false,
@@ -785,7 +871,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
         lastVehicleError: null,
       );
       await _store.saveVehicleProfile(vehicle);
-      await _syncNativeConfig(() => auth.accessToken());
+      await _syncNativeConfig();
     } catch (error) {
       state = state.copyWith(
         isLoadingVehicles: false,
@@ -832,7 +918,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
         vehicles: snapshot.vehicle.hasData ? [snapshot.vehicle] : const [],
       );
       if (snapshot.enabled) await _setNativeBackgroundTracking(true);
-      await _syncNativeConfig(() => auth.accessToken());
+      await _syncNativeConfig();
       unawaited(syncNow());
     } catch (e) {
       AppLogger.instance.w('Vehicle tracking initialisation failed', tag: 'TRACKING', error: e);
@@ -868,33 +954,40 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     );
   }
 
-  Future<void> _setNativeBackgroundTracking(bool enabled) async {
+  /// Returns whether the native side accepted the request. `false` when the
+  /// foreground service could not be started (e.g. location permission missing).
+  Future<bool> _setNativeBackgroundTracking(bool enabled) async {
     try {
-      await NativeBridge.call<bool>(
+      final ok = await NativeBridge.call<bool>(
         enabled ? 'startVehicleTrackingService' : 'stopVehicleTrackingService',
       );
+      return ok ?? false;
     } catch (e) {
-      // Tests and non-Android platforms do not have the native channel.
+      // Tests and non-Android platforms do not have the native channel — treat
+      // the toggle as a no-op success there.
       AppLogger.instance.d('Native background tracking toggle failed', tag: 'TRACKING', error: e);
+      return true;
     }
   }
 
   /// Builds the exact POST URL the native background service should hit for
   /// this device's tracking points, so native never has to know the vehicle
-  /// service's URL-shaping rules (kept in [UrlUtils] as the single source of
-  /// truth). Empty when no device is assigned yet.
+  /// service's URL-shaping rules.
+  ///
+  /// Uploads go to `POST /public-api/v1/devices/me/tracking-points` under
+  /// device-assertion auth (native mints it); the server derives the vehicle
+  /// from the device link. Empty until a vehicle is assigned, so native does
+  /// not upload for a device that is not linked yet.
   String _trackingPointsUrl() {
-    final deviceId = state.vehicle.deviceId;
-    if (deviceId.isEmpty) return '';
-    return UrlUtils.vehicleUri(state.syncEndpoint, 'devices/$deviceId/tracking-points').toString();
+    if (state.vehicle.vehicleId.isEmpty) return '';
+    final base = ApiConfig.vehicleServicePublicApiBaseUrl.replaceAll(RegExp(r'/+$'), '');
+    return '$base/devices/me/tracking-points';
   }
 
-  Future<void> _syncNativeConfig(Future<String?> Function() accessToken, {bool clearToken = false}) async {
+  Future<void> _syncNativeConfig() async {
     try {
-      final token = clearToken ? '' : await accessToken() ?? '';
       await NativeBridge.call<bool>('updateVehicleTrackingSyncConfig', {
         'trackingPointsUrl': _trackingPointsUrl(),
-        'accessToken': token,
       });
     } catch (e) {
       // Tests and non-Android platforms do not have the native channel.

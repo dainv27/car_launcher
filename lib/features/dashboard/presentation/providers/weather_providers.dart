@@ -1,13 +1,17 @@
-import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/shared/data/weather_service.dart';
+import 'package:car_launcher/shared/providers/shared_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Provider for weather service — bridges get_it factory into Riverpod.
+/// Provider for weather service.
 ///
-/// WeatherService construction (SharedPreferences + http.Client) is
-/// registered in injection_container.dart as a factory.
+/// Built from the Riverpod-overridable [sharedPreferencesProvider] and
+/// [httpClientProvider] rather than the get_it singleton so widget tests can
+/// pump weather-bearing screens without booting the full DI container.
 final weatherServiceProvider = Provider<WeatherService>(
-  (ref) => getIt<WeatherService>(),
+  (ref) => WeatherService(
+    ref.watch(sharedPreferencesProvider),
+    ref.watch(httpClientProvider),
+  ),
 );
 
 /// Provider for weather notifier.

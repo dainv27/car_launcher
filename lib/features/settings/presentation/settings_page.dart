@@ -314,16 +314,21 @@ class _CategoryButton extends StatelessWidget {
                         : context.palette.textSecondary,
                   ),
                   const SizedBox(width: 16),
-                  Text(
-                    item.label,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? context.palette.textPrimary
-                          : context.palette.textSecondary,
+                  Flexible(
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? context.palette.textPrimary
+                            : context.palette.textSecondary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),

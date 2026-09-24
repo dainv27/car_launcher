@@ -15,7 +15,10 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
 /// Provider for [http.Client] — bridges get_it lazySingleton into Riverpod.
 ///
 /// The [AuthInterceptorClient] is constructed inside injection_container.dart
-/// with bearer-token injection wired to [KeycloakAuthRepository].
+/// with bearer-token injection wired to [KeycloakAuthRepository]. Falls back to
+/// a plain client when the DI container has not been booted (widget tests that
+/// pump a screen in isolation), so accessor providers do not throw at build
+/// time; production always has the singleton registered.
 final httpClientProvider = Provider<http.Client>(
-  (ref) => getIt<http.Client>(),
+  (ref) => getIt.isRegistered<http.Client>() ? getIt<http.Client>() : http.Client(),
 );

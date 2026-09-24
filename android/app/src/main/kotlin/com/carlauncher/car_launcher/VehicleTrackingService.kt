@@ -17,12 +17,10 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import io.flutter.plugin.common.MethodChannel
+import com.carlauncher.car_launcher.deviceauth.DeviceKeyStore
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -179,18 +177,16 @@ class VehicleTrackingService : Service(), LocationListener {
     private fun syncPendingPoints() {
         val prefs = getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
+        // Empty until a vehicle is assigned: only a device linked to a vehicle
+        // may upload, so there is nothing to try yet.
         val url = prefs.getString(KEY_TRACKING_POINTS_URL, "")?.trim().orEmpty()
-        var token = prefs.getString(KEY_ACCESS_TOKEN, "")?.trim().orEmpty()
-        if (token.isEmpty() || url.isEmpty()) return
+        if (url.isEmpty()) return
 
         try {
             while (true) {
                 val batch = readPendingBatch()
                 if (batch.isEmpty()) return
-                val newToken = postBatchWithRefresh(url, token, batch)
-                if (newToken != null && newToken != token) {
-                    token = newToken
-                }
+                postBatch(url, batch)
                 markBatchSynced(batch)
             }
         } catch (error: Exception) {
@@ -217,18 +213,16 @@ class VehicleTrackingService : Service(), LocationListener {
         return points
     }
 
-    /// Post a batch of tracking points, automatically refreshing the bearer
-    /// token on HTTP 401 and retrying once. Returns the (possibly refreshed)
-    /// token so callers can persist it for subsequent batches.
+    /// Posts each point to `POST /public-api/v1/devices/me/tracking-points`
+    /// under device-assertion auth. The server derives the vehicle from the
+    /// device link, so no user session is involved and uploads keep working
+    /// while nobody is signed in on the head unit.
     ///
-    /// Returns null if no refresh was needed (original token is still valid).
-    private fun postBatchWithRefresh(
-        url: String,
-        token: String,
-        points: List<TrackedPoint>,
-    ): String? {
-        var refreshedToken: String? = null
-        points.forEachIndexed { index, point ->
+    /// A 401 is retried once with a freshly minted assertion (clock skew). A
+    /// 409 means the device is enrolled but not linked to a vehicle yet; the
+    /// points stay pending like any other failure.
+    private fun postBatch(url: String, points: List<TrackedPoint>) {
+        points.forEach { point ->
             val payload = JSONObject()
                 .put("latitude", point.latitude)
                 .put("longitude", point.longitude)
@@ -239,37 +233,26 @@ class VehicleTrackingService : Service(), LocationListener {
                         .put("clientPointId", point.id)
                         .put("displayName", point.displayName),
                 )
-            var currentToken = refreshedToken ?: token
-            var responseCode = postPoint(url, payload, currentToken)
-
-            // On 401, ask Flutter to refresh the token and retry this point.
-            if (responseCode == 401) {
-                val newToken = requestTokenRefresh(currentToken)
-                if (newToken != null && newToken.isNotEmpty()) {
-                    refreshedToken = newToken
-                    currentToken = newToken
-                    // Persist the new token immediately so future batches reuse it.
-                    persistAccessToken(newToken)
-                    responseCode = postPoint(url, payload, currentToken)
-                }
+            var responseCode = postPoint(url, payload)
+            if (responseCode == 401) responseCode = postPoint(url, payload)
+            if (responseCode == 409) {
+                throw IllegalStateException("Tracking sync rejected: device is not linked to a vehicle")
             }
-
             if (responseCode < 200 || responseCode >= 300) {
                 throw IllegalStateException("Tracking sync failed: HTTP $responseCode")
             }
         }
-        return refreshedToken
     }
 
     /// POST a single tracking point. Returns the HTTP status code.
-    private fun postPoint(url: String, payload: JSONObject, token: String): Int {
+    private fun postPoint(url: String, payload: JSONObject): Int {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = HTTP_TIMEOUT_MS
             readTimeout = HTTP_TIMEOUT_MS
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty(DeviceKeyStore.ASSERTION_HEADER, DeviceKeyStore.mintAssertion())
         }
         try {
             OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use {
@@ -278,67 +261,6 @@ class VehicleTrackingService : Service(), LocationListener {
             return connection.responseCode
         } finally {
             connection.disconnect()
-        }
-    }
-
-    /// Persist the refreshed access token to SharedPreferences.
-    private fun persistAccessToken(token: String) {
-        try {
-            getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_ACCESS_TOKEN, token)
-                .apply()
-        } catch (error: Exception) {
-            Log.w(TAG, "Unable to persist refreshed access token", error)
-        }
-    }
-
-    /// Request a fresh access token from Flutter via the MethodChannel.
-    ///
-    /// This calls back into Flutter's KeycloakAuthRepository which owns the
-    /// refresh token and the OIDC client credentials. Returns the new access
-    /// token, or null if the refresh call failed.
-    private fun requestTokenRefresh(oldToken: String): String? {
-        return try {
-            val mainHandler = Handler(Looper.getMainLooper())
-            val latch = java.util.concurrent.CountDownLatch(1)
-            val resultHolder = arrayOfNulls<String>(1)
-            mainHandler.post {
-                try {
-                    val activity = MainActivity.instance
-                    if (activity == null) {
-                        Log.w(TAG, "MainActivity instance unavailable for token refresh")
-                        latch.countDown()
-                        return@post
-                    }
-                    activity.requestVehicleTokenRefresh(
-                        oldToken,
-                        object : MethodChannel.Result {
-                            override fun success(result: Any?) {
-                                resultHolder[0] = result?.toString()
-                                latch.countDown()
-                            }
-                            override fun error(code: String, message: String?, details: Any?) {
-                                Log.w(TAG, "Token refresh failed: $code — $message")
-                                latch.countDown()
-                            }
-                            override fun notImplemented() {
-                                Log.w(TAG, "Token refresh not handled by Flutter")
-                                latch.countDown()
-                            }
-                        },
-                    )
-                } catch (error: Exception) {
-                    Log.w(TAG, "Unable to invoke token refresh", error)
-                    latch.countDown()
-                }
-            }
-            // Block the background thread for up to 30s for Flutter to respond.
-            latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
-            resultHolder[0]
-        } catch (error: Exception) {
-            Log.w(TAG, "Token refresh request failed", error)
-            null
         }
     }
 
@@ -396,7 +318,11 @@ class VehicleTrackingService : Service(), LocationListener {
     private fun hasLocationPermission(): Boolean {
         val locationGranted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val fgsLocationGranted = checkSelfPermission(Manifest.permission.FOREGROUND_SERVICE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        // FOREGROUND_SERVICE_LOCATION only exists on API 34+; on older platforms
+        // checkSelfPermission() always reports it denied, which would wrongly
+        // block tracking on Android 13 and below.
+        val fgsLocationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            checkSelfPermission(Manifest.permission.FOREGROUND_SERVICE_LOCATION) == PackageManager.PERMISSION_GRANTED
         return locationGranted && fgsLocationGranted
     }
 
@@ -535,7 +461,6 @@ class VehicleTrackingService : Service(), LocationListener {
         private const val FLUTTER_PREFS = "FlutterSharedPreferences"
         private const val KEY_ENABLED = "flutter.vehicle_tracking_enabled"
         private const val KEY_TRACKING_POINTS_URL = "flutter.vehicle_tracking_points_url"
-        private const val KEY_ACCESS_TOKEN = "flutter.vehicle_tracking_access_token"
         private val isoFormat = ThreadLocal.withInitial {
             SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")

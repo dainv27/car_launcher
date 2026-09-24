@@ -117,7 +117,7 @@ void main() {
 
   test('weather never falls back to a fabricated city', () {
     final source = File(
-      'lib/features/dashboard/data/weather_service.dart',
+      'lib/shared/data/weather_service.dart',
     ).readAsStringSync();
 
     expect(source, isNot(contains("??\n        'Hanoi'")));

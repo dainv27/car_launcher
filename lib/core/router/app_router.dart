@@ -9,12 +9,12 @@ import 'package:car_launcher/features/media/presentation/media_center_page.dart'
 import 'package:car_launcher/features/settings/presentation/clock_network_settings_page.dart';
 import 'package:car_launcher/features/settings/presentation/log_viewer_page.dart';
 import 'package:car_launcher/features/settings/presentation/settings_page.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/alerts_page.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/geofences_page.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/tracking_history_page.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/trip_detail_page.dart';
+import 'package:car_launcher/features/alert/presentation/views/alerts_page.dart';
+import 'package:car_launcher/features/geofence/presentation/views/geofences_page.dart';
+import 'package:car_launcher/features/tracking/presentation/views/tracking_history_page.dart';
+import 'package:car_launcher/features/trip/presentation/views/trip_detail_page.dart';
+import 'package:car_launcher/features/trip/presentation/views/vehicle_trips_page.dart';
 import 'package:car_launcher/features/vehicle/presentation/views/vehicle_detail_page.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/vehicle_trips_page.dart';
 import 'package:car_launcher/features/vehicle/presentation/views/vehicles_page.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';

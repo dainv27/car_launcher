@@ -1,25 +1,26 @@
-import 'package:car_launcher/shared/data/device_service.dart';
+import 'package:car_launcher/features/device/data/device_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:car_launcher/core/api/api_config.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
-import 'package:car_launcher/core/services/device_info_service.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
+import 'package:car_launcher/features/alert/data/alert_api_client.dart';
+import 'package:car_launcher/features/alert/data/alert_repository.dart';
+import 'package:car_launcher/features/device/data/device_info_service.dart';
+import 'package:car_launcher/features/geofence/data/geofence_api_client.dart';
+import 'package:car_launcher/features/geofence/data/geofence_repository.dart';
 import 'package:car_launcher/features/launcher/data/launcher_service.dart';
-import 'package:car_launcher/features/vehicle/data/alert_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/alert_repository.dart';
-import 'package:car_launcher/features/vehicle/data/geofence_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/geofence_repository.dart';
-import 'package:car_launcher/features/vehicle/data/map_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/map_repository.dart';
-import 'package:car_launcher/features/vehicle/data/tracking_repository.dart';
-import 'package:car_launcher/features/vehicle/data/trip_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/trip_repository.dart';
+import 'package:car_launcher/features/tracking/data/map_api_client.dart';
+import 'package:car_launcher/features/tracking/data/map_repository.dart';
+import 'package:car_launcher/features/tracking/data/tracking_repository.dart';
+import 'package:car_launcher/features/tracking/data/tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/data/tracking_sync_client.dart';
+import 'package:car_launcher/features/trip/data/trip_api_client.dart';
+import 'package:car_launcher/features/trip/data/trip_repository.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 import 'package:car_launcher/features/vehicle/data/vehicle_repository.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
 import 'package:car_launcher/shared/data/weather_service.dart';
 
 /// Service locator for the application.
@@ -110,10 +111,17 @@ Future<void> setupServiceLocator() async {
     () => DeviceService(httpClient: getIt<http.Client>()),
   );
 
-  // VehicleTrackingSyncClient — thin HTTP wrapper. Factory because it is
-  // lightweight and has no mutable state beyond the injected http.Client.
-  getIt.registerFactory<VehicleTrackingSyncClient>(
-    () => VehicleTrackingSyncClient(httpClient: getIt<http.Client>()),
+  // VehicleApiClient — thin HTTP wrapper over vehicle CRUD. Factory because
+  // it is lightweight and has no mutable state beyond the injected
+  // http.Client.
+  getIt.registerFactory<VehicleApiClient>(
+    () => VehicleApiClient(httpClient: getIt<http.Client>()),
+  );
+
+  // TrackingSyncClient — thin HTTP wrapper over tracking-point push/read.
+  // Factory for the same reason.
+  getIt.registerFactory<TrackingSyncClient>(
+    () => TrackingSyncClient(httpClient: getIt<http.Client>()),
   );
 
   // VehicleRepository — thin mapping layer. Factory because it has no
@@ -121,7 +129,7 @@ Future<void> setupServiceLocator() async {
   // since it depends on runtime tracking state.
   getIt.registerFactoryParam<VehicleRepository, String, void>(
     (syncEndpoint, _) => VehicleRepository(
-      syncClient: getIt<VehicleTrackingSyncClient>(),
+      apiClient: getIt<VehicleApiClient>(),
       syncEndpoint: syncEndpoint,
     ),
   );
@@ -130,7 +138,7 @@ Future<void> setupServiceLocator() async {
   // store. Factory with parametric syncEndpoint for the same reason.
   getIt.registerFactoryParam<TrackingRepository, String, void>(
     (syncEndpoint, _) => TrackingRepository(
-      syncClient: getIt<VehicleTrackingSyncClient>(),
+      syncClient: getIt<TrackingSyncClient>(),
       store: getIt<VehicleTrackingStoreService>(),
       syncEndpoint: syncEndpoint,
     ),

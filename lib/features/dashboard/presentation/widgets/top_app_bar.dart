@@ -2,6 +2,7 @@ import 'package:car_launcher/core/native/native_bridge.dart';
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:car_launcher/features/media/data/media_controller.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

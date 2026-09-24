@@ -15,7 +15,7 @@ import 'package:car_launcher/features/settings/presentation/providers/welcome_gr
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
-import 'package:car_launcher/shared/data/device_service.dart';
+import 'package:car_launcher/features/device/data/device_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -3,10 +3,15 @@ import 'dart:io';
 
 import 'package:car_launcher/core/auth/device_identity_service.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
-import 'package:car_launcher/features/vehicle/data/device_enrollment_client.dart';
-import 'package:car_launcher/shared/data/device_service.dart';
+import 'package:car_launcher/features/device/data/device_enrollment_client.dart';
+import 'package:car_launcher/features/device/data/device_service.dart';
+import 'package:car_launcher/features/tracking/data/tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/data/tracking_sync_client.dart';
+import 'package:car_launcher/features/tracking/domain/vehicle_track_point.dart';
+import 'package:car_launcher/features/tracking/presentation/tracking_notifier.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
+import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -80,7 +85,7 @@ void main() {
     'vehicle tracking sync client pushes to the device public tracking endpoint',
     () async {
       final push = _CapturingHttpClient();
-      final sync = VehicleTrackingSyncClient(
+      final sync = TrackingSyncClient(
         httpClient: _CapturingHttpClient(),
         pushClient: push,
         publicApiBaseUrl:
@@ -89,8 +94,8 @@ void main() {
 
       await sync.sync(
         endpoint: 'https://dev-car-apis.202corp.com/vehicle-service',
-        vehicle: const VehicleProfile(
-          vehicleId: 'car-001',
+        vehicle: const Vehicle(
+          id: 'car-001',
           deviceId: 'android-abc',
           plateNumber: '51A-12345',
           name: 'Family car',
@@ -124,7 +129,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async => true);
 
-    final sync = _RecordingSyncClient();
+    final sync = _RecordingApiClient();
     final directory = Directory.systemTemp.createTempSync(
       'vehicle_tracking_vehicle_test_',
     );
@@ -132,7 +137,7 @@ void main() {
     final auth = KeycloakAuthRepository();
     final notifier = VehicleTrackingNotifier(
       auth,
-      syncClient: sync,
+      apiClient: sync,
       store: store,
       loadPersisted: false,
     );
@@ -142,13 +147,13 @@ void main() {
       directory.deleteSync(recursive: true);
     });
 
-    const vehicle = VehicleProfile(
-      vehicleId: 'car-001',
+    const vehicle = Vehicle(
+      id: 'car-001',
       plateNumber: '51A-12345',
       name: 'Family car',
-      make: 'Toyota',
+      brand: 'Toyota',
       model: 'Vios',
-      year: '2026',
+      metadata: {'year': '2026'},
     );
     await notifier.setSyncEndpoint('https://tracking.example.test/points');
     await notifier.saveVehicleProfile(vehicle);
@@ -165,10 +170,10 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async => true);
 
-      final sync = _RecordingSyncClient()
+      final sync = _RecordingApiClient()
         ..serverVehicles = const [
-          VehicleProfile(vehicleId: 'car-001', plateNumber: '51A-12345'),
-          VehicleProfile(vehicleId: 'car-002', plateNumber: '51B-99999'),
+          Vehicle(id: 'car-001', plateNumber: '51A-12345'),
+          Vehicle(id: 'car-002', plateNumber: '51B-99999'),
         ];
       final directory = Directory.systemTemp.createTempSync(
         'vehicle_tracking_vehicle_list_test_',
@@ -177,7 +182,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -192,7 +197,7 @@ void main() {
       await notifier.assignVehicle(sync.serverVehicles.last);
 
       expect(notifier.state.vehicles.length, 2);
-      expect(notifier.state.vehicle.vehicleId, 'car-002');
+      expect(notifier.state.vehicle.id, 'car-002');
     },
   );
 
@@ -200,7 +205,7 @@ void main() {
     final client = _CapturingHttpClient(
       responseBody: '{"vehicles":[{"id":"car-001","plateNumber":"51A-12345"}]}',
     );
-    final sync = VehicleTrackingSyncClient(
+    final sync = VehicleApiClient(
       httpClient: client,
     );
 
@@ -208,7 +213,7 @@ void main() {
       endpoint: 'https://car-apis.202corp.com/vehicle-service/client-api/v1',
     );
 
-    expect(vehicles.single.vehicleId, 'car-001');
+    expect(vehicles.single.id, 'car-001');
     expect(
       client.lastUrl.toString(),
       'https://car-apis.202corp.com/vehicle-service/client-api/v1/vehicles?page=0&size=10',
@@ -226,20 +231,20 @@ void main() {
           ),
         ],
       );
-      final sync = VehicleTrackingSyncClient(
+      final sync = VehicleApiClient(
         httpClient: client,
       );
 
       final saved = await sync.saveVehicle(
         endpoint: 'https://car-apis.202corp.com/vehicle-service/client-api/v1',
-        vehicle: const VehicleProfile(
+        vehicle: const Vehicle(
           plateNumber: '51A-12345',
           name: 'Family car',
         ),
       );
 
       final vehicleBody = client.requestBodies[0];
-      expect(saved.vehicleId, 'server-car-001');
+      expect(saved.id, 'server-car-001');
       expect(
         client.requestUrls[0].toString(),
         'https://car-apis.202corp.com/vehicle-service/client-api/v1/vehicles',
@@ -361,20 +366,32 @@ void main() {
       final widget = File(
         'lib/features/dashboard/presentation/widgets/vehicle_tracking_card.dart',
       ).readAsStringSync();
-      final service = File(
-        'lib/shared/data/location_service.dart',
+      final trackingNotifier = File(
+        'lib/features/tracking/presentation/tracking_notifier.dart',
+      ).readAsStringSync();
+      final trackingSyncClient = File(
+        'lib/features/tracking/data/tracking_sync_client.dart',
+      ).readAsStringSync();
+      final trackingStoreService = File(
+        'lib/features/tracking/data/tracking_store_service.dart',
+      ).readAsStringSync();
+      final trackPoint = File(
+        'lib/features/tracking/domain/vehicle_track_point.dart',
       ).readAsStringSync();
 
-      expect(service, contains('vehicleTrackingProvider'));
-      expect(service, contains('pendingSyncCount'));
-      expect(service, contains('syncedAt'));
-      expect(service, contains('VehicleTrackingSyncClient'));
-      expect(service, contains('VehicleTrackingStoreService'));
+      expect(trackingNotifier, contains('vehicleTrackingProvider'));
+      expect(trackingNotifier, contains('pendingSyncCount'));
+      expect(trackPoint, contains('syncedAt'));
+      expect(trackingSyncClient, contains('class TrackingSyncClient'));
+      expect(trackingStoreService, contains('class VehicleTrackingStoreService'));
       expect(mapPage, isNot(contains('VehicleTrackingBadge')));
       expect(mapWithMedia, isNot(contains('VehicleTrackingBadge')));
       expect(mapWithYoutube, isNot(contains('VehicleTrackingBadge')));
       expect(topBar, contains("Key('top-bar-tracking-dot')"));
-      expect(settings, contains("Key('settings-vehicle-tracking-card')"));
+      // The tracking card now surfaces exactly once, from Settings'
+      // "Tracking" category — the duplicate under "Navigation" was removed.
+      expect(settings, contains("Key('settings-tracking-card')"));
+      expect(settings, isNot(contains("Key('settings-vehicle-tracking-card')")));
       expect(settings, contains('VehicleTrackingSettingsCard'));
       expect(widget, isNot(contains("Key('vehicle-tracking-sync-endpoint')")));
       expect(widget, isNot(contains('Vehicle API')));
@@ -395,7 +412,7 @@ void main() {
       expect(nativeService, contains('SQLiteOpenHelper'));
       expect(nativeService, contains('HttpURLConnection'));
       expect(nativeService, contains('KEY_TRACKING_POINTS_URL'));
-      expect(service, contains('tracking-points'));
+      expect(trackingSyncClient, contains('tracking-points'));
       expect(nativeService, contains('SYNC_BATCH_SIZE'));
       expect(nativeService, contains('pending_points'));
       expect(nativeService, contains('synced_points'));
@@ -431,43 +448,26 @@ class _StubDeviceIdentity extends DeviceIdentityService {
   void invalidateAssertion() {}
 }
 
-class _RecordingSyncClient extends VehicleTrackingSyncClient {
-  _RecordingSyncClient() : super(httpClient: _StubHttpClient());
+class _RecordingApiClient extends VehicleApiClient {
+  _RecordingApiClient() : super(httpClient: _StubHttpClient());
 
-  final uploadedIds = <String>[];
-  final batchSizes = <int>[];
-  List<VehicleProfile> serverVehicles = const [];
-  int calls = 0;
+  List<Vehicle> serverVehicles = const [];
 
   @override
-  Future<void> sync({
-    required String endpoint,
-    required List<VehicleTrackPoint> points,
-    VehicleProfile vehicle = const VehicleProfile(),
-  }) async {
-    calls++;
-    batchSizes.add(points.length);
-    uploadedIds.addAll(points.map((point) => point.id));
-  }
-
-  @override
-  Future<List<VehicleProfile>> fetchVehicles({required String endpoint}) async {
+  Future<List<Vehicle>> fetchVehicles({required String endpoint}) async {
     return serverVehicles;
   }
 
   @override
-  Future<VehicleProfile> saveVehicle({
+  Future<Vehicle> saveVehicle({
     required String endpoint,
-    required VehicleProfile vehicle,
-    Map<String, dynamic> deviceInfo = const {},
+    required Vehicle vehicle,
   }) async {
-    final saved = vehicle.vehicleId.isEmpty
-        ? vehicle.copyWith(vehicleId: 'server-car-001')
+    final saved = vehicle.id.isEmpty
+        ? vehicle.copyWith(id: 'server-car-001')
         : vehicle;
     final updated = [...serverVehicles];
-    final index = updated.indexWhere(
-      (item) => item.vehicleId == saved.vehicleId,
-    );
+    final index = updated.indexWhere((item) => item.id == saved.id);
     if (index >= 0) {
       updated[index] = saved;
     } else {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:car_launcher/core/services/device_info_service.dart';
+import 'package:car_launcher/features/device/data/device_info_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:car_launcher/core/di/injection_container.dart';

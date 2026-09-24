@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:car_launcher/core/theme/launcher_palette.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
 
 /// Standalone page listing all vehicles at /vehicles.
 class VehiclesPage extends ConsumerWidget {
@@ -76,10 +76,10 @@ class VehiclesPage extends ConsumerWidget {
               .createVehicle(vehicle);
           // The server links the new vehicle to this head unit, so start
           // tracking it right away unless another vehicle is already chosen.
-          if (container.read(vehicleTrackingProvider).vehicle.vehicleId.isEmpty) {
+          if (container.read(vehicleTrackingProvider).vehicle.id.isEmpty) {
             await container
                 .read(vehicleTrackingProvider.notifier)
-                .assignVehicle(created.toProfile());
+                .assignVehicle(created);
           }
         },
       ),

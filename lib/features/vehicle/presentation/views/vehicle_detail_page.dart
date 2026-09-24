@@ -1,12 +1,11 @@
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
-import 'package:car_launcher/features/vehicle/domain/device.dart';
-import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
+import 'package:car_launcher/features/device/domain/device.dart';
+import 'package:car_launcher/features/device/presentation/providers/device_providers.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_point.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/device_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/map_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_dialog.dart';
 import 'package:flutter/material.dart';

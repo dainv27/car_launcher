@@ -1,4 +1,4 @@
-import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_point.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

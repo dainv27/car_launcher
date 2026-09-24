@@ -1,38 +1,29 @@
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
 
-/// Repository that wraps [VehicleTrackingSyncClient] for the vehicle
-/// management feature. All HTTP logic lives in the sync client; this
-/// layer maps between [Vehicle] domain objects and [VehicleProfile].
+/// Repository for the vehicle management feature — thin mapping layer over
+/// [VehicleApiClient].
 class VehicleRepository {
-  VehicleRepository({required this._syncClient, required this.syncEndpoint});
+  VehicleRepository({required this._apiClient, required this.syncEndpoint});
 
-  final VehicleTrackingSyncClient _syncClient;
+  final VehicleApiClient _apiClient;
 
   /// Endpoint override for the vehicle service base URL.
   final String syncEndpoint;
 
   /// List all vehicles (first page, up to 10).
-  Future<List<Vehicle>> listVehicles() async {
-    final profiles = await _syncClient.fetchVehicles(endpoint: syncEndpoint);
-    return profiles.map(Vehicle.fromProfile).toList(growable: false);
-  }
+  Future<List<Vehicle>> listVehicles() =>
+      _apiClient.fetchVehicles(endpoint: syncEndpoint);
 
   /// Get a single vehicle by ID.
-  Future<Vehicle> getVehicle(String id) async {
-    final profile = await _syncClient.getVehicle(endpoint: syncEndpoint, id: id);
-    return Vehicle.fromProfile(profile);
-  }
+  Future<Vehicle> getVehicle(String id) =>
+      _apiClient.getVehicle(endpoint: syncEndpoint, id: id);
 
   /// Create a new vehicle via POST /vehicles.
-  Future<Vehicle> createVehicle(Vehicle vehicle) async {
-    final profile = await _syncClient.saveVehicle(endpoint: syncEndpoint, vehicle: vehicle.toProfile());
-    return Vehicle.fromProfile(profile);
-  }
+  Future<Vehicle> createVehicle(Vehicle vehicle) =>
+      _apiClient.saveVehicle(endpoint: syncEndpoint, vehicle: vehicle);
 
   /// Update an existing vehicle via PATCH /vehicles/:id.
-  Future<Vehicle> updateVehicle(String id, Vehicle vehicle) async {
-    final profile = await _syncClient.updateVehicle(endpoint: syncEndpoint, id: id, vehicle: vehicle.toProfile());
-    return Vehicle.fromProfile(profile);
-  }
+  Future<Vehicle> updateVehicle(String id, Vehicle vehicle) =>
+      _apiClient.updateVehicle(endpoint: syncEndpoint, id: id, vehicle: vehicle);
 }

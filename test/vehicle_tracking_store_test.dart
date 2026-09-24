@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:car_launcher/features/tracking/data/tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/domain/vehicle_track_point.dart';
+import 'package:car_launcher/features/tracking/presentation/tracking_notifier.dart';
+import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,7 +52,7 @@ void main() {
       expect(snapshot.syncEndpoint, isEmpty);
       expect(snapshot.pending, isEmpty);
       expect(snapshot.synced, isEmpty);
-      expect(snapshot.vehicle.vehicleId, isEmpty);
+      expect(snapshot.vehicle.id, isEmpty);
     });
 
     test('saveSettings persists enabled and syncEndpoint', () async {
@@ -62,20 +65,20 @@ void main() {
       expect(snapshot.syncEndpoint, 'https://api.example.com/vehicle-service');
     });
 
-    test('saveVehicleProfile persists vehicle profile', () async {
-      const vehicle = VehicleProfile(
-        vehicleId: 'car-001',
+    test('saveVehicle persists the vehicle', () async {
+      const vehicle = Vehicle(
+        id: 'car-001',
         plateNumber: '51A-12345',
         name: 'Family car',
-        make: 'Toyota',
+        brand: 'Toyota',
         model: 'Vios',
-        year: '2026',
+        metadata: {'year': '2026'},
       );
-      await store.saveVehicleProfile(vehicle);
+      await store.saveVehicle(vehicle);
       final snapshot = await store.load();
-      expect(snapshot.vehicle.vehicleId, 'car-001');
+      expect(snapshot.vehicle.id, 'car-001');
       expect(snapshot.vehicle.plateNumber, '51A-12345');
-      expect(snapshot.vehicle.make, 'Toyota');
+      expect(snapshot.vehicle.brand, 'Toyota');
     });
 
     test('appendPending and readPending', () async {
@@ -375,83 +378,6 @@ void main() {
     });
   });
 
-  group('VehicleProfile', () {
-    test('default has no data', () {
-      const profile = VehicleProfile();
-      expect(profile.hasData, isFalse);
-      expect(profile.displayName, 'Not registered');
-    });
-
-    test('displayName prefers plateNumber', () {
-      const profile = VehicleProfile(
-        vehicleId: 'car-001',
-        plateNumber: '51A-12345',
-        name: 'My Car',
-      );
-      expect(profile.displayName, '51A-12345');
-    });
-
-    test('displayName falls back to name then vehicleId', () {
-      const p1 = VehicleProfile(name: 'My Car');
-      expect(p1.displayName, 'My Car');
-      const p2 = VehicleProfile(vehicleId: 'car-001');
-      expect(p2.displayName, 'car-001');
-    });
-
-    test('fromJson parses full shape', () {
-      final profile = VehicleProfile.fromJson({
-        'vehicleId': 'car-001',
-        'plateNumber': '51A-12345',
-        'name': 'Family car',
-        'make': 'Toyota',
-        'model': 'Vios',
-        'year': '2026',
-      });
-      expect(profile.vehicleId, 'car-001');
-      expect(profile.plateNumber, '51A-12345');
-      expect(profile.make, 'Toyota');
-      expect(profile.year, '2026');
-    });
-
-    test('fromJson maps "brand" to make and "id" to vehicleId', () {
-      final profile = VehicleProfile.fromJson({
-        'id': 'alt-id',
-        'brand': 'Honda',
-        'metadata': {'year': '2025'},
-      });
-      expect(profile.vehicleId, 'alt-id');
-      expect(profile.make, 'Honda');
-      expect(profile.year, '2025');
-    });
-
-    test('toJson includes id when vehicleId is set', () {
-      const profile = VehicleProfile(vehicleId: 'car-001');
-      final json = profile.toJson();
-      expect(json['id'], 'car-001');
-      expect(json['vehicleId'], 'car-001');
-    });
-
-    test('copyWith preserves unchanged fields', () {
-      const profile = VehicleProfile(
-        vehicleId: 'car-001',
-        plateNumber: '51A-12345',
-        make: 'Toyota',
-      );
-      final updated = profile.copyWith(plateNumber: '99Z-99999');
-      expect(updated.vehicleId, 'car-001');
-      expect(updated.plateNumber, '99Z-99999');
-      expect(updated.make, 'Toyota');
-    });
-
-    test('toRegistrationJson uses "brand" key instead of "make"', () {
-      const profile = VehicleProfile(make: 'Toyota', model: 'Vios');
-      final json = profile.toRegistrationJson();
-      expect(json.containsKey('brand'), isTrue);
-      expect(json.containsKey('make'), isFalse);
-      expect(json['brand'], 'Toyota');
-    });
-  });
-
   group('VehicleTrackingState', () {
     test('default state', () {
       const state = VehicleTrackingState();
@@ -538,7 +464,7 @@ void main() {
       // Vehicle assigned but no pending
       expect(
         VehicleTrackingState(
-          vehicle: const VehicleProfile(vehicleId: 'car-001'),
+          vehicle: const Vehicle(id: 'car-001'),
           points: [p1],
         ).canSync,
         isTrue,
@@ -547,7 +473,7 @@ void main() {
       final synced = p1.markSynced(DateTime.utc(2026, 1, 1));
       expect(
         VehicleTrackingState(
-          vehicle: const VehicleProfile(vehicleId: 'car-001'),
+          vehicle: const Vehicle(id: 'car-001'),
           points: [synced],
         ).canSync,
         isFalse,
@@ -596,7 +522,7 @@ void main() {
       final snap = VehicleTrackingSnapshot(
         enabled: true,
         syncEndpoint: '',
-        vehicle: const VehicleProfile(),
+        vehicle: const Vehicle(),
         pending: [pendingPt],
         synced: [syncedPt],
       );

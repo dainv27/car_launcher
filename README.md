@@ -23,8 +23,23 @@ against the vehicle service backend (trips, route map, geofences, alerts).
 
 ## Getting Started
 
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+
 This is a standard Flutter project (`flutter pub get`, `flutter run`). See
 [`docs/tbox/02_SDK_AND_BUILD.md`](docs/tbox/02_SDK_AND_BUILD.md) for the
 Android build flavors and TBox-specific build/signing requirements, and
 [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md#validation-contract) for the
 test/analyze/build validation commands.
+
+## AOSP
+[Cert AOSP](https://android.googlesource.com/platform/build/+/refs/heads/main/target/product/security/platform.pk8)

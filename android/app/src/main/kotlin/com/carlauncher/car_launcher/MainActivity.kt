@@ -82,8 +82,19 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instance = this
+        CrashRecovery.install(this)
         applyImmersiveFullscreen()
         processOAuthCallback(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        CrashRecovery.launcherVisible = true
+    }
+
+    override fun onStop() {
+        CrashRecovery.launcherVisible = false
+        super.onStop()
     }
 
     override fun onResume() {

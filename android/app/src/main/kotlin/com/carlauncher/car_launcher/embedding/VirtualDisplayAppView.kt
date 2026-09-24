@@ -2,7 +2,9 @@ package com.carlauncher.car_launcher.embedding
 
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.IntentFilter
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -11,6 +13,7 @@ import android.hardware.display.VirtualDisplay
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PatternMatcher
 import android.os.SystemClock
 import android.os.UserManager
 import android.util.Log
@@ -20,6 +23,7 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.WindowInsets
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -53,6 +57,14 @@ class VirtualDisplayAppView(
         const val MAX_CREATE_RETRIES = 5
         const val BASE_RETRY_DELAY_MS = 250L
         const val MAX_RETRY_DELAY_MS = 4_000L
+
+        // Backstop poll while waiting for the host to become ready. Focus
+        // and unlock events normally wake us sooner.
+        const val READINESS_POLL_MS = 500L
+
+        // Backstop poll while the target package is missing/disabled (e.g.
+        // mid-update at boot). Package broadcasts normally wake us sooner.
+        const val PACKAGE_POLL_MS = 5_000L
         val ALLOWED_PACKAGES = setOf(
             "com.google.android.apps.maps",
             "com.google.android.youtube",
@@ -71,6 +83,39 @@ class VirtualDisplayAppView(
     private var createRetryCount = 0
     private val mainHandler = Handler(Looper.getMainLooper())
     private val createRetryRunnable = Runnable { attemptCreateVirtualDisplay() }
+
+    // "Not ready yet" (locked user, no window focus, unsized/invalid surface,
+    // target package not launchable) is a normal transient state right after
+    // boot, while a system dialog is up or while the target app updates.
+    // It is waited out here without spending [MAX_CREATE_RETRIES],
+    // which is reserved for real failures (ROM refuses the display, launch
+    // throws). Otherwise an early launcher start burns the whole retry budget
+    // and parks the pane on the permanent fallback.
+    private var waitingForReadiness = false
+    private val readinessRunnable = Runnable { attemptCreateVirtualDisplay() }
+    private var unlockReceiver: BroadcastReceiver? = null
+    private var packageReceiver: BroadcastReceiver? = null
+    // Once the launcher window has had focus it is known to be in the
+    // foreground. Focus then legitimately moves to the embedded apps' own
+    // VirtualDisplays, so a pane created later (e.g. its package became
+    // launchable) must not wait for focus to come back.
+    private var hostWasFocused = false
+    private val focusListener = ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
+        if (hasFocus) {
+            hostWasFocused = true
+            onReadinessSignal()
+        }
+    }
+    private val attachListener = object : View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(view: View) {
+            view.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
+            onReadinessSignal()
+        }
+
+        override fun onViewDetachedFromWindow(view: View) {
+            view.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
+        }
+    }
     private val accessibilityGestureRecorder = AccessibilityGestureRecorder()
     private val inputManager by lazy { root.context.getSystemService(Context.INPUT_SERVICE) }
     private val injectInputEventMethod: Method? by lazy {
@@ -104,6 +149,10 @@ class VirtualDisplayAppView(
         surfaceView.isFocusable = true
         surfaceView.isFocusableInTouchMode = true
         surfaceView.holder.addCallback(this)
+        root.addOnAttachStateChangeListener(attachListener)
+        if (root.isAttachedToWindow) {
+            root.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
+        }
         surfaceView.setOnTouchListener { _, event ->
             forwardMotionEvent(event)
             true
@@ -138,10 +187,17 @@ class VirtualDisplayAppView(
 
     private fun attemptCreateVirtualDisplay() {
         val holder = currentHolder ?: return
+        // Focus/unlock signals can arrive after the display already exists.
+        if (virtualDisplay != null) return
         if (!isReadyToCreate(holder)) {
-            scheduleCreateRetry("VirtualDisplay host is not ready")
+            waitForReadiness()
             return
         }
+        if (!isTargetLaunchable()) {
+            waitForTargetPackage()
+            return
+        }
+        stopWaitingForReadiness()
         val width = surfaceView.width.coerceAtLeast(1)
         val height = surfaceView.height.coerceAtLeast(1)
         lastDisplayWidth = width
@@ -182,13 +238,131 @@ class VirtualDisplayAppView(
 
     private fun isReadyToCreate(holder: SurfaceHolder): Boolean {
         val userManager = root.context.getSystemService(UserManager::class.java)
+        if (root.hasWindowFocus()) hostWasFocused = true
         return !disposed &&
             root.isAttachedToWindow &&
-            root.hasWindowFocus() &&
+            hostWasFocused &&
+            root.windowVisibility == View.VISIBLE &&
             surfaceView.width > 0 &&
             surfaceView.height > 0 &&
             holder.surface.isValid &&
             userManager.isUserUnlocked
+    }
+
+    private fun waitForReadiness() {
+        if (disposed) return
+        if (!waitingForReadiness) {
+            waitingForReadiness = true
+            registerUnlockReceiverIfLocked()
+            Log.i(TAG, "Waiting for VirtualDisplay host readiness pane=$paneId package=$targetPackage")
+        }
+        mainHandler.removeCallbacks(readinessRunnable)
+        mainHandler.postDelayed(readinessRunnable, READINESS_POLL_MS)
+    }
+
+    private fun isTargetLaunchable(): Boolean {
+        val packageManager = root.context.packageManager
+        return try {
+            packageManager.getApplicationInfo(targetPackage, 0).enabled &&
+                packageManager.getLaunchIntentForPackage(targetPackage) != null
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    private fun waitForTargetPackage() {
+        if (disposed) return
+        if (packageReceiver == null) {
+            registerPackageReceiver()
+            Log.i(TAG, "Waiting for $targetPackage to become launchable pane=$paneId")
+        }
+        waitingForReadiness = true
+        mainHandler.removeCallbacks(readinessRunnable)
+        mainHandler.postDelayed(readinessRunnable, PACKAGE_POLL_MS)
+    }
+
+    private fun stopWaitingForReadiness() {
+        waitingForReadiness = false
+        mainHandler.removeCallbacks(readinessRunnable)
+        unregisterUnlockReceiver()
+        unregisterPackageReceiver()
+    }
+
+    private fun onReadinessSignal() {
+        if (disposed || !waitingForReadiness) return
+        mainHandler.removeCallbacks(readinessRunnable)
+        mainHandler.post(readinessRunnable)
+    }
+
+    private fun registerUnlockReceiverIfLocked() {
+        val userManager = root.context.getSystemService(UserManager::class.java)
+        if (unlockReceiver != null || userManager?.isUserUnlocked != false) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                onReadinessSignal()
+            }
+        }
+        val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                root.context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                root.context.registerReceiver(receiver, filter)
+            }
+            unlockReceiver = receiver
+        } catch (error: Throwable) {
+            // The readiness poll still covers unlock; the receiver only
+            // shortens the wait.
+            Log.w(TAG, "Unable to observe user unlock for pane=$paneId", error)
+        }
+    }
+
+    private fun unregisterUnlockReceiver() {
+        val receiver = unlockReceiver ?: return
+        unlockReceiver = null
+        try {
+            root.context.unregisterReceiver(receiver)
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun registerPackageReceiver() {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                Log.i(TAG, "Package event ${intent?.action} for $targetPackage pane=$paneId")
+                onReadinessSignal()
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+            addDataSchemeSpecificPart(targetPackage, PatternMatcher.PATTERN_LITERAL)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                root.context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                root.context.registerReceiver(receiver, filter)
+            }
+            packageReceiver = receiver
+        } catch (error: Throwable) {
+            // The package poll still covers this; the receiver only shortens
+            // the wait.
+            Log.w(TAG, "Unable to observe $targetPackage changes for pane=$paneId", error)
+        }
+    }
+
+    private fun unregisterPackageReceiver() {
+        val receiver = packageReceiver ?: return
+        packageReceiver = null
+        try {
+            root.context.unregisterReceiver(receiver)
+        } catch (_: Throwable) {
+        }
     }
 
     private fun scheduleCreateRetry(reason: String) {
@@ -249,6 +423,11 @@ class VirtualDisplayAppView(
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
+        if (virtualDisplay == null) {
+            // First real size is one of the readiness conditions.
+            onReadinessSignal()
+            return
+        }
         if (isImeVisible() && width <= lastDisplayWidth && height < lastDisplayHeight) {
             Log.i(
                 TAG,
@@ -270,6 +449,7 @@ class VirtualDisplayAppView(
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         currentHolder = null
         mainHandler.removeCallbacks(createRetryRunnable)
+        stopWaitingForReadiness()
         virtualDisplay?.surface = null
     }
 
@@ -425,6 +605,7 @@ class VirtualDisplayAppView(
         root.post {
             if (disposed) return@post
 
+            stopWaitingForReadiness()
             releaseVirtualDisplay()
             surfaceView.holder.removeCallback(this)
             root.removeAllViews()
@@ -449,6 +630,9 @@ class VirtualDisplayAppView(
     override fun dispose() {
         disposed = true
         mainHandler.removeCallbacks(createRetryRunnable)
+        stopWaitingForReadiness()
+        root.removeOnAttachStateChangeListener(attachListener)
+        root.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
         currentHolder = null
         surfaceView.holder.removeCallback(this)
         surfaceView.setOnTouchListener(null)

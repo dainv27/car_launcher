@@ -52,28 +52,29 @@ android {
         }
     }
 
-    // Two build channels:
-    //  - normal: ordinary app, debug-signed. Installs and runs like today.
-    //            Signature permissions (INJECT_EVENTS, ADD_TRUSTED_DISPLAY,
-    //            MANAGE_ACTIVITY_*) are declared but NOT granted, so embedding
-    //            uses the accessibility / freeform fallbacks.
+    // Single build channel:
     //  - system: adds android:sharedUserId="android.uid.system" (via the
     //            src/system/ manifest overlay) and is platform-signed. This is
     //            the CarCar-equivalent build: it runs as the system uid and is
     //            granted the signature/privileged permissions directly.
+    // Platform key when available, debug key otherwise (compile-check only).
+    val systemSigningConfig = signingConfigs.findByName("tboxPlatform")
+        ?: signingConfigs.getByName("debug")
     flavorDimensions += "channel"
     productFlavors {
-        create("normal") {
-            dimension = "channel"
-            isDefault = true
-            signingConfig = signingConfigs.getByName("debug")
-        }
         create("system") {
             dimension = "channel"
-            // Platform key when available, debug key otherwise (compile-check only).
-            signingConfig = signingConfigs.findByName("tboxPlatform")
-                ?: signingConfigs.getByName("debug")
+            isDefault = true
+            signingConfig = systemSigningConfig
         }
+    }
+
+    // The debug build type carries its own debug signingConfig, which takes
+    // precedence over the flavor's — pin both build types to the platform key
+    // so `flutter run` (debug) installs as uid.system too.
+    buildTypes {
+        getByName("debug") { signingConfig = systemSigningConfig }
+        getByName("release") { signingConfig = systemSigningConfig }
     }
 }
 

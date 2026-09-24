@@ -56,6 +56,53 @@ void main() {
     expect(source, contains('1L shl'));
   });
 
+  test('virtual display waits out not-ready states without spending retries', () {
+    final source = File(
+      'android/app/src/main/kotlin/com/carlauncher/car_launcher/'
+      'embedding/VirtualDisplayAppView.kt',
+    ).readAsStringSync();
+
+    // Not-ready (locked, unfocused, unsized) waits; only real failures retry.
+    expect(
+      source,
+      matches(RegExp(r'if \(!isReadyToCreate\(holder\)\) \{\s+waitForReadiness\(\)')),
+    );
+    expect(
+      source,
+      isNot(contains('scheduleCreateRetry("VirtualDisplay host is not ready")')),
+    );
+    expect(source, contains('Intent.ACTION_USER_UNLOCKED'));
+    expect(source, contains('addOnWindowFocusChangeListener(focusListener)'));
+    expect(source, contains('READINESS_POLL_MS'));
+    // Surface teardown, fallback, dispose and success all end the wait.
+    expect(
+      'stopWaitingForReadiness()'.allMatches(source).length,
+      greaterThanOrEqualTo(5),
+    );
+  });
+
+  test('virtual display waits for a missing target package to come back', () {
+    final source = File(
+      'android/app/src/main/kotlin/com/carlauncher/car_launcher/'
+      'embedding/VirtualDisplayAppView.kt',
+    ).readAsStringSync();
+
+    // A missing/disabled package waits instead of burning retries into the
+    // permanent fallback.
+    expect(
+      source,
+      matches(RegExp(r'if \(!isTargetLaunchable\(\)\) \{\s+waitForTargetPackage\(\)')),
+    );
+    expect(source, contains('Intent.ACTION_PACKAGE_CHANGED'));
+    expect(source, contains('addDataSchemeSpecificPart(targetPackage'));
+    expect(source, contains('PACKAGE_POLL_MS'));
+    expect(source, contains('unregisterPackageReceiver()'));
+    // Focus moves to the embedded apps' displays; a late pane must not wait
+    // for it to come back.
+    expect(source, contains('hostWasFocused &&'));
+    expect(source, isNot(contains('root.hasWindowFocus() &&')));
+  });
+
   test('Flutter widget creates PlatformViewLink synchronously', () {
     final source = File(
       'lib/features/layout/presentation/widgets/embedded_android_app_view.dart',

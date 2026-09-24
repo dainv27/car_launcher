@@ -79,14 +79,45 @@ void main() {
     );
     expect(receiverSource, contains('StartupCoordinator.scheduleStartupCheck'));
     expect(coordinatorSource, contains('JobScheduler'));
-    expect(coordinatorSource, contains('INITIAL_BOOT_DELAY_MS = 10_000L'));
-    expect(coordinatorSource, contains('MAX_ATTEMPTS = 10'));
+    // Launch promptly once unlocked; embedded packages only get a short
+    // grace period, and an already-running launcher is never re-launched.
+    expect(coordinatorSource, contains('INITIAL_BOOT_DELAY_MS = 1_000L'));
+    expect(coordinatorSource, contains('RETRY_DELAY_MS = 1_000L'));
+    expect(coordinatorSource, contains('PACKAGE_GRACE_ATTEMPTS = 3'));
     expect(coordinatorSource, contains('userManager?.isUserUnlocked'));
+    expect(coordinatorSource, contains('MainActivity.instance != null'));
+    expect(jobServiceSource, contains('isLauncherAlreadyRunning()'));
+    expect(jobServiceSource, contains('readiness.userUnlocked'));
     expect(coordinatorSource, contains('com.google.android.apps.maps'));
     expect(coordinatorSource, contains('com.google.android.youtube'));
     expect(coordinatorSource, contains('startActivity'));
     expect(jobServiceSource, contains('readStartupReadiness'));
     expect(jobServiceSource, contains('launchMainActivity'));
+  });
+
+  test('launcher crash restores Home preference and relaunches if visible', () {
+    final crashRecoverySource = File(
+      'android/app/src/main/kotlin/com/carlauncher/car_launcher/'
+      'CrashRecovery.kt',
+    ).readAsStringSync();
+    final coordinatorSource = startupCoordinator.readAsStringSync();
+    final jobServiceSource = startupJobService.readAsStringSync();
+    final activitySource = mainActivity.readAsStringSync();
+
+    // The recovery job lives in JobScheduler so it outlives the crash.
+    expect(crashRecoverySource, contains('setDefaultUncaughtExceptionHandler'));
+    expect(crashRecoverySource, contains('StartupCoordinator.scheduleStartupCheck'));
+    expect(crashRecoverySource, contains('launch = false'));
+    expect(crashRecoverySource, contains('MAX_RECOVERIES_PER_WINDOW'));
+    expect(activitySource, contains('CrashRecovery.install(this)'));
+    expect(activitySource, contains('CrashRecovery.launcherVisible = true'));
+    expect(activitySource, contains('CrashRecovery.launcherVisible = false'));
+    // AOSP clears the preferred Home on every crash of a non-system Home app.
+    expect(coordinatorSource, contains('isRoleHeld(RoleManager.ROLE_HOME)'));
+    expect(coordinatorSource, contains('addPreferredActivity'));
+    expect(coordinatorSource, contains('setBackoffCriteria'));
+    expect(jobServiceSource, contains('restoreHomePreferenceIfNeeded(this)'));
+    expect(jobServiceSource, contains('EXTRA_LAUNCH'));
   });
 
   test('native activity has no launcher-role or overlay API', () {

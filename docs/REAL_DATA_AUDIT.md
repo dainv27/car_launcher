@@ -1,5 +1,7 @@
 # Real Data Audit
 
+Updated: 2026-09-24
+
 ## Implemented Real Sources
 
 | Surface | Source |
@@ -11,7 +13,7 @@
 | Weather | OpenWeatherMap using real coordinates or configured city |
 | Media metadata and playback controls | Android active `MediaSession` |
 | Maps and YouTube content | Embedded Android applications |
-| Sidebar state | Native Android overlay service |
+| Vehicle tracking points | Native `VehicleTrackingService` writing to local SQLite, synced to the vehicle service |
 
 ## Removed Fabricated Data
 

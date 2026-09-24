@@ -1,10 +1,17 @@
 # 14 — Đăng ký thiết bị (Device registration)
 
-Updated: 2026-08-29
-Status: implemented
-Nguồn: `lib/core/services/device_info_service.dart`,
-`lib/shared/data/device_service.dart`,
-`lib/features/vehicle/domain/device.dart`,
+Updated: 2026-09-24
+Status: implemented — nay là feature riêng `features/device/` (gộp cả device
+gắn-trên-xe, enrollment/attestation, và thu thập thông tin thiết bị; trước đây
+rải ở `core/services`, `shared/data`, và `features/vehicle`)
+Nguồn: `lib/features/device/data/device_info_service.dart`,
+`lib/features/device/data/device_service.dart`,
+`lib/features/device/data/device_enrollment_client.dart`,
+`lib/features/device/domain/device.dart`,
+`lib/features/device/presentation/providers/device_providers.dart`,
+`lib/core/auth/device_identity_service.dart`,
+`lib/core/auth/device_assertion_client.dart` (attestation/identity — hạ tầng
+auth dùng chung, ở lại `core/auth`),
 `lib/main.dart` (`_StartupPermissionGate._ensureDeviceRegistered`)
 
 ## 1. Mục tiêu & phạm vi
@@ -56,7 +63,7 @@ lúc khởi động. Lỗi (mạng tạm thời…) chỉ log — thử lại �
 
 ## 5. Quan hệ với các tính năng khác
 
-- `deviceId` chính là `DeviceInfo.id`, được đưa vào `VehicleProfile.deviceId` khi
+- `deviceId` chính là `DeviceInfo.id`, được đưa vào `Vehicle.deviceId` khi
   gán xe (xem [11](11-vehicle-management.md)), từ đó tạo URL
   `devices/:deviceId/tracking-points` cho [12](12-vehicle-tracking.md).
 - `LauncherService.getDeviceInfo()` cũng trả `DeviceInfoService.fetchDeviceInfo().toMap()`
@@ -80,5 +87,6 @@ lúc khởi động. Lỗi (mạng tạm thời…) chỉ log — thử lại �
 
 ## 8. Kiểm thử
 
-`test/real_data_contract_test.dart`, `test/vehicle_tracking_sync_client_test.dart`
-(payload device trong luồng đăng ký xe).
+`test/real_data_contract_test.dart`, `test/device_service_test.dart`
+(`ensureDeviceRegistered`/`createDevice`/`listDevices`),
+`test/device_enrollment_client_test.dart` (attestation handshake).

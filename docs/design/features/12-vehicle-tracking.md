@@ -1,15 +1,23 @@
 # 12 — Theo dõi hành trình (Vehicle Tracking)
 
-Updated: 2026-08-29
-Status: implemented
+Updated: 2026-09-24
+Status: implemented — nay là feature riêng `features/tracking/` (trước đây
+phần ghi nằm lạc trong `shared/data/location_service.dart`, xem §10)
 Route: mục Settings "Tracking" (cat 8), `/history/:vehicleId`; badge trên
 Dashboard & `TopAppBar`
-Nguồn: `lib/shared/data/location_service.dart` (`VehicleTrackingNotifier`,
-`VehicleTrackingState`, `LocationNotifier`, `VehicleTrackingSyncClient`),
-`lib/shared/data/vehicle_tracking_store_service.dart`,
-`lib/features/vehicle/data/tracking_repository.dart`,
-`lib/features/vehicle/presentation/providers/tracking_providers.dart`,
-`lib/features/vehicle/presentation/views/tracking_history_page.dart`,
+Nguồn: `lib/features/tracking/presentation/tracking_notifier.dart`
+(`VehicleTrackingNotifier`, `VehicleTrackingState`),
+`lib/features/tracking/presentation/providers/tracking_providers.dart`
+(`vehicleTrackingProvider` + các provider đọc lịch sử/route),
+`lib/features/tracking/data/tracking_sync_client.dart` (`TrackingSyncClient` —
+chỉ tracking-point, CRUD xe đã tách sang `VehicleApiClient`, xem
+[11](11-vehicle-management.md)),
+`lib/features/tracking/data/tracking_store_service.dart`,
+`lib/features/tracking/domain/vehicle_track_point.dart`,
+`lib/features/tracking/data/tracking_repository.dart`,
+`lib/features/tracking/presentation/views/tracking_history_page.dart`,
+`lib/shared/data/location_service.dart` (`LocationInfo`/`LocationNotifier`/
+`currentLocationProvider` — vị trí hiển thị chung, KHÔNG liên quan tracking xe),
 `lib/features/dashboard/presentation/widgets/vehicle_tracking_card.dart`,
 `android/app/src/main/kotlin/com/carlauncher/car_launcher/VehicleTrackingService.kt`,
 `lib/main.dart` (`_setupTrackingAuthChannel`)
@@ -89,8 +97,10 @@ Cài đặt + vehicle profile lưu ở `SharedPreferences` (native đọc từ
 ## 5. `VehicleTrackingState` (Flutter)
 
 Trường: `enabled`, `points: List<VehicleTrackPoint>`, `distanceMeters`,
-`isLoading`, `syncEndpoint`, `vehicle: VehicleProfile`, `vehicles`,
+`isLoading`, `syncEndpoint`, `vehicle: Vehicle`, `vehicles: List<Vehicle>`,
 `isLoadingVehicles`, `lastVehicleError?`, `isSyncing`, `lastSyncError?`.
+`Vehicle` (`features/vehicle/domain/vehicle.dart`) là model xe dùng chung với
+CRUD — xem [11](11-vehicle-management.md)§6.
 Getter: `lastPoint`, `pointCount`, `pendingSyncCount` (điểm chưa `synced`),
 `hasRoute`, `canSync` (`vehicleId` + `deviceId` + có pending), `formattedDistance`.
 
@@ -108,8 +118,9 @@ POST một điểm.
   `enabled` → bật lại native + đẩy config + `syncNow`.
 - **Timer 10s** `_refreshFromStore()`: đọc lại pending/synced → cập nhật state.
 - **`assignVehicle` / `saveVehicleProfile` / `loadVehicles`**: gọi
-  `VehicleTrackingSyncClient`, lưu `VehicleProfile` vào store, đẩy lại native
-  config (URL tracking-points phụ thuộc `deviceId`).
+  `VehicleApiClient` (features/vehicle — CRUD xe, không phải
+  `TrackingSyncClient`), lưu `Vehicle` vào store, đẩy lại native config (URL
+  tracking-points phụ thuộc `deviceId`).
 - **`syncNow()`**: gọi `syncVehicleTrackingNow` (no-op nếu service không chạy) →
   chờ 300ms → `_refreshFromStore`.
 
@@ -153,9 +164,26 @@ Payload POST một điểm:
 | `trackingRepositoryProvider` | `Provider<TrackingRepository>` — get_it `factoryParam(syncEndpoint)` |
 | `latestTrackingPointProvider` / `trackingHistoryProvider` | `FutureProvider.family` — `GET .../tracking-points/latest`, `GET .../tracking-points?from&to&page&size` |
 
-`TrackingRepository` cung cấp path "history feature" (đọc từ server) và một
-`syncPendingPoints` batch-50 độc lập — chủ yếu native lo sync, repo này phục vụ
-màn hình lịch sử.
+`TrackingRepository` cung cấp path "history feature" (đọc từ server, qua
+`TrackingSyncClient`) — chủ yếu native lo sync, repo này phục vụ màn hình lịch
+sử.
+
+## 10.1 Đã tách khỏi `shared/` (2026-09-24)
+
+Toàn bộ khối trên từng nằm trong `lib/shared/data/location_service.dart` +
+`lib/shared/data/vehicle_tracking_store_service.dart` — bị dán nhãn "shared"
+nhưng thực chất là lõi nghiệp vụ Tracking, không phải hạ tầng dùng chung. Đã
+chuyển sang `lib/features/tracking/`. Phần thật sự dùng chung (`LocationInfo`,
+`LocationNotifier`, `currentLocationProvider` — vị trí hiển thị TopAppBar/thời
+tiết) ở lại `shared/data/location_service.dart`.
+
+`VehicleTrackingSyncClient` (từng làm cả CRUD xe lẫn tracking-point) tách làm
+2: `VehicleApiClient` (features/vehicle — CRUD xe) và `TrackingSyncClient`
+(features/tracking — chỉ tracking-point). `VehicleTrackingNotifier` giờ chỉ
+phụ thuộc `VehicleApiClient` (cho `assignVehicle`/`saveVehicleProfile`/
+`loadVehicles`) — không hề tham chiếu `TrackingSyncClient`, nên về mặt kiểu
+dữ liệu không thể vô tình gọi HTTP tracking-point từ Flutter (bất biến
+"single writer" ở §2 giờ được enforce ở compile-time, không chỉ ở quy ước).
 
 ## 9. UI
 
@@ -198,6 +226,7 @@ màn hình lịch sử.
 ## 12. Kiểm thử
 
 `test/vehicle_tracking_contract_test.dart`, `test/vehicle_tracking_notifier_test.dart`,
-`test/vehicle_tracking_store_test.dart`, `test/vehicle_tracking_sync_client_test.dart`,
+`test/vehicle_tracking_store_test.dart`, `test/tracking_sync_client_test.dart`
+(tracking-point HTTP), `test/vehicle_api_client_test.dart` (CRUD xe),
 `test/tracking_repository_test.dart`, `test/tracking_point_test.dart`,
 `test/tracking_history_page_test.dart`, `test/location_bridge_contract_test.dart`.

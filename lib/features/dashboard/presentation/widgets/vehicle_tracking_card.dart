@@ -1,5 +1,6 @@
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
+import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -213,8 +214,8 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
                   (vehicle) => ChoiceChip(
                     label: Text(vehicle.displayName),
                     selected:
-                        vehicle.vehicleId.isNotEmpty &&
-                        vehicle.vehicleId == tracking.vehicle.vehicleId,
+                        vehicle.id.isNotEmpty &&
+                        vehicle.id == tracking.vehicle.id,
                     onSelected: (_) => notifier.assignVehicle(vehicle),
                   ),
                 )
@@ -293,11 +294,11 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
   static Future<void> _showVehicleProfileDialog(
     BuildContext context,
     VehicleTrackingNotifier notifier,
-    VehicleProfile current,
+    Vehicle current,
   ) async {
     final plateNumber = TextEditingController(text: current.plateNumber);
     final name = TextEditingController(text: current.name);
-    final make = TextEditingController(text: current.make);
+    final make = TextEditingController(text: current.brand);
     final model = TextEditingController(text: current.model);
     final year = TextEditingController(text: current.year);
     final saved = await showDialog<bool>(
@@ -343,13 +344,14 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
       ),
     );
     if (saved == true) {
+      final trimmedYear = year.text.trim();
       await notifier.saveVehicleProfile(
-        VehicleProfile(
+        Vehicle(
           plateNumber: plateNumber.text.trim(),
           name: name.text.trim(),
-          make: make.text.trim(),
+          brand: make.text.trim(),
           model: model.text.trim(),
-          year: year.text.trim(),
+          metadata: trimmedYear.isNotEmpty ? {'year': trimmedYear} : const {},
         ),
       );
     }
@@ -371,15 +373,15 @@ class VehicleTrackingSettingsCard extends ConsumerWidget {
 class _VehicleSummary extends StatelessWidget {
   const _VehicleSummary({required this.vehicle});
 
-  final VehicleProfile vehicle;
+  final Vehicle vehicle;
 
   @override
   Widget build(BuildContext context) {
     final subtitle = vehicle.hasData
         ? [
             if (vehicle.name.isNotEmpty) vehicle.name,
-            if (vehicle.make.isNotEmpty || vehicle.model.isNotEmpty)
-              '${vehicle.make} ${vehicle.model}'.trim(),
+            if (vehicle.brand.isNotEmpty || vehicle.model.isNotEmpty)
+              '${vehicle.brand} ${vehicle.model}'.trim(),
             if (vehicle.year.isNotEmpty) vehicle.year,
           ].where((value) => value.isNotEmpty).join(' | ')
         : 'Vehicle is not registered';

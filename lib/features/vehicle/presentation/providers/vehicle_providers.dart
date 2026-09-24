@@ -1,7 +1,7 @@
 import 'package:car_launcher/core/di/injection_container.dart';
 import 'package:car_launcher/features/vehicle/data/vehicle_repository.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provider for the vehicle repository — reads the dynamic syncEndpoint

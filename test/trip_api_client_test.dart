@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:car_launcher/core/api/api_response.dart';
-import 'package:car_launcher/features/vehicle/data/trip_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/trip_repository.dart';
-import 'package:car_launcher/features/vehicle/domain/trip.dart';
+import 'package:car_launcher/features/trip/data/trip_api_client.dart';
+import 'package:car_launcher/features/trip/data/trip_repository.dart';
+import 'package:car_launcher/features/trip/domain/trip.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

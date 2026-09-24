@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
-import 'package:car_launcher/features/vehicle/data/tracking_repository.dart';
-import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
+import 'package:car_launcher/features/tracking/data/tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/data/tracking_repository.dart';
+import 'package:car_launcher/features/tracking/data/tracking_sync_client.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_point.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -21,7 +21,7 @@ void main() {
         'eventTime': '2026-06-22T12:00:00.000Z',
         'metadata': {'clientPointId': 'abc', 'displayName': 'Garage'},
       });
-      final client = VehicleTrackingSyncClient(
+      final client = TrackingSyncClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = TrackingRepository(
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('getLatestTrackingPoint returns null on 204', () async {
-      final client = VehicleTrackingSyncClient(
+      final client = TrackingSyncClient(
         httpClient: _mockClient(body: '', status: 204),
       );
       final repo = TrackingRepository(
@@ -65,7 +65,7 @@ void main() {
           'eventTime': '2026-06-22T13:00:00.000Z',
         },
       ]);
-      final client = VehicleTrackingSyncClient(
+      final client = TrackingSyncClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = TrackingRepository(
@@ -80,7 +80,7 @@ void main() {
     });
 
     test('listTrackingPoints passes from/to/page/size query params', () async {
-      final client = VehicleTrackingSyncClient(
+      final client = TrackingSyncClient(
         httpClient: _MockCapturingClient(),
       );
       final repo = TrackingRepository(

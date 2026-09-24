@@ -1,10 +1,10 @@
-import 'package:car_launcher/features/vehicle/domain/alert_rule.dart';
-import 'package:car_launcher/features/vehicle/domain/geo_point.dart';
-import 'package:car_launcher/features/vehicle/domain/geofence.dart';
-import 'package:car_launcher/features/vehicle/domain/geofence_event.dart';
-import 'package:car_launcher/features/vehicle/domain/tracking_route.dart';
-import 'package:car_launcher/features/vehicle/domain/trip.dart';
-import 'package:car_launcher/features/vehicle/domain/vehicle_alert.dart';
+import 'package:car_launcher/features/alert/domain/alert_rule.dart';
+import 'package:car_launcher/features/alert/domain/vehicle_alert.dart';
+import 'package:car_launcher/features/geofence/domain/geo_point.dart';
+import 'package:car_launcher/features/geofence/domain/geofence.dart';
+import 'package:car_launcher/features/geofence/domain/geofence_event.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_route.dart';
+import 'package:car_launcher/features/trip/domain/trip.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

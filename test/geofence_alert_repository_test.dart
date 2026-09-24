@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:car_launcher/features/vehicle/data/alert_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/alert_repository.dart';
-import 'package:car_launcher/features/vehicle/data/geofence_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/geofence_repository.dart';
-import 'package:car_launcher/features/vehicle/domain/alert_rule.dart';
-import 'package:car_launcher/features/vehicle/domain/geofence.dart';
-import 'package:car_launcher/features/vehicle/domain/vehicle_alert.dart';
+import 'package:car_launcher/features/alert/data/alert_api_client.dart';
+import 'package:car_launcher/features/alert/data/alert_repository.dart';
+import 'package:car_launcher/features/geofence/data/geofence_api_client.dart';
+import 'package:car_launcher/features/geofence/data/geofence_repository.dart';
+import 'package:car_launcher/features/alert/domain/alert_rule.dart';
+import 'package:car_launcher/features/geofence/domain/geofence.dart';
+import 'package:car_launcher/features/alert/domain/vehicle_alert.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

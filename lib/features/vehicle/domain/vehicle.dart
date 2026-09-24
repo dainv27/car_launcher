@@ -1,9 +1,7 @@
-import 'package:car_launcher/shared/data/location_service.dart';
-
 /// Primary vehicle entity for the vehicle management feature.
 ///
-/// This wraps the API contract fields and provides conversion to/from
-/// the existing [VehicleProfile] model used by the tracking subsystem.
+/// Also the model the tracking subsystem assigns/reads (single vehicle model
+/// used across vehicle CRUD and tracking — see `features/tracking`).
 class Vehicle {
   const Vehicle({
     this.id = '',
@@ -52,13 +50,15 @@ class Vehicle {
       plateNumber.isNotEmpty ||
       name.isNotEmpty ||
       brand.isNotEmpty ||
-      model.isNotEmpty;
+      model.isNotEmpty ||
+      deviceId.isNotEmpty ||
+      year.isNotEmpty;
 
   String get displayName {
     if (plateNumber.isNotEmpty) return plateNumber;
     if (name.isNotEmpty) return name;
     if (id.isNotEmpty) return id;
-    return 'Unknown vehicle';
+    return 'Not registered';
   }
 
   Vehicle copyWith({
@@ -129,28 +129,6 @@ class Vehicle {
         if (vin.isNotEmpty) 'vin': vin,
         if (metadata.isNotEmpty) 'metadata': metadata,
       };
-
-  /// Convert to [VehicleProfile] for use by the tracking subsystem.
-  VehicleProfile toProfile() => VehicleProfile(
-        vehicleId: id,
-        plateNumber: plateNumber,
-        name: name,
-        make: brand,
-        model: model,
-        deviceId: deviceId,
-        year: year,
-      );
-
-  /// Create from an existing [VehicleProfile].
-  factory Vehicle.fromProfile(VehicleProfile profile) => Vehicle(
-        id: profile.vehicleId,
-        plateNumber: profile.plateNumber,
-        name: profile.name,
-        brand: profile.make,
-        model: profile.model,
-        deviceId: profile.deviceId,
-        metadata: profile.year.isNotEmpty ? {'year': profile.year} : const {},
-      );
 
   @override
   String toString() => 'Vehicle(id: $id, plateNumber: $plateNumber, name: $name)';

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:car_launcher/core/theme/app_theme.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_dialog.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;

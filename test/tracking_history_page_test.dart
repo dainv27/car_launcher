@@ -1,9 +1,8 @@
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
-import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
-import 'package:car_launcher/features/vehicle/domain/tracking_route.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/map_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/tracking_history_page.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_point.dart';
+import 'package:car_launcher/features/tracking/domain/tracking_route.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
+import 'package:car_launcher/features/tracking/presentation/views/tracking_history_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

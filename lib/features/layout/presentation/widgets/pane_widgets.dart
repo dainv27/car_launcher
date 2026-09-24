@@ -129,9 +129,14 @@ Future<void> showPaneAppPicker({
   );
 
   PaneLaunchCoordinator.invalidate();
+  final launcher = ref.read(launcherServiceProvider);
+  // Only foreground-launch as a fallback: on devices that support
+  // embedding, the pane renders the app in place and jumping to it
+  // fullscreen would just kick the user out of Settings mid-assignment.
+  if (await launcher.isEmbeddingSupported()) return;
   final model = ref.read(layoutProvider);
   await PaneLaunchCoordinator.launchForLayout(
-    ref.read(launcherServiceProvider),
+    launcher,
     model,
     force: true,
     useSplitScreenFallback: true,

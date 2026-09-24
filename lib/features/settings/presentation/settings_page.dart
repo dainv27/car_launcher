@@ -10,9 +10,6 @@ import 'package:car_launcher/features/account/presentation/widgets/login_require
 import 'package:car_launcher/features/dashboard/presentation/providers/carplay_settings_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tracking_card.dart';
-import 'package:car_launcher/features/layout/domain/layout_model.dart';
-import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
-import 'package:car_launcher/features/layout/presentation/widgets/pane_widgets.dart';
 import 'package:car_launcher/features/settings/domain/welcome_greeting.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/default_launcher_provider.dart';
@@ -1271,7 +1268,6 @@ class _DashboardSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final carPlaySettings = ref.watch(carPlaySettingsProvider);
     final selectedMode = carPlaySettings.homeViewMode;
-    final isMultiApp = selectedMode == HomeViewMode.multiApp;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(right: 8, bottom: CarPlayTheme.margin),
@@ -1298,81 +1294,26 @@ class _DashboardSection extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // 2×2 grid of dashboard preview tiles
-                for (final row in [
-                  [HomeViewMode.dashboard01, HomeViewMode.dashboard02],
-                  [HomeViewMode.dashboard03, HomeViewMode.multiApp],
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        for (final mode in row) ...[
-                          Expanded(
-                            child: _DashboardPreviewTile(
-                              mode: mode,
-                              isSelected: selectedMode == mode,
-                              onTap: () {
-                                ref
-                                    .read(carPlaySettingsProvider.notifier)
-                                    .setHomeViewMode(mode);
-                                if (mode == HomeViewMode.multiApp) {
-                                  ref
-                                      .read(layoutProvider.notifier)
-                                      .setType(LayoutType.dualPane);
-                                }
-                              },
-                            ),
-                          ),
-                          if (mode != row.last) const SizedBox(width: 12),
-                        ],
-                      ],
-                    ),
-                  ),
+                Row(
+                  children: [
+                    for (final mode in HomeViewMode.values) ...[
+                      Expanded(
+                        child: _DashboardPreviewTile(
+                          mode: mode,
+                          isSelected: selectedMode == mode,
+                          onTap: () => ref
+                              .read(carPlaySettingsProvider.notifier)
+                              .setHomeViewMode(mode),
+                        ),
+                      ),
+                      if (mode != HomeViewMode.values.last)
+                        const SizedBox(width: 12),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
-
-          // ── Multi-app specific controls ──
-          if (isMultiApp) ...[
-            const SizedBox(height: CarPlayTheme.widgetGap),
-            _GlassPanel(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pane Apps',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Assign apps to each pane',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.palette.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _MultiAppPaneSettings(),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Pane Split',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _PaneRatioSelector(),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -1474,8 +1415,6 @@ class _DashboardPreviewTile extends StatelessWidget {
         return _PreviewDashboard02();
       case HomeViewMode.dashboard03:
         return _PreviewDashboard03();
-      case HomeViewMode.multiApp:
-        return _PreviewMultiApp();
     }
   }
 }
@@ -1647,176 +1586,6 @@ class _PreviewDashboard03 extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PreviewMultiApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // Sidebar
-        Container(
-          width: 6,
-          color: context.palette.scrim.withValues(alpha: 0.3),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(3),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.palette.surfaceRaised,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'App 1',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: context.palette.textTertiary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.palette.surface,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'App 2',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: context.palette.textTertiary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Pane app assignment UI — only shown in multiApp mode.
-class _MultiAppPaneSettings extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final layout = ref.watch(layoutProvider);
-    return Column(
-      children: [
-        for (var i = 0; i < 2; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _PaneAppTile(index: i, app: layout.appForPane(i)),
-          ),
-      ],
-    );
-  }
-}
-
-/// Split-ratio chips for the two multiApp panes.
-class _PaneRatioSelector extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currentRatio = ref.watch(layoutRatioProvider);
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: LayoutRatio.values.map((ratio) {
-        final isSelected = ratio == currentRatio;
-        return FilterChip(
-          label: Text(ratio.label),
-          selected: isSelected,
-          onSelected: (_) =>
-              ref.read(layoutProvider.notifier).setRatio(ratio),
-          selectedColor: Theme.of(context).colorScheme.primary,
-          checkmarkColor: context.palette.textPrimary,
-          labelStyle: TextStyle(
-            color: isSelected
-                ? context.palette.textPrimary
-                : context.palette.textSecondary,
-          ),
-          backgroundColor: context.palette.foreground.withValues(alpha: 0.12),
-          side: BorderSide(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : context.palette.foreground.withValues(alpha: 0.24),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _PaneAppTile extends ConsumerWidget {
-  const _PaneAppTile({required this.index, required this.app});
-
-  final int index;
-  final PaneApp? app;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final name = app?.appName ?? 'Tap to select';
-    return GestureDetector(
-      onTap: () => showPaneAppPicker(
-        context: context,
-        ref: ref,
-        paneIndex: index,
-        currentApp: app,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: context.palette.surfaceRaised,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.accent,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: app != null
-                    ? context.palette.textPrimary
-                    : context.palette.textSecondary,
-              ),
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: context.palette.textSecondary,
-            size: 20,
-          ),
-        ],
-      ),
     );
   }
 }

@@ -60,8 +60,7 @@ lib/
   (ví dụ `accountSessionProvider`, `effectiveThemeModeProvider`,
   `vehicleTrackingProvider`, `sharedPreferencesProvider`, `httpClientProvider`).
 - Một số provider được `overrideWith` trong `main.dart` để tiêm
-  `SharedPreferences` (ví dụ `layoutProvider`, `widgetListProvider`,
-  `carPlaySettingsProvider`).
+  `SharedPreferences` (ví dụ `widgetListProvider`, `carPlaySettingsProvider`).
 
 ### Dependency Injection — get_it
 

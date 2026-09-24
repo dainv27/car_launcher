@@ -6,9 +6,6 @@ import 'package:car_launcher/features/dashboard/presentation/providers/carplay_s
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/widgets/bottom_status_bar.dart';
 import 'package:car_launcher/features/dashboard/presentation/widgets/top_app_bar.dart';
-import 'package:car_launcher/features/layout/domain/layout_model.dart';
-import 'package:car_launcher/features/layout/presentation/layout_engine.dart';
-import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/media/presentation/media_center_page.dart';
 import 'package:car_launcher/features/settings/presentation/settings_page.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +14,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The "home" slot of the dashboard PageView is driven by
 /// [carPlaySettingsProvider]'s `homeViewMode` instead of being fixed, so
 /// choosing a layout style in Settings → Dashboard actually changes what
-/// shows here.
-Widget _homeContentFor(HomeViewMode mode, LayoutModel layout) {
+/// shows here. All layouts render through the VirtualDisplay-based
+/// `EmbeddedAndroidAppView` (see `NavigationMapWidget`/`YoutubeWidget`).
+Widget _homeContentFor(HomeViewMode mode) {
   switch (mode) {
     case HomeViewMode.dashboard01:
       return const MapPage();
@@ -26,8 +24,6 @@ Widget _homeContentFor(HomeViewMode mode, LayoutModel layout) {
       return const MapWithMedia();
     case HomeViewMode.dashboard03:
       return const MapWithYoutube();
-    case HomeViewMode.multiApp:
-      return LayoutEngine(model: layout);
   }
 }
 
@@ -78,7 +74,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final index = ref.watch(dashboardIndexProvider).clamp(0, _pageCount - 1);
     final homeViewMode = ref.watch(carPlaySettingsProvider).homeViewMode;
-    final layout = ref.watch(layoutProvider);
 
     ref.listen<int>(dashboardIndexProvider, (previous, next) {
       if (previous == next) return;
@@ -87,16 +82,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     final bodies = <Widget>[
       const MediaCenterPage(),
-      _homeContentFor(homeViewMode, layout),
+      _homeContentFor(homeViewMode),
       const AppDrawerPage(),
       const SettingsPage(),
     ];
-    final topBarTitles = [
-      'Media Center',
-      homeViewMode == HomeViewMode.multiApp ? 'Multi App' : '',
-      'Apps',
-      'Settings',
-    ];
+    const topBarTitles = ['Media Center', '', 'Apps', 'Settings'];
 
     return Scaffold(
       backgroundColor: Colors.transparent,

@@ -10,7 +10,6 @@ import 'package:car_launcher/core/router/app_router.dart';
 import 'package:car_launcher/core/theme/app_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/carplay_settings_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/widget_providers.dart';
-import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/settings/presentation/providers/welcome_greeting_provider.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
@@ -70,7 +69,6 @@ void main() async {
       overrides: [
         // sharedPreferencesProvider and launcherServiceProvider are now
         // registered in injection_container.dart — no override needed.
-        layoutProvider.overrideWith((ref) => LayoutNotifier(getIt<SharedPreferences>())),
         widgetListProvider.overrideWith((ref) => WidgetListNotifier(getIt<SharedPreferences>())),
         carPlaySettingsProvider.overrideWith((ref) => CarPlaySettingsNotifier(getIt<SharedPreferences>())),
       ],

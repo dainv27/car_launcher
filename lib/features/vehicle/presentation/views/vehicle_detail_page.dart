@@ -12,6 +12,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Page at /vehicles/:id showing vehicle details.
 class VehicleDetailPage extends ConsumerWidget {
@@ -36,20 +37,20 @@ class VehicleDetailPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: CarPlayTheme.deepObsidian,
-        title: const Text(
+        backgroundColor: context.palette.background,
+        title: Text(
           'Vehicle Details',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
       body: vehicleAsync.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(
-            color: CarPlayTheme.neonCyan,
+            color: context.palette.accent,
             strokeWidth: 2,
           ),
         ),
@@ -60,14 +61,14 @@ class VehicleDetailPage extends ConsumerWidget {
               Icon(
                 Icons.error_outline,
                 size: 48,
-                color: CarPlayTheme.hazardRed.withValues(alpha: 0.7),
+                color: context.palette.danger.withValues(alpha: 0.7),
               ),
               const SizedBox(height: 12),
               Text(
                 'Failed to load vehicle',
                 style: TextStyle(
                   fontSize: 16,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -108,7 +109,7 @@ class _VehicleDetailContent extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: CarPlayTheme.onSurface,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -128,7 +129,7 @@ class _VehicleDetailContent extends ConsumerWidget {
                   _InfoRow(
                     label: 'ID',
                     value: vehicle.id,
-                    valueColor: CarPlayTheme.onSurfaceVariant,
+                    valueColor: context.palette.textSecondary,
                   ),
                 ],
               ],
@@ -222,14 +223,14 @@ class _LatestLocationSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final header = Row(
       children: [
-        Icon(Icons.my_location_outlined, size: 20, color: CarPlayTheme.neonCyan),
+        Icon(Icons.my_location_outlined, size: 20, color: context.palette.accent),
         const SizedBox(width: 8),
         Text(
           'Latest Location',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -244,7 +245,7 @@ class _LatestLocationSection extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Vehicle has no id yet',
-              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+              style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
             ),
           ],
         ),
@@ -260,22 +261,22 @@ class _LatestLocationSection extends ConsumerWidget {
           header,
           const SizedBox(height: 8),
           latestAsync.when(
-            loading: () => const SizedBox(
+            loading: () => SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
-                color: CarPlayTheme.neonCyan,
+                color: context.palette.accent,
                 strokeWidth: 2,
               ),
             ),
             error: (error, _) => Text(
               'Failed to load latest location',
-              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+              style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
             ),
             data: (point) => point == null
                 ? Text(
                     'No location data available',
-                    style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+                    style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
                   )
                 : _LatestLocationDetails(point: point),
           ),
@@ -342,14 +343,14 @@ class _AttachedDevicesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final header = Row(
       children: [
-        Icon(Icons.devices_outlined, size: 20, color: CarPlayTheme.neonCyan),
+        Icon(Icons.devices_outlined, size: 20, color: context.palette.accent),
         const SizedBox(width: 8),
         Text(
           'Attached Devices',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: CarPlayTheme.onSurface,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -364,22 +365,22 @@ class _AttachedDevicesSection extends ConsumerWidget {
           header,
           const SizedBox(height: 8),
           devicesAsync.when(
-            loading: () => const SizedBox(
+            loading: () => SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
-                color: CarPlayTheme.neonCyan,
+                color: context.palette.accent,
                 strokeWidth: 2,
               ),
             ),
             error: (error, _) => Text(
               'Failed to load devices',
-              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+              style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
             ),
             data: (devices) => devices.isEmpty
                 ? Text(
                     'No devices',
-                    style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
+                    style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,12 +406,12 @@ class _DeviceTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(Icons.smartphone_outlined, size: 18, color: CarPlayTheme.onSurfaceVariant),
+          Icon(Icons.smartphone_outlined, size: 18, color: context.palette.textSecondary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               device.displayName,
-              style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurface),
+              style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
             ),
           ),
         ],
@@ -428,9 +429,9 @@ class _GlassPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: CarPlayTheme.surfaceVariant,
+        color: context.palette.surfaceRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(26)),
+        border: Border.all(color: context.palette.border),
       ),
       padding: const EdgeInsets.all(24),
       child: child,
@@ -460,7 +461,7 @@ class _InfoRow extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ),
         ),
@@ -470,7 +471,7 @@ class _InfoRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: valueColor ?? CarPlayTheme.onSurface,
+              color: valueColor ?? context.palette.textPrimary,
             ),
           ),
         ),

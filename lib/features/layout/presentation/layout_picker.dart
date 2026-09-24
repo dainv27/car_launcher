@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// LayoutPicker — UI for selecting layout type and ratio
 class LayoutPicker extends ConsumerWidget {
@@ -17,12 +18,12 @@ class LayoutPicker extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Layout type selector
-        const Text(
+        Text(
           'Layout Type',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -45,12 +46,12 @@ class LayoutPicker extends ConsumerWidget {
 
         // Ratio selector (only show for multi-pane layouts)
         if (currentType != LayoutType.dashboard_01) ...[
-          const Text(
+          Text(
             'Pane Ratio',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -95,7 +96,7 @@ class _LayoutTypeChip extends StatelessWidget {
           Icon(
             type.icon,
             size: 18,
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? context.palette.textPrimary : context.palette.textSecondary,
           ),
           const SizedBox(width: 6),
           Text(type.displayName),
@@ -104,15 +105,15 @@ class _LayoutTypeChip extends StatelessWidget {
       selected: isSelected,
       onSelected: (_) => onSelected(),
       selectedColor: Theme.of(context).colorScheme.primary,
-      checkmarkColor: Colors.white,
+      checkmarkColor: context.palette.textPrimary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
+        color: isSelected ? context.palette.textPrimary : context.palette.textSecondary,
       ),
-      backgroundColor: Colors.white12,
+      backgroundColor: context.palette.foreground.withValues(alpha: 0.12),
       side: BorderSide(
         color: isSelected
             ? Theme.of(context).colorScheme.primary
-            : Colors.white24,
+            : context.palette.foreground.withValues(alpha: 0.24),
       ),
     );
   }
@@ -137,15 +138,15 @@ class _RatioChip extends StatelessWidget {
       selected: isSelected,
       onSelected: (_) => onSelected(),
       selectedColor: Theme.of(context).colorScheme.primary,
-      checkmarkColor: Colors.white,
+      checkmarkColor: context.palette.textPrimary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
+        color: isSelected ? context.palette.textPrimary : context.palette.textSecondary,
       ),
-      backgroundColor: Colors.white12,
+      backgroundColor: context.palette.foreground.withValues(alpha: 0.12),
       side: BorderSide(
         color: isSelected
             ? Theme.of(context).colorScheme.primary
-            : Colors.white24,
+            : context.palette.foreground.withValues(alpha: 0.24),
       ),
     );
   }

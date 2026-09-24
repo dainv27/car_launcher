@@ -1,8 +1,8 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle_brand.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_brand_badge.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Dialog for creating or editing a vehicle.
 ///
@@ -71,10 +71,10 @@ class _VehicleFormDialogState extends State<VehicleFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: true,
-      backgroundColor: CarPlayTheme.surfaceContainer,
+      backgroundColor: context.palette.surface,
       title: Text(
         _isEditing ? 'Edit vehicle' : 'Add vehicle',
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: context.palette.textPrimary),
       ),
       content: SizedBox(
         width: 420,
@@ -168,12 +168,14 @@ class _BrandField extends StatelessWidget {
           const SizedBox(height: 8),
           TextField(
             controller: controller,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            style: TextStyle(color: context.palette.textPrimary),
+            decoration: InputDecoration(
               labelText: 'Brand',
-              labelStyle: TextStyle(color: Colors.white70),
+              labelStyle: TextStyle(color: context.palette.textSecondary),
               enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
+                borderSide: BorderSide(
+                  color: context.palette.foreground.withValues(alpha: 0.24),
+                ),
               ),
             ),
           ),
@@ -205,12 +207,14 @@ class _VehicleTextField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         validator: validator,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: context.palette.textPrimary),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white70),
-          enabledBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.white24),
+          labelStyle: TextStyle(color: context.palette.textSecondary),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: context.palette.foreground.withValues(alpha: 0.24),
+            ),
           ),
         ),
       ),

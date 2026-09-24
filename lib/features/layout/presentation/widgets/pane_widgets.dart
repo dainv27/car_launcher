@@ -5,6 +5,7 @@ import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/pane_launch_coordinator.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/layout/presentation/widgets/app_picker_dialog.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Container styling shared by all layout panes.
 class PaneContainer extends StatelessWidget {
@@ -15,7 +16,7 @@ class PaneContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.3)),
+      decoration: BoxDecoration(color: context.palette.glass),
       child: child,
     );
   }
@@ -54,13 +55,13 @@ class AppPane extends StatelessWidget {
             Icon(
               hasApp ? Icons.android : Icons.add_circle_outline,
               size: 48,
-              color: hasApp ? Colors.greenAccent : Colors.white38,
+              color: hasApp ? context.palette.success : context.palette.textTertiary,
             ),
             const SizedBox(height: 8),
             Text(
               hasApp ? app!.appName : 'Pane ${paneIndex + 1}\nTap to assign',
               style: TextStyle(
-                color: hasApp ? Colors.white : Colors.white38,
+                color: hasApp ? context.palette.textPrimary : context.palette.textTertiary,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -70,7 +71,7 @@ class AppPane extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               hasApp ? assignedHint : emptyHint,
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
+              style: TextStyle(color: context.palette.textTertiary, fontSize: 10),
               textAlign: TextAlign.center,
             ),
           ],
@@ -91,9 +92,9 @@ class EmptyPane extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.add_circle_outline, size: 40, color: Colors.white38),
+          Icon(Icons.add_circle_outline, size: 40, color: context.palette.textTertiary),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(label, style: TextStyle(color: context.palette.textTertiary, fontSize: 12)),
         ],
       ),
     );

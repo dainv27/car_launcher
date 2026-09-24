@@ -8,6 +8,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_ui.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Page at `/trips/:tripId` — one trip's stats and its route on a map.
 class TripDetailPage extends ConsumerWidget {
@@ -32,13 +33,13 @@ class TripDetailPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: CarPlayTheme.deepObsidian,
-        title: const Text(
+        backgroundColor: context.palette.background,
+        title: Text(
           'Trip',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
@@ -93,7 +94,7 @@ class _TripDetailContent extends ConsumerWidget {
                   label: 'Status',
                   value: trip.isOpen ? 'Open' : 'Closed',
                   valueColor:
-                      trip.isOpen ? CarPlayTheme.toggleOn : null,
+                      trip.isOpen ? context.palette.success : null,
                 ),
                 InfoRow(label: 'Start', value: formatVehicleTimestamp(trip.startTime)),
                 InfoRow(label: 'End', value: formatVehicleTimestamp(trip.endTime)),

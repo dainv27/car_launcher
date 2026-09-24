@@ -3,8 +3,8 @@ import 'package:car_launcher/shared/data/weather_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Weather & clock widget — bottom-right panel (4 columns).
 /// Shows city name, temperature, weather condition, time, and date.
@@ -23,7 +23,7 @@ class WeatherClockWidget extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           // Background
-          Container(color: CarPlayTheme.deepObsidian),
+          Container(color: context.palette.glass),
           // ── Decorative blur circle ──
           Positioned(
             bottom: -40,
@@ -32,7 +32,7 @@ class WeatherClockWidget extends ConsumerWidget {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                color: CarPlayTheme.neonCyan.withValues(alpha: 0.05),
+                color: context.palette.accent.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -45,19 +45,19 @@ class WeatherClockWidget extends ConsumerWidget {
                 // Left: weather
                 Expanded(
                   child: weatherAsync.when(
-                    data: (weather) => _buildWeather(weather),
-                    loading: () => _buildWeatherLoading(),
-                    error: (_, _) => _buildWeatherError(),
+                    data: (weather) => _buildWeather(context, weather),
+                    loading: () => _buildWeatherLoading(context),
+                    error: (_, _) => _buildWeatherError(context),
                   ),
                 ),
                 // Divider
                 Container(
                   width: 1,
                   margin: const EdgeInsets.symmetric(horizontal: 24),
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: context.palette.foreground.withValues(alpha: 0.1),
                 ),
                 // Right: clock
-                _buildClock(clock, now),
+                _buildClock(context, clock, now),
               ],
             ),
           ),
@@ -66,7 +66,7 @@ class WeatherClockWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildWeather(WeatherData? weather) {
+  Widget _buildWeather(BuildContext context, WeatherData? weather) {
     if (weather == null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,7 +75,7 @@ class WeatherClockWidget extends ConsumerWidget {
           Text(
             'Weather',
             style: TextStyle(
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.6,
@@ -84,8 +84,8 @@ class WeatherClockWidget extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             '--°',
-            style: const TextStyle(
-              color: CarPlayTheme.safetyWhite,
+            style: TextStyle(
+              color: context.palette.textPrimary,
               fontSize: 80,
               fontWeight: FontWeight.w700,
               height: 1.0,
@@ -94,10 +94,7 @@ class WeatherClockWidget extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Set API key in Settings',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: context.palette.textTertiary, fontSize: 12),
           ),
         ],
       );
@@ -111,7 +108,7 @@ class WeatherClockWidget extends ConsumerWidget {
         Text(
           weather.cityName,
           style: TextStyle(
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.6,
@@ -123,8 +120,8 @@ class WeatherClockWidget extends ConsumerWidget {
           children: [
             Text(
               '${weather.temperature.round()}°',
-              style: const TextStyle(
-                color: CarPlayTheme.safetyWhite,
+              style: TextStyle(
+                color: context.palette.textPrimary,
                 fontSize: 80,
                 fontWeight: FontWeight.w700,
                 height: 1.0,
@@ -135,7 +132,7 @@ class WeatherClockWidget extends ConsumerWidget {
               children: [
                 Icon(
                   _weatherIcon(weather.iconCode),
-                  color: CarPlayTheme.neonCyan,
+                  color: context.palette.accent,
                   size: 48,
                 ),
                 const SizedBox(height: 4),
@@ -143,8 +140,8 @@ class WeatherClockWidget extends ConsumerWidget {
                   weather.description.isNotEmpty
                       ? _capitalize(weather.description)
                       : 'Clear',
-                  style: const TextStyle(
-                    color: CarPlayTheme.onSurfaceVariant,
+                  style: TextStyle(
+                    color: context.palette.textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -157,7 +154,7 @@ class WeatherClockWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildWeatherLoading() {
+  Widget _buildWeatherLoading(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -165,7 +162,7 @@ class WeatherClockWidget extends ConsumerWidget {
         Text(
           'Loading…',
           style: TextStyle(
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.6,
@@ -178,7 +175,7 @@ class WeatherClockWidget extends ConsumerWidget {
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(
-              Colors.white.withValues(alpha: 0.5),
+              context.palette.textSecondary,
             ),
           ),
         ),
@@ -186,7 +183,7 @@ class WeatherClockWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildWeatherError() {
+  Widget _buildWeatherError(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -194,7 +191,7 @@ class WeatherClockWidget extends ConsumerWidget {
         Text(
           'Weather',
           style: TextStyle(
-            color: CarPlayTheme.onSurfaceVariant,
+            color: context.palette.textSecondary,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.6,
@@ -203,16 +200,12 @@ class WeatherClockWidget extends ConsumerWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: CarPlayTheme.hazardRed,
-              size: 20,
-            ),
+            Icon(Icons.error_outline, color: context.palette.danger, size: 20),
             const SizedBox(width: 8),
             Text(
               'Unavailable',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: context.palette.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -222,7 +215,7 @@ class WeatherClockWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildClock(String clock, DateTime now) {
+  Widget _buildClock(BuildContext context, String clock, DateTime now) {
     final dateStr = DateFormat('EEE, MMM d').format(now).toUpperCase();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -231,8 +224,8 @@ class WeatherClockWidget extends ConsumerWidget {
         // Time
         Text(
           clock,
-          style: const TextStyle(
-            color: CarPlayTheme.neonCyan,
+          style: TextStyle(
+            color: context.palette.accent,
             fontSize: 80,
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -242,8 +235,8 @@ class WeatherClockWidget extends ConsumerWidget {
         // Date
         Text(
           dateStr,
-          style: const TextStyle(
-            color: CarPlayTheme.safetyWhite,
+          style: TextStyle(
+            color: context.palette.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.w600,
           ),
@@ -259,8 +252,8 @@ class WeatherClockWidget extends ConsumerWidget {
               margin: EdgeInsets.only(left: i > 0 ? 8 : 0),
               decoration: BoxDecoration(
                 color: i == 0
-                    ? CarPlayTheme.neonCyan
-                    : Colors.white.withValues(alpha: 0.2),
+                    ? context.palette.accent
+                    : context.palette.foreground.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
             );

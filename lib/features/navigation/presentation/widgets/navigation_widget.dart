@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/navigation/data/navigation_service.dart';
 import 'package:car_launcher/features/navigation/presentation/providers/navigation_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Enhanced navigation widget with provider switching and rich status display
 class NavigationWidget extends ConsumerWidget {
@@ -26,10 +27,12 @@ class NavigationWidget extends ConsumerWidget {
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.4),
+          color: context.palette.glass,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: navState.isActive ? const Color(0xFF4CAF50) : Colors.white12,
+            color: navState.isActive
+                ? context.palette.success
+                : context.palette.foreground.withValues(alpha: 0.12),
           ),
         ),
         padding: const EdgeInsets.all(12),
@@ -56,20 +59,20 @@ class NavigationWidget extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                color: context.palette.success.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.navigation,
-                color: Color(0xFF4CAF50),
+                color: context.palette.success,
                 size: 18,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               navState.eta,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.palette.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
@@ -78,7 +81,7 @@ class NavigationWidget extends ConsumerWidget {
             Text(
               navState.distance,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: context.palette.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -90,7 +93,7 @@ class NavigationWidget extends ConsumerWidget {
           Text(
             'To: ${navState.destination}',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: context.palette.textSecondary,
               fontSize: 12,
             ),
             maxLines: 1,
@@ -104,7 +107,7 @@ class NavigationWidget extends ConsumerWidget {
             children: [
               Icon(
                 _turnIcon(navState.nextTurn),
-                color: const Color(0xFF4CAF50),
+                color: context.palette.success,
                 size: 16,
               ),
               const SizedBox(width: 4),
@@ -112,7 +115,7 @@ class NavigationWidget extends ConsumerWidget {
                 child: Text(
                   navState.nextTurn,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: context.palette.textSecondary,
                     fontSize: 11,
                   ),
                   maxLines: 1,
@@ -132,13 +135,13 @@ class NavigationWidget extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.palette.foreground.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 navState.currentProvider.displayName,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: context.palette.textSecondary,
                   fontSize: 10,
                 ),
               ),
@@ -159,17 +162,21 @@ class NavigationWidget extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.navigation, color: Colors.white38, size: 32),
+            Icon(
+              Icons.navigation,
+              color: context.palette.textTertiary,
+              size: 32,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Navigation',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: context.palette.textSecondary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -177,7 +184,7 @@ class NavigationWidget extends ConsumerWidget {
                   Text(
                     'Not active',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: context.palette.textTertiary,
                       fontSize: 11,
                     ),
                   ),
@@ -186,9 +193,9 @@ class NavigationWidget extends ConsumerWidget {
             ),
             // Launch button
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.directions,
-                color: Colors.white54,
+                color: context.palette.textSecondary,
                 size: 20,
               ),
               onPressed: () => controller.launchNavigation(),
@@ -217,12 +224,12 @@ class NavigationWidget extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.06),
+                          ? context.palette.success.withValues(alpha: 0.2)
+                          : context.palette.foreground.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+                            ? context.palette.success.withValues(alpha: 0.5)
                             : Colors.transparent,
                       ),
                     ),
@@ -230,8 +237,8 @@ class NavigationWidget extends ConsumerWidget {
                       provider.displayName,
                       style: TextStyle(
                         color: isSelected
-                            ? const Color(0xFF4CAF50)
-                            : Colors.white.withValues(alpha: 0.5),
+                            ? context.palette.success
+                            : context.palette.textSecondary,
                         fontSize: 10,
                         fontWeight: isSelected
                             ? FontWeight.w600

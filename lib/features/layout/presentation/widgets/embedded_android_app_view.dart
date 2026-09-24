@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Displays an Android application on its own native VirtualDisplay.
 ///
@@ -31,12 +32,12 @@ class EmbeddedAndroidAppView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.android) {
-      return const ColoredBox(
-        color: Colors.black,
+      return ColoredBox(
+        color: context.palette.surfaceSunken,
         child: Center(
           child: Text(
             'Embedded app requires Android',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.palette.textSecondary),
           ),
         ),
       );

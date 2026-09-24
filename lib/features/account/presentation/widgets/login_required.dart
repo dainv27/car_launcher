@@ -1,6 +1,7 @@
 import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Reusable glass-panel widget shown when a feature requires sign-in.
 ///
@@ -26,16 +27,10 @@ class LoginRequiredWidget extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 420),
           decoration: BoxDecoration(
-            color: CarPlayTheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withAlpha(26)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(77),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            color: context.palette.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.palette.border),
+            boxShadow: context.palette.cardShadow,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
           child: Column(
@@ -46,13 +41,13 @@ class LoginRequiredWidget extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: CarPlayTheme.neonCyan.withAlpha(26),
+                  color: context.palette.accent.withAlpha(26),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.lock_outline,
                   size: 28,
-                  color: CarPlayTheme.neonCyan,
+                  color: context.palette.accent,
                 ),
               ),
               const SizedBox(height: 20),
@@ -64,7 +59,7 @@ class LoginRequiredWidget extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
-                    color: CarPlayTheme.neonCyan,
+                    color: context.palette.accent,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -75,7 +70,7 @@ class LoginRequiredWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: CarPlayTheme.onSurface,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -84,23 +79,16 @@ class LoginRequiredWidget extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: CarPlayTheme.onSurfaceVariant,
+                  color: context.palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 24),
               SizedBox(
-                height: 48,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/login'),
                   icon: const Icon(Icons.login_rounded, size: 20),
                   label: const Text('Sign In'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                 ),
               ),
             ],

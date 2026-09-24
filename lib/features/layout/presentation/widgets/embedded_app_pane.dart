@@ -10,6 +10,7 @@ import 'package:car_launcher/features/layout/presentation/pane_launch_coordinato
 import 'package:car_launcher/features/layout/presentation/providers/embedding_providers.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/layout/presentation/widgets/pane_widgets.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Embeds a target Android app inside a launcher pane, or falls back to
 /// launching apps when the device ROM does not support ActivityView.
@@ -61,8 +62,8 @@ class EmbeddedAppPane extends ConsumerWidget {
     final embeddingAsync = ref.watch(embeddingInfoProvider);
 
     return embeddingAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white54, strokeWidth: 2),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: context.palette.textSecondary, strokeWidth: 2),
       ),
       error: (_, _) => _FallbackAppPane(
         paneIndex: paneIndex,
@@ -122,7 +123,7 @@ class EmbeddedAppPane extends ConsumerWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: onChange,
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(6),
                     child: Icon(Icons.swap_horiz, color: Colors.white70, size: 18),
                   ),

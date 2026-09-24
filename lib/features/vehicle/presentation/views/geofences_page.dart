@@ -1,4 +1,3 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/geofence.dart';
@@ -9,6 +8,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_ui.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Page at `/vehicles/:id/geofences` — geofence CRUD + a transition-events log.
 class GeofencesPage extends ConsumerWidget {
@@ -33,19 +33,19 @@ class GeofencesPage extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: CarPlayTheme.deepObsidian,
-          title: const Text(
+          backgroundColor: context.palette.background,
+          title: Text(
             'Geofences',
-            style: TextStyle(color: Colors.white, fontSize: 22),
+            style: TextStyle(color: context.palette.textPrimary, fontSize: 22),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: context.palette.textPrimary),
             onPressed: () => context.pop(),
           ),
-          bottom: const TabBar(
-            indicatorColor: CarPlayTheme.neonCyan,
-            labelColor: CarPlayTheme.onSurface,
-            unselectedLabelColor: CarPlayTheme.onSurfaceVariant,
+          bottom: TabBar(
+            indicatorColor: context.palette.accent,
+            labelColor: context.palette.textPrimary,
+            unselectedLabelColor: context.palette.textSecondary,
             tabs: [Tab(text: 'Fences'), Tab(text: 'Events')],
           ),
         ),
@@ -73,9 +73,9 @@ class _FencesTab extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         heroTag: 'geofence-add',
-        backgroundColor: CarPlayTheme.neonCyan,
+        backgroundColor: context.palette.accent,
         onPressed: () => _openForm(context, ref, null),
-        child: const Icon(Icons.add, color: CarPlayTheme.deepObsidian),
+        child: Icon(Icons.add, color: context.palette.onAccent),
       ),
       body: fencesAsync.when(
         loading: () => const VehicleLoadingView(),
@@ -139,10 +139,10 @@ class _FencesTab extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: CarPlayTheme.surface,
+        backgroundColor: context.palette.surface,
         title: Text(
           'Delete "${fence.name}"?',
-          style: const TextStyle(color: CarPlayTheme.onSurface),
+          style: TextStyle(color: context.palette.textPrimary),
         ),
         actions: [
           TextButton(
@@ -201,8 +201,8 @@ class _FenceTile extends StatelessWidget {
             Icon(
               fence.isCircle ? Icons.circle_outlined : Icons.pentagon_outlined,
               color: fence.active
-                  ? CarPlayTheme.neonCyan
-                  : CarPlayTheme.onSurfaceVariant,
+                  ? context.palette.accent
+                  : context.palette.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -212,8 +212,8 @@ class _FenceTile extends StatelessWidget {
                 children: [
                   Text(
                     '${fence.name}${fence.active ? '' : ' (inactive)'}',
-                    style: const TextStyle(
-                      color: CarPlayTheme.onSurface,
+                    style: TextStyle(
+                      color: context.palette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -221,8 +221,8 @@ class _FenceTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '$detail${notify.isEmpty ? '' : '  ·  notify $notify'}',
-                    style: const TextStyle(
-                      color: CarPlayTheme.onSurfaceVariant,
+                    style: TextStyle(
+                      color: context.palette.textSecondary,
                       fontSize: 12.5,
                     ),
                   ),
@@ -232,12 +232,12 @@ class _FenceTile extends StatelessWidget {
             IconButton(
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
             IconButton(
               onPressed: onDelete,
               icon: const Icon(Icons.delete_outline, size: 18),
-              color: CarPlayTheme.onSurfaceVariant,
+              color: context.palette.textSecondary,
             ),
           ],
         ),
@@ -268,7 +268,7 @@ class _EventsTab extends ConsumerWidget {
               message: 'No geofence events yet',
             )
           : RefreshIndicator(
-              color: CarPlayTheme.neonCyan,
+              color: context.palette.accent,
               onRefresh: () async =>
                   ref.invalidate(geofenceEventsProvider(vehicleId)),
               child: ListView.builder(
@@ -297,7 +297,7 @@ class _EventTile extends StatelessWidget {
           children: [
             Icon(
               isEnter ? Icons.login : Icons.logout,
-              color: isEnter ? CarPlayTheme.toggleOn : CarPlayTheme.cityAmber,
+              color: isEnter ? context.palette.success : context.palette.warning,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -308,8 +308,8 @@ class _EventTile extends StatelessWidget {
                   Text(
                     '${isEnter ? 'Entered' : 'Exited'} '
                     '${event.geofenceName.isEmpty ? 'geofence' : event.geofenceName}',
-                    style: const TextStyle(
-                      color: CarPlayTheme.onSurface,
+                    style: TextStyle(
+                      color: context.palette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -317,8 +317,8 @@ class _EventTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     formatVehicleTimestamp(event.eventTime),
-                    style: const TextStyle(
-                      color: CarPlayTheme.onSurfaceVariant,
+                    style: TextStyle(
+                      color: context.palette.textSecondary,
                       fontSize: 12.5,
                     ),
                   ),

@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/carplay_settings_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/widgets/home_indicator.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// CarPlay-style Clock & Network settings screen.
 class ClockNetworkSettingsPage extends ConsumerWidget {
@@ -33,26 +33,29 @@ class ClockNetworkSettingsPage extends ConsumerWidget {
                         context.go('/settings');
                       }
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.chevron_left,
-                      color: Colors.white,
+                      color: context.palette.textPrimary,
                       size: 28,
                     ),
-                    label: const Text(
+                    label: Text(
                       'Settings',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(
+                        color: context.palette.textPrimary,
+                        fontSize: 18,
+                      ),
                     ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                   ),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
                   child: Text(
                     'Clock & Network',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: context.palette.textPrimary,
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
@@ -133,8 +136,8 @@ class _CarPlayToggleTile extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.palette.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                 ),
@@ -143,8 +146,8 @@ class _CarPlayToggleTile extends StatelessWidget {
             const SizedBox(width: 12),
             CupertinoSwitch(
               value: value,
-              activeTrackColor: CarPlayTheme.toggleOn,
-              inactiveTrackColor: CarPlayTheme.toggleOff,
+              activeTrackColor: context.palette.success,
+              inactiveTrackColor: context.palette.toggleTrackOff,
               onChanged: onChanged,
             ),
           ],
@@ -153,8 +156,8 @@ class _CarPlayToggleTile extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             description!,
-            style: const TextStyle(
-              color: CarPlayTheme.secondaryText,
+            style: TextStyle(
+              color: context.palette.textSecondary,
               fontSize: 15,
               height: 1.35,
             ),

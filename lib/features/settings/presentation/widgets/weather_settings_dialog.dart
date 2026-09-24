@@ -4,6 +4,7 @@ import 'package:car_launcher/shared/providers/shared_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Dialog for configuring weather API key and city
 class WeatherSettingsDialog extends ConsumerStatefulWidget {
@@ -88,7 +89,7 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: context.palette.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 400,
@@ -101,16 +102,19 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Weather Settings',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: context.palette.textPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
+                    icon: Icon(
+                      Icons.close,
+                      color: context.palette.textSecondary,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -118,20 +122,26 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
               const SizedBox(height: 24),
 
               // API Key field
-              const Text(
+              Text(
                 'OpenWeatherMap API Key',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: context.palette.textPrimary,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _apiKeyController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.palette.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Enter your API key from openweathermap.org',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.key, color: Colors.white54),
+                  hintStyle: TextStyle(color: context.palette.textTertiary),
+                  prefixIcon: Icon(
+                    Icons.key,
+                    color: context.palette.textSecondary,
+                  ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.08),
+                  fillColor: context.palette.foreground.withValues(alpha: 0.08),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -140,8 +150,8 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: _apiKeyValid
-                          ? Colors.greenAccent
-                          : Colors.blueAccent,
+                          ? context.palette.success
+                          : context.palette.accent,
                       width: 2,
                     ),
                   ),
@@ -154,23 +164,26 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
               const SizedBox(height: 16),
 
               // City field
-              const Text(
+              Text(
                 'City for Weather',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: context.palette.textPrimary,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _cityController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.palette.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'e.g., Hanoi, Ho Chi Minh City, New York',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: context.palette.textTertiary),
+                  prefixIcon: Icon(
                     Icons.location_city,
-                    color: Colors.white54,
+                    color: context.palette.textSecondary,
                   ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.08),
+                  fillColor: context.palette.foreground.withValues(alpha: 0.08),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -185,18 +198,14 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _saveSettings,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                                  context.palette.onAccent,
                                 ),
                               ),
                             )
@@ -213,13 +222,12 @@ class _WeatherSettingsDialogState extends ConsumerState<WeatherSettingsDialog> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white38),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: TextStyle(
+                          color: context.palette.textPrimary,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),

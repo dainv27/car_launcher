@@ -1,6 +1,5 @@
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:car_launcher/shared/widgets/car_responsive.dart';
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/dashboard/all_dashboard/dashboard_layout_metrics.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/carplay_settings_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -11,6 +10,7 @@ import 'package:car_launcher/features/media/presentation/providers/media_provide
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 class MapWithMedia extends ConsumerWidget {
   const MapWithMedia({super.key});
@@ -96,15 +96,12 @@ class _DashboardMediaCard extends ConsumerWidget {
                 if (!short)
                   Row(
                     children: [
-                      const Icon(
-                        Icons.graphic_eq,
-                        color: CarPlayTheme.neonCyan,
-                      ),
+                      Icon(Icons.graphic_eq, color: context.palette.accent),
                       if (!compact) ...[
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Spatial Audio Active',
-                          style: TextStyle(color: CarPlayTheme.neonCyan),
+                          style: TextStyle(color: context.palette.accent),
                         ),
                       ],
                     ],
@@ -115,7 +112,7 @@ class _DashboardMediaCard extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.palette.textPrimary,
                     fontSize: short ? 20 : 24,
                     fontWeight: FontWeight.w600,
                   ),
@@ -124,15 +121,17 @@ class _DashboardMediaCard extends ConsumerWidget {
                   session.artist.isEmpty ? 'Open Media Center' : session.artist,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: CarPlayTheme.onSurfaceVariant),
+                  style: TextStyle(color: context.palette.textSecondary),
                 ),
                 SizedBox(height: short ? 8 : 20),
                 LinearProgressIndicator(
                   value: session.progress,
                   minHeight: short ? 4 : 8,
                   borderRadius: BorderRadius.circular(999),
-                  color: CarPlayTheme.neonCyan,
-                  backgroundColor: Colors.white12,
+                  color: context.palette.accent,
+                  backgroundColor: context.palette.foreground.withValues(
+                    alpha: 0.12,
+                  ),
                 ),
                 SizedBox(height: short ? 4 : 16),
                 Row(
@@ -140,24 +139,27 @@ class _DashboardMediaCard extends ConsumerWidget {
                   children: [
                     IconButton(
                       onPressed: controller.previous,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.skip_previous,
-                        color: Colors.white,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     IconButton.filled(
                       onPressed: controller.playPause,
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: context.palette.accent,
                       ),
                       icon: Icon(
                         session.isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: CarPlayTheme.deepObsidian,
+                        color: context.palette.onAccent,
                       ),
                     ),
                     IconButton(
                       onPressed: controller.next,
-                      icon: const Icon(Icons.skip_next, color: Colors.white),
+                      icon: Icon(
+                        Icons.skip_next,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -190,7 +192,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
     final location = ref.watch(currentLocationProvider).valueOrNull;
     final weather = ref.watch(weatherProvider).valueOrNull;
     final now = DateTime.now();
-    const muted = CarPlayTheme.onSurfaceVariant;
+    final muted = context.palette.textSecondary;
     final placeName = location?.displayName.isNotEmpty == true
         ? location!.displayName
         : weather?.cityName.isNotEmpty == true
@@ -218,7 +220,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: CarPlayTheme.neonCyan.withValues(alpha: 0.08),
+                      color: context.palette.accent.withValues(alpha: 0.08),
                       blurRadius: 70,
                       spreadRadius: 22,
                     ),
@@ -241,10 +243,10 @@ class _DashboardWeatherCard extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.location_on_outlined,
                               size: 16,
-                              color: CarPlayTheme.neonCyan,
+                              color: context.palette.accent,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -252,7 +254,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                                 placeName.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: muted,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -267,7 +269,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                           children: [
                             Icon(
                               _weatherIcon(weather?.iconCode),
-                              color: CarPlayTheme.neonCyan,
+                              color: context.palette.accent,
                               size: compact ? 30 : 42,
                             ),
                             SizedBox(width: compact ? 6 : 12),
@@ -281,7 +283,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                                     'dashboard-weather-temperature',
                                   ),
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: context.palette.textPrimary,
                                     fontSize: compact ? 36 : 50,
                                     height: 1,
                                     fontWeight: FontWeight.w600,
@@ -297,7 +299,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                           description,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: muted, fontSize: 14),
+                          style: TextStyle(color: muted, fontSize: 14),
                         ),
                         if (weather != null && !compact) ...[
                           const SizedBox(height: 12),
@@ -322,7 +324,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                   Container(
                     width: 1,
                     height: compact ? 88 : 112,
-                    color: Colors.white12,
+                    color: context.palette.foreground.withValues(alpha: 0.12),
                   ),
                   SizedBox(width: compact ? 12 : 24),
                   Expanded(
@@ -334,7 +336,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                         Text(
                           compact ? 'TIME' : 'LOCAL TIME',
                           style: TextStyle(
-                            color: CarPlayTheme.neonCyan,
+                            color: context.palette.accent,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.8,
@@ -347,7 +349,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                             clock,
                             key: const Key('dashboard-clock-time'),
                             style: TextStyle(
-                              color: Colors.white,
+                              color: context.palette.textPrimary,
                               fontSize: compact ? 32 : 46,
                               height: 1,
                               fontWeight: FontWeight.w600,
@@ -359,7 +361,7 @@ class _DashboardWeatherCard extends ConsumerWidget {
                         Text(
                           _formattedDate(now),
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: muted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -421,12 +423,12 @@ class _WeatherMetric extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: CarPlayTheme.neonCyan),
+        Icon(icon, size: 14, color: context.palette.accent),
         const SizedBox(width: 5),
         Text(
           value,
-          style: const TextStyle(
-            color: CarPlayTheme.onSurfaceVariant,
+          style: TextStyle(
+            color: context.palette.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// App-wide constants
 class AppConstants {
   static const appName = 'Car Launcher';
@@ -47,22 +45,4 @@ class AppConstants {
   static const warmStartTargetMs = 2000;
   static const targetFps = 60;
   static const maxMemoryMb = 500;
-}
-
-/// App theme colors
-class AppColors {
-  static const primary = Color(0xFF2196F3);
-  static const accent = Color(0xFF03A9F4);
-  static const background = Color(0xFF121212);
-  static const surface = Color(0xFF1E1E1E);
-  static const error = Color(0xFFCF6679);
-  static const onPrimary = Colors.white;
-  static const onBackground = Colors.white;
-  static const onSurface = Colors.white;
-
-  // Status colors
-  static const wifiConnected = Color(0xFF4CAF50);
-  static const wifiDisconnected = Color(0xFFF44336);
-  static const btConnected = Color(0xFF2196F3);
-  static const btDisconnected = Color(0xFF9E9E9E);
 }

@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:car_launcher/features/media/presentation/providers/media_providers.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Playback control buttons
 class PlaybackControls extends ConsumerWidget {
@@ -101,7 +102,7 @@ class _ControlButton extends StatelessWidget {
       width: size,
       height: size,
       child: IconButton(
-        icon: Icon(icon, color: Colors.white70, size: iconSize),
+        icon: Icon(icon, color: context.palette.textSecondary, size: iconSize),
         onPressed: onPressed,
         padding: EdgeInsets.zero,
       ),
@@ -128,14 +129,14 @@ class _PlayPauseButton extends StatelessWidget {
       width: size,
       height: size,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: context.palette.foreground.withValues(alpha: 0.15),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
           child: Icon(
             isPlaying ? Icons.pause : Icons.play_arrow,
-            color: Colors.white,
+            color: context.palette.textPrimary,
             size: iconSize,
           ),
         ),

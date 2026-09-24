@@ -1,6 +1,6 @@
-import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/vehicle/domain/alert_rule.dart';
 import 'package:flutter/material.dart';
+import 'package:car_launcher/core/theme/launcher_palette.dart';
 
 /// Create / edit a speeding (OVERSPEED) or idle (IDLE) alert rule.
 ///
@@ -74,10 +74,10 @@ class _AlertRuleFormDialogState extends State<AlertRuleFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: true,
-      backgroundColor: CarPlayTheme.surface,
+      backgroundColor: context.palette.surface,
       title: Text(
         _isEdit ? 'Edit alert rule' : 'New alert rule',
-        style: const TextStyle(color: CarPlayTheme.onSurface),
+        style: TextStyle(color: context.palette.textPrimary),
       ),
       content: Form(
         key: _formKey,
@@ -143,9 +143,12 @@ class _AlertRuleFormDialogState extends State<AlertRuleFormDialog> {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text(
+              title: Text(
                 'Active',
-                style: TextStyle(color: CarPlayTheme.onSurface, fontSize: 14),
+                style: TextStyle(
+                  color: context.palette.textPrimary,
+                  fontSize: 14,
+                ),
               ),
               value: _active,
               onChanged: (v) => setState(() => _active = v),

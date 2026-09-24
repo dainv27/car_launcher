@@ -12,6 +12,7 @@ import 'package:car_launcher/features/dashboard/presentation/providers/dashboard
 import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tracking_card.dart';
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
+import 'package:car_launcher/features/layout/presentation/widgets/pane_widgets.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/default_launcher_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/notification_sound_provider.dart';
@@ -1309,9 +1310,16 @@ class _DashboardSection extends ConsumerWidget {
                             child: _DashboardPreviewTile(
                               mode: mode,
                               isSelected: selectedMode == mode,
-                              onTap: () => ref
-                                  .read(carPlaySettingsProvider.notifier)
-                                  .setHomeViewMode(mode),
+                              onTap: () {
+                                ref
+                                    .read(carPlaySettingsProvider.notifier)
+                                    .setHomeViewMode(mode);
+                                if (mode == HomeViewMode.multiApp) {
+                                  ref
+                                      .read(layoutProvider.notifier)
+                                      .setType(LayoutType.dualPane);
+                                }
+                              },
                             ),
                           ),
                           if (mode != row.last) const SizedBox(width: 12),
@@ -1348,6 +1356,17 @@ class _DashboardSection extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   _MultiAppPaneSettings(),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Pane Split',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _PaneRatioSelector(),
                 ],
               ),
             ),
@@ -1706,19 +1725,56 @@ class _MultiAppPaneSettings extends ConsumerWidget {
   }
 }
 
-class _PaneAppTile extends StatelessWidget {
+/// Split-ratio chips for the two multiApp panes.
+class _PaneRatioSelector extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentRatio = ref.watch(layoutRatioProvider);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: LayoutRatio.values.map((ratio) {
+        final isSelected = ratio == currentRatio;
+        return FilterChip(
+          label: Text(ratio.label),
+          selected: isSelected,
+          onSelected: (_) =>
+              ref.read(layoutProvider.notifier).setRatio(ratio),
+          selectedColor: Theme.of(context).colorScheme.primary,
+          checkmarkColor: context.palette.textPrimary,
+          labelStyle: TextStyle(
+            color: isSelected
+                ? context.palette.textPrimary
+                : context.palette.textSecondary,
+          ),
+          backgroundColor: context.palette.foreground.withValues(alpha: 0.12),
+          side: BorderSide(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : context.palette.foreground.withValues(alpha: 0.24),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _PaneAppTile extends ConsumerWidget {
   const _PaneAppTile({required this.index, required this.app});
 
   final int index;
   final PaneApp? app;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final name = app?.appName ?? 'Tap to select';
     return GestureDetector(
-      onTap: () {
-        // Trigger app picker — reuse existing pane app picker
-      },
+      onTap: () => showPaneAppPicker(
+        context: context,
+        ref: ref,
+        paneIndex: index,
+        currentApp: app,
+      ),
       child: Row(
         children: [
           Container(

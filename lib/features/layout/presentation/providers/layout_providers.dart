@@ -55,11 +55,11 @@ class LayoutNotifier extends StateNotifier<LayoutModel> {
     await _save();
   }
 
-  /// Remove an app from a specific pane
+  /// Remove an app from a specific pane, without shifting other panes' apps.
   Future<void> removeApp(int paneIndex) async {
     if (paneIndex < 0 || paneIndex >= state.paneApps.length) return;
     final apps = List<PaneApp>.from(state.paneApps);
-    apps.removeAt(paneIndex);
+    apps[paneIndex] = const PaneApp(packageName: '', appName: '');
     state = state.copyWith(paneApps: apps);
     await _save();
   }

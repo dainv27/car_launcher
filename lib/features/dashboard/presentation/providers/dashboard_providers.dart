@@ -173,7 +173,7 @@ class DashboardIndexNotifier extends StateNotifier<int> {
   DashboardIndexNotifier() : super(_default) {
     _load();
   }
-  static final int _default = 2;
+  static final int _default = 1;
 
   Future<void> _load() async {
     final value = await AppSecureStorage.instance.read(key: AppSecureStorageKeys.dashboardIndex);

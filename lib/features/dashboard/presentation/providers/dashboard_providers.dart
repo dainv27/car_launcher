@@ -16,7 +16,10 @@ final clockProvider = StateNotifierProvider<ClockNotifier, String>((ref) {
 class ClockNotifier extends StateNotifier<String> {
   ClockNotifier() : super(_formatTime(DateTime.now())) {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      state = _formatTime(DateTime.now());
+      // Only HH:mm is shown: publish once per minute, not a fresh (equal)
+      // string every second that rebuilds every clock listener.
+      final next = _formatTime(DateTime.now());
+      if (next != state) state = next;
     });
   }
 

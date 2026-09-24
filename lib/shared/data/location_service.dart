@@ -762,7 +762,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     // of the shared offline-first store fresh between manual refreshes.
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 10),
-      (_) => _refreshFromStore(),
+      (_) => _refreshIfStoreChanged(),
     );
   }
 
@@ -770,6 +770,7 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
   final VehicleTrackingSyncClient _syncClient;
   final VehicleTrackingStoreService _store;
   late final Timer _refreshTimer;
+  String? _storeStamp;
 
   Future<void> start() async {
     state = state.copyWith(
@@ -935,12 +936,27 @@ class VehicleTrackingNotifier extends StateNotifier<VehicleTrackingState> {
     );
   }
 
+  /// Periodic poll: reload only when native has written to the store since
+  /// the last load, so an idle head unit does not re-read and re-publish
+  /// every stored point (rebuilding all listeners) every 10 seconds.
+  Future<void> _refreshIfStoreChanged() async {
+    try {
+      final stamp = await _store.changeStamp();
+      if (stamp == _storeStamp) return;
+      await _refreshFromStore();
+    } catch (e) {
+      AppLogger.instance.d('Tracking store poll failed', tag: 'TRACKING', error: e);
+    }
+  }
+
   Future<void> _refreshFromStore({
     bool? isSyncing,
     Object? lastSyncError = VehicleTrackingState._unchanged,
   }) async {
+    final stamp = await _store.changeStamp();
     final snapshot = await _store.load();
     if (!mounted) return;
+    _storeStamp = stamp;
     final points = _dedupe(snapshot.points);
     state = state.copyWith(
       enabled: snapshot.enabled,

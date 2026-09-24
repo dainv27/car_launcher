@@ -12,6 +12,7 @@ class YoutubeWidget extends StatelessWidget {
     return GlassPanel(
       key: const Key('dashboard-youtube-card'),
       padding: EdgeInsets.zero,
+      shadow: false,
       child: const ClipRRect(
         borderRadius: BorderRadius.all(Radius.circular(12)),
         child: EmbeddedAndroidAppView(

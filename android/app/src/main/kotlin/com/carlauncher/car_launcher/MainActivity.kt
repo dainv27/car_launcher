@@ -1,6 +1,7 @@
 package com.carlauncher.car_launcher
 
 import android.Manifest
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.role.RoleManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -33,6 +34,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.view.accessibility.AccessibilityManager
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -92,17 +94,62 @@ class MainActivity : FlutterActivity() {
     override fun onStart() {
         super.onStart()
         CrashRecovery.launcherVisible = true
+        accessibilityManager?.addAccessibilityStateChangeListener(semanticsStateListener)
+        accessibilityManager?.addTouchExplorationStateChangeListener(semanticsTouchListener)
+        applySemanticsPolicySoon()
     }
 
     override fun onStop() {
         CrashRecovery.launcherVisible = false
+        accessibilityManager?.removeAccessibilityStateChangeListener(semanticsStateListener)
+        accessibilityManager?.removeTouchExplorationStateChangeListener(semanticsTouchListener)
         super.onStop()
     }
 
     override fun onResume() {
         super.onResume()
         applyImmersiveFullscreen()
+        applySemanticsPolicySoon()
     }
+
+    // ── Flutter semantics policy ───────────────────────────────────────────
+    //
+    // Flutter builds its semantics tree whenever Android reports *any*
+    // accessibility service enabled. On the head unit two non-screen-reader
+    // services are always on (our EmbeddedInputAccessibilityService gesture
+    // injector and the ROM's AccessibilityHookerService), so every frame paid
+    // 5–11 ms of SEMANTICS work nobody consumes. Keep semantics only while a
+    // screen reader (touch exploration / spoken or braille feedback) is on.
+
+    private val accessibilityManager: AccessibilityManager? by lazy {
+        getSystemService(AccessibilityManager::class.java)
+    }
+    private val semanticsStateListener =
+        AccessibilityManager.AccessibilityStateChangeListener { applySemanticsPolicySoon() }
+    private val semanticsTouchListener =
+        AccessibilityManager.TouchExplorationStateChangeListener { applySemanticsPolicySoon() }
+
+    /** Posted so it runs after Flutter's own accessibility listener, which
+     * re-enables semantics on every accessibility state change. */
+    private fun applySemanticsPolicySoon() {
+        window?.decorView?.post { applySemanticsPolicy() }
+    }
+
+    private fun applySemanticsPolicy() {
+        val manager = accessibilityManager ?: return
+        val renderer = flutterEngine?.renderer ?: return
+        if (!manager.isEnabled) return // Flutter already keeps semantics off.
+        // The ROM's hooker service declares every feedback type (spoken and
+        // braille included) without being a screen reader, so it — and our
+        // own gesture injector — must not count as one.
+        val screenReaderOn = manager.isTouchExplorationEnabled ||
+            manager.getEnabledAccessibilityServiceList(
+                AccessibilityServiceInfo.FEEDBACK_SPOKEN or AccessibilityServiceInfo.FEEDBACK_BRAILLE,
+            ).any { it.resolveInfo?.serviceInfo?.packageName !in nonReaderServicePackages }
+        renderer.setSemanticsEnabled(screenReaderOn)
+    }
+
+    private val nonReaderServicePackages by lazy { setOf(packageName, "com.carsyso.main") }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

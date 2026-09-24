@@ -75,6 +75,9 @@ android {
     buildTypes {
         getByName("debug") { signingConfig = systemSigningConfig }
         getByName("release") { signingConfig = systemSigningConfig }
+        // Flutter's profile build type (for performance tracing) must also
+        // install over the platform-signed app.
+        findByName("profile")?.signingConfig = systemSigningConfig
     }
 }
 

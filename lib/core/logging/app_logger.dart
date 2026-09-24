@@ -27,6 +27,16 @@ enum LogLevel {
   const LogLevel(this.label, this.priority);
   final String label;
   final int priority;
+
+  /// Parses a `LOG_LEVEL` env value (`debug`/`info`/`warn`/`error`,
+  /// case-insensitive); null when missing or unknown.
+  static LogLevel? parse(String? value) {
+    final name = value?.trim().toLowerCase();
+    for (final level in values) {
+      if (level.name == name) return level;
+    }
+    return null;
+  }
 }
 
 /// A lightweight, file-backed logger with automatic rotation.
@@ -57,6 +67,11 @@ class AppLogger {
   late String _logFilePath;
   IOSink? _sink;
 
+  /// Bytes in the active file, tracked in memory so rotation does not need a
+  /// `stat()` round-trip for every line written.
+  int _approxFileSize = 0;
+  bool _rotating = false;
+
   /// Initialise the logger. Idempotent — safe to call multiple times.
   Future<void> init({
     int? maxFileSizeBytes,
@@ -74,7 +89,9 @@ class AppLogger {
     _logFilePath = '$_logDir/app.log';
 
     await Directory(_logDir).create(recursive: true);
-    _sink = File(_logFilePath).openWrite(mode: FileMode.append);
+    final file = File(_logFilePath);
+    _approxFileSize = await file.exists() ? await file.length() : 0;
+    _sink = file.openWrite(mode: FileMode.append);
     _initialised = true;
 
     // Log after initialised – goes straight to file, no recursion.
@@ -162,16 +179,24 @@ class AppLogger {
 
   void _writeLine(String line) {
     _sink?.writeln(line);
-    // Fire-and-forget rotation check (async, non-blocking).
-    _rotateIfNeeded();
+    // UTF-16 length is a close enough byte estimate for a rotation threshold.
+    _approxFileSize += line.length + 1;
+    if (_approxFileSize >= maxFileSizeBytes) {
+      // Fire-and-forget rotation (async, non-blocking).
+      _rotateIfNeeded();
+    }
   }
 
   Future<void> _rotateIfNeeded() async {
-    if (!_initialised) return;
+    if (!_initialised || _rotating) return;
+    _rotating = true;
     try {
       final file = File(_logFilePath);
       final stat = await file.stat();
-      if (stat.size < maxFileSizeBytes) return;
+      if (stat.size < maxFileSizeBytes) {
+        _approxFileSize = stat.size;
+        return;
+      }
 
       // Close current handle
       await _sink?.flush();
@@ -195,8 +220,11 @@ class AppLogger {
 
       // Re-open fresh file
       _sink = File(_logFilePath).openWrite(mode: FileMode.append);
+      _approxFileSize = 0;
     } catch (_) {
       // Rotation failure must never be fatal.
+    } finally {
+      _rotating = false;
     }
   }
 }

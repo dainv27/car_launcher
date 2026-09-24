@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'shared/data/location_service.dart';
 
 void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -37,7 +36,11 @@ void main() async {
   AppLogger.instance.i('Environment loaded', tag: 'MAIN');
 
   // Initialise file logger before anything else
-  await AppLogger.instance.init();
+  // Honour LOG_LEVEL (prod: warn) — debug lines for every native call cost
+  // I/O on the UI thread in builds that do not need them.
+  await AppLogger.instance.init(
+    minLevel: LogLevel.parse(EnvLoader.instance.getValue('LOG_LEVEL')),
+  );
   AppLogger.instance.i('App starting', tag: 'MAIN');
 
   // Catch uncaught async errors

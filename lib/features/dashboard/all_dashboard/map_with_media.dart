@@ -34,10 +34,11 @@ class MapWithMedia extends ConsumerWidget {
             children: [
               Expanded(
                 flex: compact ? 7 : 8,
-                child: GlassPanel(
-                  key: const Key('dashboard-map-card'),
-                  padding: EdgeInsets.zero,
-                  child: const NavigationMapWidget(),
+                // NavigationMapWidget is already a GlassPanel; a second one
+                // around it only doubled the border, clip and shadow.
+                child: const KeyedSubtree(
+                  key: Key('dashboard-map-card'),
+                  child: NavigationMapWidget(),
                 ),
               ),
               SizedBox(width: metrics.gap),
@@ -48,6 +49,7 @@ class MapWithMedia extends ConsumerWidget {
                     Expanded(
                       child: GlassPanel(
                         key: const Key('dashboard-media-card'),
+                        shadow: false,
                         child: _DashboardMediaCard(
                           onOpen: () => context.go('/media'),
                         ),
@@ -58,6 +60,7 @@ class MapWithMedia extends ConsumerWidget {
                       child: GlassPanel(
                         key: Key('dashboard-weather-card'),
                         padding: EdgeInsets.zero,
+                        shadow: false,
                         child: _DashboardWeatherCard(),
                       ),
                     ),

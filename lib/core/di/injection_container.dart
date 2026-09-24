@@ -8,7 +8,15 @@ import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/services/device_info_service.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
 import 'package:car_launcher/features/launcher/data/launcher_service.dart';
+import 'package:car_launcher/features/vehicle/data/alert_api_client.dart';
+import 'package:car_launcher/features/vehicle/data/alert_repository.dart';
+import 'package:car_launcher/features/vehicle/data/geofence_api_client.dart';
+import 'package:car_launcher/features/vehicle/data/geofence_repository.dart';
+import 'package:car_launcher/features/vehicle/data/map_api_client.dart';
+import 'package:car_launcher/features/vehicle/data/map_repository.dart';
 import 'package:car_launcher/features/vehicle/data/tracking_repository.dart';
+import 'package:car_launcher/features/vehicle/data/trip_api_client.dart';
+import 'package:car_launcher/features/vehicle/data/trip_repository.dart';
 import 'package:car_launcher/features/vehicle/data/vehicle_repository.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
@@ -124,6 +132,52 @@ Future<void> setupServiceLocator() async {
     (syncEndpoint, _) => TrackingRepository(
       syncClient: getIt<VehicleTrackingSyncClient>(),
       store: getIt<VehicleTrackingStoreService>(),
+      syncEndpoint: syncEndpoint,
+    ),
+  );
+
+  // ------------------------------------------------------------------
+  //  Trips / map / geofences / alerts (owner-JWT client-api readers)
+  // ------------------------------------------------------------------
+  //
+  // Each api client is a stateless HTTP wrapper (registerFactory); each
+  // repository takes the runtime syncEndpoint (registerFactoryParam), the
+  // same pattern as VehicleRepository / TrackingRepository above.
+
+  getIt.registerFactory<TripApiClient>(
+    () => TripApiClient(httpClient: getIt<http.Client>()),
+  );
+  getIt.registerFactory<MapApiClient>(
+    () => MapApiClient(httpClient: getIt<http.Client>()),
+  );
+  getIt.registerFactory<GeofenceApiClient>(
+    () => GeofenceApiClient(httpClient: getIt<http.Client>()),
+  );
+  getIt.registerFactory<AlertApiClient>(
+    () => AlertApiClient(httpClient: getIt<http.Client>()),
+  );
+
+  getIt.registerFactoryParam<TripRepository, String, void>(
+    (syncEndpoint, _) => TripRepository(
+      apiClient: getIt<TripApiClient>(),
+      syncEndpoint: syncEndpoint,
+    ),
+  );
+  getIt.registerFactoryParam<MapRepository, String, void>(
+    (syncEndpoint, _) => MapRepository(
+      apiClient: getIt<MapApiClient>(),
+      syncEndpoint: syncEndpoint,
+    ),
+  );
+  getIt.registerFactoryParam<GeofenceRepository, String, void>(
+    (syncEndpoint, _) => GeofenceRepository(
+      apiClient: getIt<GeofenceApiClient>(),
+      syncEndpoint: syncEndpoint,
+    ),
+  );
+  getIt.registerFactoryParam<AlertRepository, String, void>(
+    (syncEndpoint, _) => AlertRepository(
+      apiClient: getIt<AlertApiClient>(),
       syncEndpoint: syncEndpoint,
     ),
   );

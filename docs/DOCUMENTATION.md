@@ -4,17 +4,20 @@ Updated: 2026-06-16
 
 ## Current Architecture
 
-Car Launcher is now a normal Android application. It is launched from the
-standard app launcher, exposes only the regular `MAIN`/`LAUNCHER` entry point,
-and keeps primary navigation inside the Flutter app.
+Car Launcher registers as the Android Home/default launcher (`MAIN`+`HOME`+
+`DEFAULT`+`LAUNCHER`) and can replace the device's stock launcher without
+root — via Settings > Apps > Default apps > Home app, or the in-app
+"Set as Default Launcher" button under Settings > System Info. It keeps
+primary navigation inside the Flutter app.
 
-The app no longer:
+The app still does not:
 
-- registers as the Android HOME/default launcher;
-- starts itself from `BOOT_COMPLETED`;
-- requests `SYSTEM_ALERT_WINDOW`;
-- runs a persistent native taskbar, sidebar, or media system overlay;
-- reserves layout width for a taskbar rail.
+- request `SYSTEM_ALERT_WINDOW`;
+- run a persistent native taskbar, sidebar, or media system overlay;
+- reserve layout width for a taskbar rail.
+
+It does start itself from `BOOT_COMPLETED`/`LOCKED_BOOT_COMPLETED` via
+`BootReceiver`, to come back up as the Home surface after a reboot.
 
 ## Primary Routes
 
@@ -45,11 +48,13 @@ fallbacks open apps or maps as normal fullscreen Android activities.
 
 Removed native components:
 
-- `BootReceiver`
 - `SystemSidebarService`
 - `MediaOverlayService`
-- default launcher role/prompt APIs
 - taskbar/sidebar route APIs
+
+`BootReceiver` and the default-launcher role/prompt APIs
+(`isDefaultLauncher`/`requestDefaultLauncher`) are present — see
+[docs/tbox/README.md](tbox/README.md).
 
 ## Settings
 
@@ -81,3 +86,10 @@ Flutter validation should include:
 flutter test
 flutter analyze
 ```
+
+## Design documentation
+
+Per-feature design docs (goals, UX flow, architecture, data flow, state
+management, native/API integration, persistence, trade-offs, edge cases, tests)
+live in [`docs/design/features/`](design/features/README.md). Static UI mockups
+are in [`docs/design/`](design/).

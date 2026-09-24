@@ -5,6 +5,7 @@ import 'package:car_launcher/features/vehicle/domain/device.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/device_providers.dart';
+import 'package:car_launcher/features/vehicle/presentation/providers/map_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_dialog.dart';
@@ -150,13 +151,32 @@ class _VehicleDetailContent extends ConsumerWidget {
                 key: const Key('vehicle-detail-view-history'),
                 onPressed: () => context.push('/history/${vehicle.id}'),
                 icon: const Icon(Icons.timeline_outlined, size: 18),
-                label: const Text('View History'),
+                label: const Text('History'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('vehicle-detail-trips'),
+                onPressed: () => context.push('/vehicles/${vehicle.id}/trips'),
+                icon: const Icon(Icons.route_outlined, size: 18),
+                label: const Text('Trips'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('vehicle-detail-alerts'),
+                onPressed: () => context.push('/vehicles/${vehicle.id}/alerts'),
+                icon: const Icon(Icons.notifications_outlined, size: 18),
+                label: const Text('Alerts'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('vehicle-detail-geofences'),
+                onPressed: () =>
+                    context.push('/vehicles/${vehicle.id}/geofences'),
+                icon: const Icon(Icons.fence_outlined, size: 18),
+                label: const Text('Geofences'),
               ),
             ],
           ),
           const SizedBox(height: CarPlayTheme.widgetGap),
 
-          _LatestLocationSection(deviceId: vehicle.deviceId),
+          _LatestLocationSection(vehicleId: vehicle.id),
           const SizedBox(height: CarPlayTheme.widgetGap),
 
           _AttachedDevicesSection(vehicleId: vehicle.id),
@@ -194,9 +214,9 @@ class _VehicleDetailContent extends ConsumerWidget {
 }
 
 class _LatestLocationSection extends ConsumerWidget {
-  const _LatestLocationSection({required this.deviceId});
+  const _LatestLocationSection({required this.vehicleId});
 
-  final String deviceId;
+  final String vehicleId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,7 +235,7 @@ class _LatestLocationSection extends ConsumerWidget {
       ],
     );
 
-    if (deviceId.isEmpty) {
+    if (vehicleId.isEmpty) {
       return _GlassPanel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +243,7 @@ class _LatestLocationSection extends ConsumerWidget {
             header,
             const SizedBox(height: 8),
             Text(
-              'No device assigned to this vehicle',
+              'Vehicle has no id yet',
               style: TextStyle(fontSize: 14, color: CarPlayTheme.onSurfaceVariant),
             ),
           ],
@@ -231,7 +251,7 @@ class _LatestLocationSection extends ConsumerWidget {
       );
     }
 
-    final latestAsync = ref.watch(latestTrackingPointProvider(deviceId));
+    final latestAsync = ref.watch(latestTrackingPointProvider(vehicleId));
 
     return _GlassPanel(
       child: Column(
@@ -265,16 +285,28 @@ class _LatestLocationSection extends ConsumerWidget {
   }
 }
 
-class _LatestLocationDetails extends StatelessWidget {
+class _LatestLocationDetails extends ConsumerWidget {
   const _LatestLocationDetails({required this.point});
 
   final TrackingPoint point;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Reverse geocoding is best-effort: the provider yields null when the
+    // server has no geocoder configured (503) — we simply omit the address.
+    final address = ref
+        .watch(reverseGeocodeProvider(
+          (lat: point.latitude, lon: point.longitude),
+        ))
+        .valueOrNull;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (address != null) ...[
+          _InfoRow(label: 'Address', value: address.displayName),
+          const SizedBox(height: 8),
+        ],
         _InfoRow(
           label: 'Coords',
           value:

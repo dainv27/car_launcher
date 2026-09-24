@@ -2,11 +2,18 @@
 
 Updated: 2026-06-16
 
-## Normal Android App Shell
+## Home Launcher Shell
 
-Car Launcher launches like any other Android app. The manifest exposes a normal
-`MAIN`/`LAUNCHER` activity and does not register HOME categories, boot
-receivers, system overlay permissions, or persistent native taskbar services.
+Car Launcher registers as a Home launcher (`MAIN` + `HOME` + `DEFAULT` +
+`LAUNCHER` intent categories) and can replace the device's default launcher.
+On any device the user can either go to Settings > Apps > Default apps > Home
+app, or use the in-app "Set as Default Launcher" button under Settings >
+System Info, which triggers the standard `RoleManager` Home-role prompt on
+Android 10+ (falling back to the same system settings screen otherwise) — no
+root or platform signing required for either path. The activity uses
+`singleTask` + `stateNotNeeded` and a boot receiver so it comes up as the
+home surface after boot. It does not create persistent system overlays or a
+native taskbar.
 
 ## Dashboard
 

@@ -4,9 +4,10 @@ Updated: 2026-06-16
 
 ## Scope
 
-Car Launcher behaves as a regular Android app. It does not replace the system
-HOME screen, does not auto-start after boot, and does not draw persistent
-system overlays. All navigation and settings are handled inside the app.
+Car Launcher can replace the system HOME screen (no root required) and
+auto-starts after boot once selected as the default Home app. It does not
+draw persistent system overlays. All navigation and settings are handled
+inside the app.
 
 ## UC-01 Open App
 
@@ -83,12 +84,27 @@ Flow:
 3. Changes persist through the existing Riverpod/shared-preference providers.
 4. User can return Home through the shared top bar.
 
+## UC-07 Set as Default Launcher
+
+Actor: user
+
+Trigger: user opens Settings > System Info and taps "Set as Default
+Launcher" (shown only while Car Launcher is not already the Home app).
+
+Flow:
+
+1. Settings > System Info shows whether Car Launcher is currently the
+   device's Home app (polled via `isDefaultLauncher`).
+2. On Android 10+, tapping the button opens the system's Home-role
+   confirmation dialog (`RoleManager`); on older versions, or if the role
+   API is unavailable, it opens Settings > Apps > Default apps > Home app
+   instead.
+3. The status updates automatically once the user confirms (or returns
+   from Settings).
+
 ## Removed Use Cases
 
 The following legacy behaviors are intentionally out of scope:
 
-- becoming the Android default HOME application;
-- handling physical HOME as a launcher replacement;
-- starting from boot broadcasts;
 - showing a persistent taskbar/sidebar outside the app;
 - requesting system overlay permission for media controls or taskbar UI.

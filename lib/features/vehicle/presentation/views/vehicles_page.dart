@@ -3,6 +3,7 @@ import 'package:car_launcher/features/account/presentation/providers/account_pro
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
+import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_brand_badge.dart';
 import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,19 +160,21 @@ class _VehicleListTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: CarPlayTheme.neonCyan.withAlpha(26),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.directions_car,
-                  color: CarPlayTheme.neonCyan,
-                  size: 24,
-                ),
-              ),
+              vehicle.brand.isNotEmpty
+                  ? VehicleBrandBadge(brand: vehicle.brand, size: 44)
+                  : Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: CarPlayTheme.neonCyan.withAlpha(26),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.directions_car,
+                        color: CarPlayTheme.neonCyan,
+                        size: 24,
+                      ),
+                    ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

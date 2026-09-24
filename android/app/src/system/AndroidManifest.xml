@@ -1,0 +1,39 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:sharedUserId="android.uid.system">
+
+    <!--
+      System-flavor manifest overlay (merged only into the `system` build).
+
+      sharedUserId=android.uid.system makes the app run under the platform
+      (system) uid, exactly like CarCar (com.example.car_launcher). This is what
+      grants the signature/privileged permissions used by the VirtualDisplay
+      embedding path — WITHOUT it, INJECT_EVENTS / ADD_TRUSTED_DISPLAY /
+      MANAGE_ACTIVITY_* are never granted no matter how they are declared.
+
+      Requirements for this to actually install and boot:
+        1. The APK MUST be signed with the ROM's platform key (see build.gradle.kts).
+        2. A build signed with any other key will FAIL to install as uid.system,
+           and replacing a system app with a mismatched signature can boot-loop
+           the device. Back up (QFIL) before flashing.
+
+      The core embedding permissions (ADD_TRUSTED_DISPLAY, MANAGE_ACTIVITY_TASKS,
+      MANAGE_ACTIVITY_STACKS, INJECT_EVENTS, ACTIVITY_EMBEDDING, REORDER_TASKS)
+      are declared in the main manifest and apply to both flavors. The extra
+      system-only permissions below match CarCar's manifest and are added here so
+      they never affect the normal build.
+    -->
+
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.MANAGE_USERS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.CONTROL_DISPLAY_BRIGHTNESS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
+        tools:ignore="ProtectedPermissions"/>
+</manifest>

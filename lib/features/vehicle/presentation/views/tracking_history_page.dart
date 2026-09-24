@@ -2,14 +2,17 @@ import 'package:car_launcher/core/theme/carplay_theme.dart';
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
 import 'package:car_launcher/features/account/presentation/widgets/login_required.dart';
 import 'package:car_launcher/features/vehicle/domain/tracking_point.dart';
+import 'package:car_launcher/features/vehicle/presentation/providers/map_providers.dart';
 import 'package:car_launcher/features/vehicle/presentation/providers/tracking_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/vehicle_providers.dart';
+import 'package:car_launcher/features/vehicle/presentation/widgets/route_map_view.dart';
+import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Page at /history/:vehicleId showing tracking point history with date
-/// range filtering and an export placeholder (UC12 future work).
+/// Page at `/history/:vehicleId` — a vehicle's tracking history, shown either
+/// as a simplified route on a map or as a list of raw points, filtered by an
+/// optional date range.
 class TrackingHistoryPage extends ConsumerStatefulWidget {
   const TrackingHistoryPage({super.key, required this.vehicleId});
 
@@ -20,28 +23,24 @@ class TrackingHistoryPage extends ConsumerStatefulWidget {
       _TrackingHistoryPageState();
 }
 
+enum _HistoryView { map, list }
+
 class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
   DateTime? _from;
   DateTime? _to;
+  _HistoryView _view = _HistoryView.map;
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn =
-        ref.watch(accountSessionProvider.select((s) => s.valueOrNull != null));
-
+    final isLoggedIn = ref.watch(
+      accountSessionProvider.select((s) => s.valueOrNull != null),
+    );
     if (!isLoggedIn) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
         body: LoginRequiredWidget(featureLabel: 'Tracking history'),
       );
     }
-
-    // Tracking points are scoped to the device attached to this vehicle.
-    final vehicleAsync = ref.watch(vehicleProvider(widget.vehicleId));
-    final deviceId = vehicleAsync.valueOrNull?.deviceId ?? '';
-    final historyAsync = ref.watch(
-      trackingHistoryProvider((deviceId, _from, _to)),
-    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -58,53 +57,17 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
       ),
       body: Column(
         children: [
-          _DateRangeBar(
+          _ControlBar(
             from: _from,
             to: _to,
-            onTap: _showDateRangePicker,
+            view: _view,
+            onPickRange: _showDateRangePicker,
+            onViewChanged: (v) => setState(() => _view = v),
           ),
           Expanded(
-            child: historyAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: CarPlayTheme.neonCyan,
-                  strokeWidth: 2,
-                ),
-              ),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: CarPlayTheme.hazardRed.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Failed to load tracking history',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: CarPlayTheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () => ref.invalidate(
-                        trackingHistoryProvider(
-                          (deviceId, _from, _to),
-                        ),
-                      ),
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-              data: (points) => _HistoryContent(
-                points: points,
-              ),
-            ),
+            child: _view == _HistoryView.map
+                ? _MapBody(vehicleId: widget.vehicleId, from: _from, to: _to)
+                : _ListBody(vehicleId: widget.vehicleId, from: _from, to: _to),
           ),
         ],
       ),
@@ -113,12 +76,10 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
 
   Future<void> _showDateRangePicker() async {
     final now = DateTime.now();
-    final firstDate = now.subtract(const Duration(days: 365));
-    final lastDate = now;
     final result = await showDateRangePicker(
       context: context,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now,
       initialDateRange: _from != null && _to != null
           ? DateTimeRange(start: _from!, end: _to!)
           : null,
@@ -143,104 +104,152 @@ class _TrackingHistoryPageState extends ConsumerState<TrackingHistoryPage> {
   }
 }
 
-class _DateRangeBar extends StatelessWidget {
-  const _DateRangeBar({
+class _ControlBar extends StatelessWidget {
+  const _ControlBar({
     required this.from,
     required this.to,
-    required this.onTap,
+    required this.view,
+    required this.onPickRange,
+    required this.onViewChanged,
   });
 
   final DateTime? from;
   final DateTime? to;
-  final VoidCallback onTap;
+  final _HistoryView view;
+  final VoidCallback onPickRange;
+  final ValueChanged<_HistoryView> onViewChanged;
 
   @override
   Widget build(BuildContext context) {
-    final dateStyle = TextStyle(
-      fontSize: 13,
-      color: CarPlayTheme.onSurfaceVariant,
-    );
     final label = from != null && to != null
-        ? '${_formatDate(from!)} – ${_formatDate(to!)}'
+        ? '${_fmt(from!)} – ${_fmt(to!)}'
         : 'All time';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: dateStyle,
+              style: TextStyle(
+                fontSize: 13,
+                color: CarPlayTheme.onSurfaceVariant,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          OutlinedButton.icon(
-            key: const Key('tracking-history-date-range'),
-            onPressed: onTap,
-            icon: const Icon(Icons.date_range_outlined, size: 18),
-            label: const Text('Range'),
+          SegmentedButton<_HistoryView>(
+            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            segments: const [
+              ButtonSegment(
+                value: _HistoryView.map,
+                icon: Icon(Icons.map_outlined, size: 18),
+              ),
+              ButtonSegment(
+                value: _HistoryView.list,
+                icon: Icon(Icons.list, size: 18),
+              ),
+            ],
+            selected: {view},
+            onSelectionChanged: (s) => onViewChanged(s.first),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: 'Coming soon',
-            child: OutlinedButton.icon(
-              key: const Key('tracking-history-export'),
-              onPressed: null,
-              icon: const Icon(Icons.file_download_outlined, size: 18),
-              label: const Text('Export'),
-            ),
+          OutlinedButton.icon(
+            key: const Key('tracking-history-date-range'),
+            onPressed: onPickRange,
+            icon: const Icon(Icons.date_range_outlined, size: 18),
+            label: const Text('Range'),
           ),
         ],
       ),
     );
   }
 
-  static String _formatDate(DateTime date) {
-    final y = date.year.toString();
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+  static String _fmt(DateTime d) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)}';
   }
 }
 
-class _HistoryContent extends StatelessWidget {
-  const _HistoryContent({required this.points});
+class _MapBody extends ConsumerWidget {
+  const _MapBody({required this.vehicleId, required this.from, required this.to});
 
-  final List<TrackingPoint> points;
+  final String vehicleId;
+  final DateTime? from;
+  final DateTime? to;
 
   @override
-  Widget build(BuildContext context) {
-    if (points.isEmpty) {
-      return Center(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final query = (vehicleId: vehicleId, from: from, to: to);
+    final routeAsync = ref.watch(vehicleRouteProvider(query));
+
+    return routeAsync.when(
+      loading: () => const VehicleLoadingView(),
+      error: (error, _) => VehicleErrorView(
+        message: 'Failed to load route',
+        detail: error.toString(),
+        onRetry: () => ref.invalidate(vehicleRouteProvider(query)),
+      ),
+      data: (route) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.timeline_outlined,
-              size: 48,
-              color: CarPlayTheme.onSurfaceVariant.withValues(alpha: 0.5),
+            RouteMapView(
+              height: 340,
+              distanceKm: route.hasPath ? route.distanceKm : null,
+              points: [
+                for (final p in route.points)
+                  (lat: p.latitude, lon: p.longitude),
+              ],
             ),
             const SizedBox(height: 12),
-            Text(
-              'No tracking points yet',
-              style: TextStyle(
-                fontSize: 16,
-                color: CarPlayTheme.onSurfaceVariant,
+            if (route.hasPath)
+              Text(
+                '${route.simplifiedCount} of ${route.rawCount} points  ·  '
+                '${route.distanceKm.toStringAsFixed(1)} km',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: CarPlayTheme.onSurfaceVariant,
+                ),
               ),
-            ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
+}
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: points.length,
-      itemBuilder: (context, index) {
-        final point = points[index];
-        return _TrackingPointTile(point: point);
-      },
+class _ListBody extends ConsumerWidget {
+  const _ListBody({required this.vehicleId, required this.from, required this.to});
+
+  final String vehicleId;
+  final DateTime? from;
+  final DateTime? to;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = (vehicleId, from, to);
+    final historyAsync = ref.watch(trackingHistoryProvider(key));
+
+    return historyAsync.when(
+      loading: () => const VehicleLoadingView(),
+      error: (error, _) => VehicleErrorView(
+        message: 'Failed to load tracking history',
+        detail: error.toString(),
+        onRetry: () => ref.invalidate(trackingHistoryProvider(key)),
+      ),
+      data: (points) => points.isEmpty
+          ? const VehicleEmptyView(
+              icon: Icons.timeline_outlined,
+              message: 'No tracking points yet',
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: points.length,
+              itemBuilder: (context, i) => _TrackingPointTile(point: points[i]),
+            ),
     );
   }
 }
@@ -252,21 +261,11 @@ class _TrackingPointTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeStyle = TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      color: CarPlayTheme.onSurface,
-    );
-    final coordStyle = TextStyle(
-      fontSize: 13,
-      color: CarPlayTheme.onSurfaceVariant,
-    );
-
-    final speedLabel =
-        point.speedKph != null ? '${point.speedKph!.toStringAsFixed(1)} km/h' : '--';
-    final headingLabel = point.heading != null
-        ? '${point.heading!.toStringAsFixed(0)}°'
+    final speedLabel = point.speedKph != null
+        ? '${point.speedKph!.toStringAsFixed(1)} km/h'
         : '--';
+    final headingLabel =
+        point.heading != null ? '${point.heading!.toStringAsFixed(0)}°' : '--';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -283,13 +282,21 @@ class _TrackingPointTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _formatTimestamp(point.eventTime),
-                  style: timeStyle,
+                  formatVehicleTimestamp(point.eventTime),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: CarPlayTheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}',
-                  style: coordStyle,
+                  '${point.latitude.toStringAsFixed(6)}, '
+                  '${point.longitude.toStringAsFixed(6)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: CarPlayTheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -297,23 +304,26 @@ class _TrackingPointTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(speedLabel, style: timeStyle),
+              Text(
+                speedLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: CarPlayTheme.onSurface,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(headingLabel, style: coordStyle),
+              Text(
+                headingLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: CarPlayTheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
-  }
-
-  static String _formatTimestamp(DateTime time) {
-    final y = time.year.toString();
-    final mo = time.month.toString().padLeft(2, '0');
-    final d = time.day.toString().padLeft(2, '0');
-    final h = time.hour.toString().padLeft(2, '0');
-    final mi = time.minute.toString().padLeft(2, '0');
-    final s = time.second.toString().padLeft(2, '0');
-    return '$y-$mo-$d $h:$mi:$s';
   }
 }

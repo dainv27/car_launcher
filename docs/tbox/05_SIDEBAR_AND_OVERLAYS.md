@@ -1,8 +1,12 @@
 # Điều hướng trong ứng dụng
 
-Car Launcher không còn tạo taskbar hoặc media controls dạng system overlay.
-Ứng dụng cũng không đăng ký làm HOME launcher và không tự khởi động service sau
-boot.
+Car Launcher đăng ký làm HOME launcher (intent categories `MAIN` + `HOME` +
+`DEFAULT` + `LAUNCHER`) và có thể thay thế launcher gốc của thiết bị, không
+cần root. Người dùng có thể chọn nó làm Home mặc định trong Settings > Apps >
+Default apps > Home app, hoặc bấm nút "Set as Default Launcher" trong
+Settings > System Info (gọi `RoleManager` trên Android 10+, hoặc mở thẳng màn
+hình Settings đó trên bản cũ hơn). Ứng dụng không tạo taskbar hoặc media
+controls dạng system overlay.
 
 ## App shell
 

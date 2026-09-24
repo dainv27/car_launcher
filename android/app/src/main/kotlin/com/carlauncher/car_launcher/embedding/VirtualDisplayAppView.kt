@@ -2,7 +2,6 @@ package com.carlauncher.car_launcher.embedding
 
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -174,7 +173,7 @@ class VirtualDisplayAppView(
         Log.i(TAG, "Created pane=$paneId display=${display.displayId} package=$targetPackage")
         logInputCapability(display.displayId)
         if (!launchOnDisplay(display.displayId)) {
-            releaseVirtualDisplay()
+            releaseVirtualDisplay(hideSurface = false)
             scheduleCreateRetry("Cannot launch $targetPackage on display ${display.displayId}")
             return
         }
@@ -274,8 +273,16 @@ class VirtualDisplayAppView(
         virtualDisplay?.surface = null
     }
 
-    private fun releaseVirtualDisplay() {
-        surfaceView.visibility = View.INVISIBLE
+    // [hideSurface]=true (dispose/showFallback) intentionally hides the
+    // SurfaceView, which triggers surfaceDestroyed() and nulls currentHolder.
+    // The launch-failure retry path must pass false: hiding the surface
+    // there destroys currentHolder before the scheduled retry runs, so
+    // attemptCreateVirtualDisplay()'s `currentHolder ?: return` silently
+    // no-ops forever — the retry never fires, createRetryCount never
+    // reaches MAX_CREATE_RETRIES, and showFallback() never appears, leaving
+    // a permanently blank pane with no explanation.
+    private fun releaseVirtualDisplay(hideSurface: Boolean = true) {
+        if (hideSurface) surfaceView.visibility = View.INVISIBLE
         val display = virtualDisplay
         virtualDisplay = null
         try {
@@ -299,11 +306,15 @@ class VirtualDisplayAppView(
         val options = ActivityOptions.makeBasic().apply {
             launchDisplayId = displayId
         }
+        // A direct startActivity() call lets the framework's permission check
+        // (ActivityOptions.setLaunchDisplayId requires ADD_TRUSTED_DISPLAY on
+        // most ROMs) throw synchronously back to us. Routing this through a
+        // PendingIntent.send() instead — as this used to — hides that
+        // SecurityException inside system_server: the send() call itself
+        // never throws, so the failure was invisible here and the panes were
+        // left blank forever instead of falling back to showFallback().
         return try {
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
-            PendingIntent.getActivity(context, targetPackage.hashCode(), intent, flags)
-                .send(context, 0, null, null, null, null, options.toBundle())
+            context.startActivity(intent, options.toBundle())
             true
         } catch (error: Throwable) {
             Log.w(TAG, "Cannot launch $targetPackage on display $displayId", error)

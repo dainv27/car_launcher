@@ -13,6 +13,8 @@ import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tra
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
+import 'package:car_launcher/features/settings/presentation/providers/default_launcher_provider.dart';
+import 'package:car_launcher/features/settings/presentation/providers/notification_sound_provider.dart';
 import 'package:car_launcher/features/settings/presentation/widgets/weather_settings_dialog.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
@@ -913,6 +915,8 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
   Widget _buildQuickSettingsCard() {
     final brightnessSettings = ref.watch(brightnessProvider);
     final brightnessNotifier = ref.read(brightnessProvider.notifier);
+    final soundSettings = ref.watch(notificationSoundProvider);
+    final soundNotifier = ref.read(notificationSoundProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -937,6 +941,38 @@ class _AppearanceSectionState extends ConsumerState<_AppearanceSection> {
           subtitle: 'Match album art color',
           value: _dynamicAccents,
           onChanged: (v) => setState(() => _dynamicAccents = v),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Notification Sound',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: CarPlayTheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    soundSettings.displayTitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: CarPlayTheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            OutlinedButton(
+              key: const Key('settings-pick-notification-sound'),
+              onPressed: () => soundNotifier.pick(),
+              child: const Text('Change'),
+            ),
+          ],
         ),
       ],
     );
@@ -1000,13 +1036,6 @@ class _WallpaperThumbnail extends StatelessWidget {
   final LauncherBackgroundStyle style;
   final VoidCallback onTap;
 
-  // Placeholder gradient colors for wallpaper previews
-  static const _gradients = [
-    [Color(0xFF1A1A1A), Color(0xFF4A4A4A)], // Glass grey
-    [Color(0xFF1A0A2E), Color(0xFF8B5CF6)], // Electric violet
-    [Color(0xFF0A0B0C), Color(0xFF00E5FF)], // Dark cyan
-  ];
-
   @override
   Widget build(BuildContext context) {
     final accent = CarPlayTheme.accent(context);
@@ -1024,11 +1053,25 @@ class _WallpaperThumbnail extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: _gradients[style.index],
+              colors: style.gradient,
             ),
           ),
-          child: isSelected
-              ? Center(
+          child: Stack(
+            children: [
+              Positioned(
+                left: 8,
+                bottom: 6,
+                child: Text(
+                  style.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Center(
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -1037,8 +1080,9 @@ class _WallpaperThumbnail extends StatelessWidget {
                     ),
                     child: Icon(Icons.check_circle, color: accent, size: 24),
                   ),
-                )
-              : null,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -2173,6 +2217,8 @@ class _SystemInfoSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hiddenApps = ref.watch(hiddenAppsProvider);
+    final isDefaultLauncher =
+        ref.watch(defaultLauncherStatusProvider).valueOrNull ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(right: 8, bottom: CarPlayTheme.margin),
@@ -2196,6 +2242,58 @@ class _SystemInfoSection extends ConsumerWidget {
                   label: 'Hidden Apps',
                   value: '${hiddenApps.length} apps',
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: CarPlayTheme.widgetGap),
+          _GlassPanel(
+            key: const Key('settings-default-launcher-card'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Default Launcher',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: CarPlayTheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isDefaultLauncher
+                      ? 'Car Launcher is your device\'s Home app.'
+                      : 'Replace the stock launcher so Car Launcher opens on Home and after reboot.',
+                  key: const Key('settings-default-launcher-status'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDefaultLauncher
+                        ? CarPlayTheme.neonCyan
+                        : CarPlayTheme.onSurfaceVariant,
+                  ),
+                ),
+                if (!isDefaultLauncher) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      key: const Key('settings-set-default-launcher'),
+                      onPressed: () =>
+                          ref.read(launcherServiceProvider).requestDefaultLauncher(),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withAlpha(51)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Set as Default Launcher',
+                        style: TextStyle(color: CarPlayTheme.neonCyan),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

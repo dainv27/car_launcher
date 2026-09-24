@@ -33,9 +33,18 @@ done
 echo
 
 echo "Launcher package:"
-shell dumpsys package "$PACKAGE" 2>/dev/null | grep -E 'pkgFlags|privateFlags|MANAGE_ACTIVITY_TASKS|SYSTEM_ALERT_WINDOW|INJECT_EVENTS|ADD_TRUSTED_DISPLAY|ACTIVITY_EMBEDDING' || {
+shell dumpsys package "$PACKAGE" 2>/dev/null | grep -E 'pkgFlags|privateFlags|MANAGE_ACTIVITY_TASKS|SYSTEM_ALERT_WINDOW|INJECT_EVENTS|ADD_TRUSTED_DISPLAY|ACTIVITY_EMBEDDING|WRITE_SECURE_SETTINGS' || {
   echo "$PACKAGE is not installed."
 }
+echo
+
+echo "Embedded-input accessibility service:"
+enabled_services="$(shell settings get secure enabled_accessibility_services 2>/dev/null || true)"
+if echo "$enabled_services" | grep -qi "$PACKAGE/.*EmbeddedInputAccessibilityService"; then
+  echo "enabled"
+else
+  echo "not enabled (needs WRITE_SECURE_SETTINGS granted above, or manual Settings > Accessibility toggle)"
+fi
 echo
 
 echo "Google Maps:"

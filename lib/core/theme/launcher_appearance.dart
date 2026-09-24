@@ -11,7 +11,28 @@ enum LauncherThemeStyle {
   final Color accent;
 }
 
-enum LauncherBackgroundStyle { obsidian, electric, aurora }
+enum LauncherBackgroundStyle {
+  obsidian(
+    label: 'Obsidian',
+    gradient: [Color(0xFF1A1A1A), Color(0xFF4A4A4A)],
+  ),
+  electric(
+    label: 'Electric',
+    gradient: [Color(0xFF1A0A2E), Color(0xFF8B5CF6)],
+  ),
+  aurora(
+    label: 'Aurora',
+    gradient: [Color(0xFF0A0B0C), Color(0xFF00E5FF)],
+  );
+
+  const LauncherBackgroundStyle({required this.label, required this.gradient});
+
+  final String label;
+
+  /// Built-in gradient wallpaper for this preset, used whenever no custom
+  /// wallpaper image is selected.
+  final List<Color> gradient;
+}
 
 @immutable
 class LauncherAppearance {

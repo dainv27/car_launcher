@@ -125,10 +125,26 @@ Background tracking writes location points into `pending_points`. Sync moves suc
 Implemented API mapping:
 
 ```text
-POST /devices/:deviceId/tracking-points
-GET  /devices/:deviceId/tracking-points?from&to&page=0&size=50
-GET  /devices/:deviceId/tracking-points/latest
+GET  /vehicles/:vehicleId/tracking-points?from&to&page=0&size=50   (history list)
+GET  /vehicles/:vehicleId/tracking-points/latest                   (latest fix)
 ```
+
+> **Reads are vehicle-scoped.** The current client API exposes tracking-point
+> history under `/vehicles/{vehicleId}/…`; the app used to call a device-scoped
+> path (`/devices/{deviceId}/tracking-points`) which no longer exists.
+> `VehicleTrackingSyncClient.listVehicleTrackingPoints` /
+> `getLatestVehicleTrackingPoint` and `TrackingRepository` now take a
+> `vehicleId`.
+
+> **Ingestion (the upload path) is a separate migration.** The owner-JWT
+> `POST /client-api/v1/vehicles/{id}/tracking-points` was removed when the
+> service moved device onboarding to Android Key Attestation. Uploading points
+> now requires enrolling the device on the **public API**
+> (`POST /public-api/v1/devices/me/tracking-points[/batch]`) with an
+> `X-Device-Assertion` JWS. The bootstrap PKI material in `assets/security/`
+> is for that work; `VehicleTrackingSyncClient.sync()` and the native
+> `VehicleTrackingService` upload path are untouched by the read/feature work
+> below.
 
 Sync sends pending records in local batches, but each HTTP request follows the
 vehicle service single-point request schema:
@@ -178,3 +194,33 @@ Sync only runs when:
 - pending points exist.
 
 Each successful local batch is moved from `pending_points` to `synced_points`. Failed batches remain pending for retry.
+
+## Trips, Route, Geofences and Alerts
+
+These read/manage features consume the owner-JWT `client-api/v1` endpoints
+(same bearer auth as vehicle management) and are surfaced from the vehicle
+detail screen. Each area follows the repo's feature layout —
+`features/vehicle/{domain,data,presentation/{providers,views,widgets}}` — with a
+thin `*ApiClient` (HTTP + URL shaping via `UrlUtils.vehicleUri`), a `*Repository`
+(DTO → domain), Riverpod providers, and a screen.
+
+| Feature | Screen / route | Endpoints |
+| --- | --- | --- |
+| Trips | `Trips` button → `/vehicles/:id/trips`; a row → `/trips/:tripId` | `GET /vehicles/{id}/trips`, `GET /trips/{tripId}`, `GET /trips/{tripId}/tracking-points` |
+| Route on map | `History` screen → **Map** toggle (also on trip detail) | `GET /vehicles/{id}/tracking-points/route` (Douglas–Peucker) |
+| Address | `Latest Location` card on vehicle detail | `GET /tracking/reverse-geocode` — `503` ⇒ address omitted |
+| Alerts | `Alerts` button → `/vehicles/:id/alerts` (Raised / Rules tabs) | `GET /alerts`, `POST /alerts/{id}/resolve`, `GET/POST/PATCH/DELETE /alert-rules` |
+| Geofences | `Geofences` button → `/vehicles/:id/geofences` (Fences / Events tabs) | `GET/POST/PATCH/DELETE /geofences`, `GET /geofences/events` |
+
+Notes:
+
+- The **route map** is a tile-free `CustomPainter` (`RouteMapView` +
+  `GeoUtils.projectToCanvas`) — the app ships no Flutter map package, only the
+  native Google-Maps intent channel.
+- `reverse-geocode` / `snap-to-road` need an operator-configured provider
+  server-side; the app treats a `503` as "feature unavailable" rather than an
+  error.
+- Alert-rule and geofence create/edit forms build the request body
+  (`toCreateJson` / `toUpdateJson`) and hand it to the repository; the list
+  notifier invalidates itself on success and the view shows a SnackBar on
+  failure.

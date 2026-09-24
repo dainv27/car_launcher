@@ -32,14 +32,8 @@ void main() {
   final topAppBar = File(
     'lib/features/dashboard/presentation/widgets/top_app_bar.dart',
   );
-  final appDrawer = File(
-    'lib/features/app_drawer/presentation/app_drawer_page.dart',
-  );
   final appDrawerProviders = File(
     'lib/features/app_drawer/presentation/providers/app_drawer_providers.dart',
-  );
-  final mediaCenter = File(
-    'lib/features/media/presentation/media_center_page.dart',
   );
   final navigationMapWidget = File(
     'lib/features/dashboard/presentation/widgets/navigation_map_widget.dart',
@@ -85,8 +79,8 @@ void main() {
     );
     expect(receiverSource, contains('StartupCoordinator.scheduleStartupCheck'));
     expect(coordinatorSource, contains('JobScheduler'));
-    expect(coordinatorSource, contains('INITIAL_BOOT_DELAY_MS = 45_000L'));
-    expect(coordinatorSource, contains('MAX_ATTEMPTS = 20'));
+    expect(coordinatorSource, contains('INITIAL_BOOT_DELAY_MS = 10_000L'));
+    expect(coordinatorSource, contains('MAX_ATTEMPTS = 10'));
     expect(coordinatorSource, contains('userManager?.isUserUnlocked'));
     expect(coordinatorSource, contains('com.google.android.apps.maps'));
     expect(coordinatorSource, contains('com.google.android.youtube'));
@@ -125,13 +119,16 @@ void main() {
 
     expect(appSource, isNot(contains('Sidebar()')));
     expect(appSource, isNot(contains('sidebarWidth')));
-    expect(topBarSource, contains("context.go('/settings')"));
-    expect(topBarSource, contains("context.go('/')"));
-    expect(topBarSource, contains("context.go('/apps')"));
-    expect(topBarSource, contains("context.go('/media')"));
-    expect(topBarSource, contains("context.go('/navigation')"));
-    expect(topBarSource, contains("Key('top-bar-settings')"));
-    expect(topBarSource, contains("Key('top-bar-home')"));
+    expect(topBarSource, contains("router.push(dest.route)"));
+    expect(topBarSource, contains("'/settings'"));
+    expect(topBarSource, contains("'/apps'"));
+    expect(topBarSource, contains("'/media'"));
+    expect(topBarSource, contains("'/navigation'"));
+    expect(topBarSource, contains("Key('top-bar-nav-\${destination.label.toLowerCase()}')"));
+    expect(
+      bottomStatusBar.readAsStringSync(),
+      contains("Key('top-bar-home')"),
+    );
     expect(topBarSource, contains("Key('top-bar-clock')"));
     expect(topBarSource, contains('ref.watch(clockProvider)'));
     expect(topBarSource, isNot(contains("Key('top-bar-clock-date')")));
@@ -139,7 +136,6 @@ void main() {
     expect(topBarSource, isNot(contains("'LOCAL'")));
     expect(topBarSource, isNot(contains('_formatDate')));
     expect(topBarSource, isNot(contains('LinearGradient')));
-    expect(topBarSource, isNot(contains('BoxShadow')));
     expect(
       bottomStatusBar.readAsStringSync(),
       isNot(contains('Internet validated')),
@@ -148,9 +144,7 @@ void main() {
       bottomStatusBar.readAsStringSync(),
       isNot(contains('Internet unavailable')),
     );
-    expect(appDrawer.readAsStringSync(), contains("Key('apps-settings')"));
-    expect(mediaCenter.readAsStringSync(), contains("Key('media-settings')"));
-    expect(source, contains('android:launchMode="singleTop"'));
+    expect(source, contains('android:launchMode="singleTask"'));
     expect(source, isNot(contains('android:taskAffinity=')));
     expect(source, isNot(contains('android:alwaysRetainTaskState=')));
     expect(source, isNot(contains('android:clearTaskOnLaunch=')));

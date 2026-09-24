@@ -9,8 +9,12 @@ import 'package:car_launcher/features/media/presentation/media_center_page.dart'
 import 'package:car_launcher/features/settings/presentation/clock_network_settings_page.dart';
 import 'package:car_launcher/features/settings/presentation/log_viewer_page.dart';
 import 'package:car_launcher/features/settings/presentation/settings_page.dart';
+import 'package:car_launcher/features/vehicle/presentation/views/alerts_page.dart';
+import 'package:car_launcher/features/vehicle/presentation/views/geofences_page.dart';
 import 'package:car_launcher/features/vehicle/presentation/views/tracking_history_page.dart';
+import 'package:car_launcher/features/vehicle/presentation/views/trip_detail_page.dart';
 import 'package:car_launcher/features/vehicle/presentation/views/vehicle_detail_page.dart';
+import 'package:car_launcher/features/vehicle/presentation/views/vehicle_trips_page.dart';
 import 'package:car_launcher/features/vehicle/presentation/views/vehicles_page.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +24,7 @@ part 'app_router.g.dart';
 
 /// Routes that require an authenticated user. Any unauthenticated
 /// navigation target in this set is redirected to `/login`.
-const _protectedRoutes = <String>{'/vehicles', '/history'};
+const _protectedRoutes = <String>{'/vehicles', '/history', '/trips'};
 
 /// App router configuration
 @riverpod
@@ -65,8 +69,38 @@ GoRouter appRouter(AppRouterRef ref) {
               final id = state.pathParameters['id'] ?? '';
               return _transitionPage(state, VehicleDetailPage(vehicleId: id));
             },
+            routes: [
+              GoRoute(
+                path: 'trips',
+                pageBuilder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return _transitionPage(state, VehicleTripsPage(vehicleId: id));
+                },
+              ),
+              GoRoute(
+                path: 'geofences',
+                pageBuilder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return _transitionPage(state, GeofencesPage(vehicleId: id));
+                },
+              ),
+              GoRoute(
+                path: 'alerts',
+                pageBuilder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return _transitionPage(state, AlertsPage(vehicleId: id));
+                },
+              ),
+            ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/trips/:tripId',
+        pageBuilder: (context, state) {
+          final tripId = state.pathParameters['tripId'] ?? '';
+          return _transitionPage(state, TripDetailPage(tripId: tripId));
+        },
       ),
       GoRoute(
         path: '/history/:vehicleId',

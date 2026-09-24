@@ -4,6 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Platform signing (TBox / AOSP platform key).
+// Provide these four values in ~/.gradle/gradle.properties or via -P flags to
+// platform-sign the `system` flavor. If they are unset, the `system` flavor
+// falls back to the debug key — that build will NOT install as uid.system on a
+// device (signature mismatch); use it only to verify that the project compiles.
 val tboxPlatformKeystore = providers.gradleProperty("TBOX_PLATFORM_KEYSTORE").orNull
 val tboxPlatformAlias = providers.gradleProperty("TBOX_PLATFORM_KEY_ALIAS").orNull
 val tboxPlatformStorePassword = providers.gradleProperty("TBOX_PLATFORM_STORE_PASSWORD").orNull
@@ -27,10 +32,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.carlauncher.car_launcher"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         // Match the CarCar launcher compatibility target. Its embedded-app
         // implementation intentionally uses system/private Android APIs.
@@ -50,9 +52,27 @@ android {
         }
     }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.findByName("tboxPlatform") ?: signingConfigs.getByName("debug")
+    // Two build channels:
+    //  - normal: ordinary app, debug-signed. Installs and runs like today.
+    //            Signature permissions (INJECT_EVENTS, ADD_TRUSTED_DISPLAY,
+    //            MANAGE_ACTIVITY_*) are declared but NOT granted, so embedding
+    //            uses the accessibility / freeform fallbacks.
+    //  - system: adds android:sharedUserId="android.uid.system" (via the
+    //            src/system/ manifest overlay) and is platform-signed. This is
+    //            the CarCar-equivalent build: it runs as the system uid and is
+    //            granted the signature/privileged permissions directly.
+    flavorDimensions += "channel"
+    productFlavors {
+        create("normal") {
+            dimension = "channel"
+            isDefault = true
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        create("system") {
+            dimension = "channel"
+            // Platform key when available, debug key otherwise (compile-check only).
+            signingConfig = signingConfigs.findByName("tboxPlatform")
+                ?: signingConfigs.getByName("debug")
         }
     }
 }

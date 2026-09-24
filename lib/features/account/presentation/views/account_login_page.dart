@@ -102,6 +102,9 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> with Widget
                     width: 200,
                     child: Image.asset(
                       'assets/images/dainv.png',
+                      // 1024px source shown 200 wide: decode at display size.
+                      cacheWidth:
+                          (200 * MediaQuery.devicePixelRatioOf(context)).ceil(),
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.high,
                     ),

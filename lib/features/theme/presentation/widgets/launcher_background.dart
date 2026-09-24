@@ -14,25 +14,39 @@ class LauncherBackground extends ConsumerWidget {
     final appearance = ref.watch(effectiveLauncherAppearanceProvider);
     final palette = context.palette;
 
+    // Static layer under every page: isolate it so page transitions and
+    // widget updates never repaint (or re-rasterize) the wallpaper.
     return Positioned.fill(
-      child: AnimatedContainer(
-        key: const Key('launcher-global-background'),
-        duration: const Duration(milliseconds: 350),
-        color: palette.background,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _WallpaperImage(
-              path: appearance.customWallpaperPath,
-              backgroundStyle: appearance.backgroundStyle,
-              brightness: palette.brightness,
-            ),
-            _LegibilityScrim(palette: palette),
-          ],
+      child: RepaintBoundary(
+        child: AnimatedContainer(
+          key: const Key('launcher-global-background'),
+          duration: const Duration(milliseconds: 350),
+          color: palette.background,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _WallpaperImage(
+                path: appearance.customWallpaperPath,
+                backgroundStyle: appearance.backgroundStyle,
+                brightness: palette.brightness,
+              ),
+              _LegibilityScrim(palette: palette),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Decode width for full-screen wallpapers: the display's physical width.
+///
+/// Decoding a camera photo at native size costs ~48 MB of RAM for 12 MP; the
+/// head unit runs with a few tens of MB free, so decode at screen size.
+int _screenCacheWidth(BuildContext context) {
+  final media = MediaQuery.of(context);
+  final longest = media.size.longestSide * media.devicePixelRatio;
+  return longest.ceil().clamp(1, 4096);
 }
 
 class _WallpaperImage extends StatelessWidget {
@@ -57,6 +71,7 @@ class _WallpaperImage extends StatelessWidget {
       return Image.file(
         File(wallpaperPath),
         key: const Key('launcher-custom-wallpaper'),
+        cacheWidth: _screenCacheWidth(context),
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => fallback,
       );
@@ -77,7 +92,8 @@ class _DefaultWallpaperImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final useArtwork = style == LauncherBackgroundStyle.obsidian &&
+    final useArtwork =
+        style == LauncherBackgroundStyle.obsidian &&
         brightness == Brightness.dark;
     if (!useArtwork) {
       return DecoratedBox(
@@ -94,6 +110,7 @@ class _DefaultWallpaperImage extends StatelessWidget {
     return Image.asset(
       'assets/images/logo_1.webp',
       key: const Key('launcher-default-wallpaper'),
+      cacheWidth: _screenCacheWidth(context),
       fit: BoxFit.cover,
       alignment: Alignment.center,
     );

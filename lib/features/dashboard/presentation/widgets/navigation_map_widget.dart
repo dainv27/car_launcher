@@ -11,6 +11,7 @@ class NavigationMapWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPanel(
       padding: EdgeInsets.zero,
+      shadow: false,
       child: const ClipRRect(
         borderRadius: BorderRadius.all(Radius.circular(12)),
         child: EmbeddedAndroidAppView(

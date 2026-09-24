@@ -99,8 +99,11 @@ class _LogoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
     return Image.asset(
       'assets/images/splash.png',
+      // Full-screen cover: decode at the display's size, not the source's.
+      cacheWidth: (media.size.longestSide * media.devicePixelRatio).ceil(),
       fit: BoxFit.cover,
       alignment: Alignment.center,
       filterQuality: FilterQuality.high,

@@ -63,6 +63,24 @@ class VehicleTrackingStoreService {
     );
   }
 
+  /// Cheap fingerprint of both point tables (row counts + newest timestamps).
+  ///
+  /// The native service writes the same database; comparing this lets the
+  /// UI's periodic poll skip [load] — which reads and maps every stored point,
+  /// up to 10k synced rows — when native has not written anything since.
+  Future<String> changeStamp() async {
+    await _queue;
+    final rows = await (await _db).rawQuery(
+      'SELECT '
+      '(SELECT COUNT(*) FROM $pendingTable) AS pc, '
+      '(SELECT MAX(timestamp) FROM $pendingTable) AS pt, '
+      '(SELECT COUNT(*) FROM $syncedTable) AS sc, '
+      '(SELECT MAX(synced_at) FROM $syncedTable) AS st',
+    );
+    final row = rows.first;
+    return '${row['pc']}|${row['pt']}|${row['sc']}|${row['st']}';
+  }
+
   Future<void> saveSettings({
     required bool enabled,
     required String syncEndpoint,

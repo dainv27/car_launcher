@@ -74,18 +74,10 @@ class TopAppBar extends ConsumerWidget {
           semanticLabel: 'K3',
         ),
         const SizedBox(width: 16),
-        Container(
-          width: 1,
-          height: 24,
-          color: context.palette.border,
-        ),
+        Container(width: 1, height: 24, color: context.palette.border),
         const SizedBox(width: 16),
         if (title.isEmpty) ...[
-          Icon(
-            Icons.navigation,
-            color: context.palette.accent,
-            size: 14,
-          ),
+          Icon(Icons.navigation, color: context.palette.accent, size: 14),
           const SizedBox(width: 8),
         ],
         Expanded(
@@ -233,42 +225,48 @@ class _TrackingStatusDotState extends State<_TrackingStatusDot>
   Widget build(BuildContext context) {
     final style = _TrackingDotStyle.from(widget.tracking, context.palette);
 
-    return Tooltip(
-      message: style.label,
-      child: AnimatedBuilder(
-        key: const Key('top-bar-tracking-dot'),
-        animation: _pulse,
-        builder: (context, child) {
-          final value = style.animated ? _pulse.value : 0.0;
-          final opacity = style.baseOpacity + (style.opacityRange * value);
-          final scale = 0.92 + (0.16 * value);
-          final glow = style.glowRadius + (style.glowRange * value);
+    // Isolated layer: when the dot does pulse (only while syncing), it must
+    // not repaint the rest of the top bar.
+    return RepaintBoundary(
+      child: Tooltip(
+        message: style.label,
+        child: AnimatedBuilder(
+          key: const Key('top-bar-tracking-dot'),
+          animation: _pulse,
+          builder: (context, child) {
+            final value = style.animated ? _pulse.value : 0.0;
+            final opacity = style.baseOpacity + (style.opacityRange * value);
+            final scale = 0.92 + (0.16 * value);
+            final glow = style.glowRadius + (style.glowRange * value);
 
-          return Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: style.color.withValues(alpha: opacity),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: context.palette.foreground.withValues(alpha: 0.12),
-                  width: 0.6,
+            return Transform.scale(
+              scale: scale,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: style.color.withValues(alpha: opacity),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: context.palette.foreground.withValues(alpha: 0.12),
+                    width: 0.6,
+                  ),
+                  boxShadow: style.glow
+                      ? [
+                          BoxShadow(
+                            color: style.color.withValues(
+                              alpha: 0.46 * opacity,
+                            ),
+                            blurRadius: glow,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: style.glow
-                    ? [
-                        BoxShadow(
-                          color: style.color.withValues(alpha: 0.46 * opacity),
-                          blurRadius: glow,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -297,6 +295,11 @@ class _TrackingDotStyle {
   final double glowRadius;
   final double glowRange;
 
+  /// Only the short-lived syncing state pulses. A never-ending animation
+  /// forces a frame on every vsync, and with the hybrid-composition Maps /
+  /// YouTube panes each frame also costs main-thread composition — an
+  /// always-pulsing dot kept the idle launcher at ~50% main-thread CPU and
+  /// ~20 fps with 38% janky frames on the Bengal head unit.
   factory _TrackingDotStyle.from(
     VehicleTrackingState tracking,
     LauncherPalette palette,
@@ -318,7 +321,7 @@ class _TrackingDotStyle {
         color: palette.danger,
         label: 'Vehicle tracking active, sync needs attention',
         duration: Duration(milliseconds: 1200),
-        animated: true,
+        animated: false,
         baseOpacity: 0.58,
         opacityRange: 0.34,
         glowRadius: 5,
@@ -345,7 +348,7 @@ class _TrackingDotStyle {
         label:
             'Vehicle tracking active, ${tracking.pendingSyncCount} pending sync',
         duration: const Duration(milliseconds: 1500),
-        animated: true,
+        animated: false,
         baseOpacity: 0.58,
         opacityRange: 0.36,
         glowRadius: 5,
@@ -357,7 +360,7 @@ class _TrackingDotStyle {
       color: palette.success,
       label: 'Vehicle tracking active',
       duration: Duration(milliseconds: 2300),
-      animated: true,
+      animated: false,
       baseOpacity: 0.68,
       opacityRange: 0.22,
       glowRadius: 5,
@@ -426,7 +429,8 @@ class _NavigationMenu extends StatelessWidget {
     final router = GoRouter.of(context);
     final currentPath = GoRouterState.of(context).uri.path;
     final selected = _destinations.firstWhere(
-      (d) => d.route == currentPath ||
+      (d) =>
+          d.route == currentPath ||
           (d.route != '/' && currentPath.startsWith(d.route)),
       orElse: () => _destinations.first,
     );
@@ -491,9 +495,7 @@ class _NavButton extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: selected
-                ? context.palette.accentSoft
-                : Colors.transparent,
+            color: selected ? context.palette.accentSoft : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

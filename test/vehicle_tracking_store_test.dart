@@ -136,6 +136,26 @@ void main() {
       expect(snapshot.synced.every((p) => p.synced), isTrue);
     });
 
+    test('changeStamp is stable until points are written or synced', () async {
+      final empty = await store.changeStamp();
+      expect(await store.changeStamp(), empty);
+
+      final point = VehicleTrackPoint(
+        id: 'p-1',
+        latitude: 10.0,
+        longitude: 106.0,
+        timestamp: DateTime.utc(2026, 6, 25, 12, 0),
+        displayName: 'A',
+      );
+      await store.appendPending(point);
+      final afterAppend = await store.changeStamp();
+      expect(afterAppend, isNot(empty));
+      expect(await store.changeStamp(), afterAppend);
+
+      await store.markSynced({'p-1'}, DateTime.utc(2026, 6, 25, 14, 0));
+      expect(await store.changeStamp(), isNot(afterAppend));
+    });
+
     test('markSynced with empty set is a no-op', () async {
       await store.markSynced({}, DateTime.utc(2026));
       final pending = await store.readPending();

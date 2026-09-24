@@ -124,10 +124,29 @@ class _AppIconTileState extends ConsumerState<AppIconTile> {
     );
   }
 
+  /// Decoded icon bytes keyed by the base64 string from the native side.
+  ///
+  /// Tiles rebuild on every press and are recreated on every visit to the
+  /// Apps page. Returning the same [Uint8List] keeps [Image.memory]'s cache
+  /// key stable, so each icon is base64- and PNG-decoded once instead of on
+  /// every rebuild.
+  static final _iconBytesCache = <String, Uint8List>{};
+  static const _iconBytesCacheLimit = 256;
+
   static Uint8List? _decodeIcon(String? base64) {
     if (base64 == null || base64.isEmpty) return null;
+    final cached = _iconBytesCache.remove(base64);
+    if (cached != null) {
+      _iconBytesCache[base64] = cached; // most recently used
+      return cached;
+    }
     try {
-      return base64Decode(base64);
+      final bytes = base64Decode(base64);
+      _iconBytesCache[base64] = bytes;
+      if (_iconBytesCache.length > _iconBytesCacheLimit) {
+        _iconBytesCache.remove(_iconBytesCache.keys.first);
+      }
+      return bytes;
     } catch (e) {
       AppLogger.instance.d('Icon decode failed', tag: 'APP_DRAWER', error: e);
       return null;
@@ -200,6 +219,8 @@ class _AppIconImage extends StatelessWidget {
         bytes!,
         width: size,
         height: size,
+        // Decode at the displayed size, not the launcher icon's native size.
+        cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).ceil(),
         fit: BoxFit.cover,
         gaplessPlayback: true,
         filterQuality: FilterQuality.medium,

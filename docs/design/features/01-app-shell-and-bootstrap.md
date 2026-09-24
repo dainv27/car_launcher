@@ -27,9 +27,9 @@ năng cụ thể nằm ở các file khác.
 7. `_setupTrackingAuthChannel()` — mở `MethodChannel('com.carlauncher/tracking_auth')`.
 8. `runApp(ProviderScope(overrides: [...], child: CarLauncherApp()))`.
 
-`overrides` tiêm `SharedPreferences` (từ `getIt`) vào `layoutProvider`,
-`widgetListProvider`, `carPlaySettingsProvider` — các provider này `throw
-UnimplementedError` nếu không được override.
+`overrides` tiêm `SharedPreferences` (từ `getIt`) vào `widgetListProvider`,
+`carPlaySettingsProvider` — các provider này `throw UnimplementedError` nếu
+không được override.
 
 ## 3. `CarLauncherApp`
 

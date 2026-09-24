@@ -1,6 +1,6 @@
 # 03 — Dashboard (màn hình chính)
 
-Updated: 2026-08-29
+Updated: 2026-09-24
 Status: implemented
 Route: `/`
 Nguồn: `lib/features/dashboard/presentation/dashboard_page.dart`,
@@ -12,7 +12,7 @@ Nguồn: `lib/features/dashboard/presentation/dashboard_page.dart`,
 ## 1. Mục tiêu & phạm vi
 
 Màn hình trung tâm của launcher: khung trên (`TopAppBar`) + vùng nội dung dạng
-`PageView` gồm 6 trang + thanh trạng thái dưới (`BottomStatusBar`). Kèm splash
+`PageView` gồm 4 trang + thanh trạng thái dưới (`BottomStatusBar`). Kèm splash
 screen và các provider hạ tầng dashboard (đồng hồ, kết nối mạng, wallpaper, chỉ
 số trang).
 
@@ -25,17 +25,23 @@ số trang).
    | index | trang | tiêu đề top bar |
    |---|---|---|
    | 0 | `MediaCenterPage` | "Media Center" |
-   | 1 | `MapPage` | "" (hiển thị tên địa điểm) |
-   | 2 | `MapWithYoutube` | "" |
-   | 3 | `MapWithMedia` | "" |
-   | 4 | `AppDrawerPage` | "Apps" |
-   | 5 | `SettingsPage` | "Settings" |
-3. `BottomStatusBar` (cao 40)
+   | 1 | "Home" — `_homeContentFor(homeViewMode)` | "" (hiển thị tên địa điểm) |
+   | 2 | `AppDrawerPage` | "Apps" |
+   | 3 | `SettingsPage` | "Settings" |
 
-- Trang khởi tạo = `dashboardIndexProvider` (mặc định `2`).
+   Trang "Home" (index 1) **không cố định**: `_homeContentFor` chọn
+   `MapPage`/`MapWithMedia`/`MapWithYoutube` theo `carPlaySettingsProvider`
+   (`HomeViewMode`, cấu hình ở Settings → Dashboard — xem [08](08-settings.md)).
+   Trước 2026-09-24, cả 3 trang map này từng là 3 trang PageView cố định luôn
+   hiển thị bất kể setting; `HomeViewMode` khi đó chỉ lưu giá trị, không tác
+   động UI.
+3. `BottomStatusBar` (cao 40, `dashboardLength = 4`)
+
+- Trang khởi tạo = `dashboardIndexProvider` (mặc định `1`, tức trang Home).
 - `PageController` + cờ `_programmaticChanging` để phân biệt vuốt tay và chuyển
   bằng code: `ref.listen(dashboardIndexProvider)` → `_animateToPage`; `onPageChanged`
-  do người dùng vuốt → `setIndex`.
+  do người dùng vuốt → `setIndex`. Cả hai đều `clamp(0, 3)` để tránh index cũ
+  (từ bản 6 trang trước đây, lưu ở secure storage) làm vỡ `PageController`.
 - `physics: BouncingScrollPhysics(parent: PageScrollPhysics())`.
 
 ## 3. Splash
@@ -52,13 +58,14 @@ out). `_startFlow`: forward logo → chờ 1500ms → fade 500ms → `context.go
 | `connectivityStatusProvider` | `StateNotifier<ConnectivityStatus>` | đọc native + lắng nghe `NativeBridge.events`, refresh mỗi 10s; có `ConnectivityStatus` typed thay cho `Map` thô, kèm chống race bằng `_requestGeneration` |
 | `currentWallpaperProvider` | `StateNotifier<String>` | đường dẫn wallpaper (in-memory) |
 | `favoriteAppsProvider` | `StateNotifier<List<Map>>` | tối đa 5 app yêu thích |
-| `dashboardIndexProvider` | `StateNotifier<int>` | chỉ số trang PageView; **lưu vào `AppSecureStorage`** key `dashboardIndex`; mặc định 2 |
+| `dashboardIndexProvider` | `StateNotifier<int>` | chỉ số trang PageView; **lưu vào `AppSecureStorage`** key `dashboardIndex`; mặc định 1 |
 
 `carplay_settings_providers.dart`:
 
-- `HomeViewMode` (dashboard01/02/03/multiApp) + `CarPlaySettings`
-  (`dynamicClockNetwork`, `use24HourTime`, `showVpnStatus`, `dockPinned`) — lưu
-  `SharedPreferences`, provider `overrideWith` trong `main.dart`.
+- `HomeViewMode` (dashboard01/02/03 — "Map Focus"/"Grid Layout"/"Split View")
+  + `CarPlaySettings` (`dynamicClockNetwork`, `use24HourTime`, `showVpnStatus`,
+  `dockPinned`) — lưu `SharedPreferences`, provider `overrideWith` trong
+  `main.dart`. `homeViewMode` chọn trang Home của `DashboardPage` (mục 2).
 - `overlayVisibleProvider`: ẩn đồng hồ/mạng 5s sau khi người dùng chạm màn hình
   (chỉ khi `dynamicClockNetwork` bật và dock không ghim).
 
@@ -86,8 +93,10 @@ out). `_startFlow`: forward logo → chờ 1500ms → fade 500ms → `context.go
 - **`dashboardIndexProvider` lưu ở secure storage** (không phải `SharedPreferences`)
   — vô tình lệch chuẩn với các preference khác; hệ quả: đọc/ghi async, khởi tạo
   bằng giá trị mặc định rồi cập nhật sau khi `_load()`.
-- **PageView giữ toàn bộ 6 trang sống** → chuyển trang mượt, không dựng lại state;
+- **PageView giữ toàn bộ 4 trang sống** → chuyển trang mượt, không dựng lại state;
   đổi lại tốn RAM và các trang chạy nền (timer, listener) kể cả khi không hiển thị.
+  Trang Home tuy đổi nội dung theo `homeViewMode`, nhưng cả 3 lựa chọn đều là
+  widget `const` nên Flutter không rebuild lại state khi không cần.
 - **Chống race bằng generation counter** (`_requestGeneration`) lặp lại ở nhiều
   notifier — pattern nhất quán nhưng lặp code.
 

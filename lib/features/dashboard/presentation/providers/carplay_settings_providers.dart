@@ -6,8 +6,7 @@ import 'package:car_launcher/shared/constants/app_constants.dart';
 enum HomeViewMode {
   dashboard01,
   dashboard02,
-  dashboard03,
-  multiApp;
+  dashboard03;
 
   String get displayName {
     switch (this) {
@@ -17,8 +16,6 @@ enum HomeViewMode {
         return 'Grid Layout';
       case HomeViewMode.dashboard03:
         return 'Split View';
-      case HomeViewMode.multiApp:
-        return 'Multi App';
     }
   }
 
@@ -30,8 +27,6 @@ enum HomeViewMode {
         return 'Map + media + weather grid';
       case HomeViewMode.dashboard03:
         return 'Map and YouTube side by side';
-      case HomeViewMode.multiApp:
-        return 'Split-screen with embedded apps';
     }
   }
 }

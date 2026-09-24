@@ -13,7 +13,6 @@ class AppConstants {
   static const keyWallpaper = 'wallpaper_path';
   static const keyLauncherThemeStyle = 'launcher_theme_style';
   static const keyLauncherBackgroundStyle = 'launcher_background_style';
-  static const keyLayout = 'layout_config';
   static const keyWidgets = 'widget_config';
   static const keyFavorites = 'favorite_apps';
   static const keyHiddenApps = 'hidden_apps';

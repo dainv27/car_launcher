@@ -25,7 +25,7 @@ enum HomeViewMode {
   String get description {
     switch (this) {
       case HomeViewMode.dashboard01:
-        return 'Full-screen map with YouTube overlay';
+        return 'Full-screen map';
       case HomeViewMode.dashboard02:
         return 'Map + media + weather grid';
       case HomeViewMode.dashboard03:

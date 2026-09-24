@@ -14,7 +14,9 @@ class BottomStatusBar extends ConsumerWidget {
   const BottomStatusBar({super.key});
 
   static const double height = 48.0;
-  static const int dashboardLength = 6;
+  static const int dashboardLength = 4;
+  // Index of the "Apps" page — where a swipe left past the last page lands.
+  static const int appsIndex = 2;
   static const _gap = SizedBox(width: CarPlayTheme.widgetGap);
   static const _buttonConstraints = BoxConstraints(minWidth: 30);
 
@@ -87,7 +89,7 @@ class BottomStatusBar extends ConsumerWidget {
                       .setIndex(
                         dashboardIndex < dashboardLength - 1
                             ? dashboardIndex + 1
-                            : 4,
+                            : appsIndex,
                       );
                   AppLogger.instance.i('Swipe left', tag: 'BOTTOM_BAR');
                 },

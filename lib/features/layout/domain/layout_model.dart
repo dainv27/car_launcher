@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 /// Enum of all available layout types
 enum LayoutType {
   dashboard_01,
+  dualPane,
 }
 
 /// Extension for LayoutType display names and icons
@@ -11,6 +12,8 @@ extension LayoutTypeExtension on LayoutType {
     switch (this) {
       case LayoutType.dashboard_01:
         return 'Single Pane';
+      case LayoutType.dualPane:
+        return 'Split Apps';
     }
   }
 
@@ -18,6 +21,8 @@ extension LayoutTypeExtension on LayoutType {
     switch (this) {
       case LayoutType.dashboard_01:
         return Icons.crop_square;
+      case LayoutType.dualPane:
+        return Icons.vertical_split;
     }
   }
 
@@ -26,6 +31,8 @@ extension LayoutTypeExtension on LayoutType {
     switch (this) {
       case LayoutType.dashboard_01:
         return 1;
+      case LayoutType.dualPane:
+        return 2;
     }
   }
 }

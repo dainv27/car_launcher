@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
+import 'package:car_launcher/features/layout/presentation/widgets/dual_layout.dart';
 import 'package:car_launcher/features/layout/presentation/widgets/single_layout.dart';
 
 /// LayoutEngine — renders the appropriate layout widget based on LayoutModel
@@ -12,6 +13,8 @@ class LayoutEngine extends StatelessWidget {
     switch (model.type) {
       case LayoutType.dashboard_01:
         return SingleLayout(model: model);
+      case LayoutType.dualPane:
+        return DualLayout(model: model);
     }
   }
 }

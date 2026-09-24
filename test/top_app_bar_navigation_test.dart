@@ -4,6 +4,8 @@ import 'package:car_launcher/features/dashboard/presentation/providers/dashboard
 import 'package:car_launcher/features/dashboard/presentation/widgets/top_app_bar.dart';
 import 'package:car_launcher/features/launcher/data/launcher_service.dart';
 import 'package:car_launcher/features/media/data/media_controller.dart';
+import 'package:car_launcher/features/tracking/presentation/providers/tracking_providers.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +92,7 @@ Future<Widget> _buildWideShell(GoRouter router) async {
       vehicleTrackingProvider.overrideWith(
         (ref) => VehicleTrackingNotifier(
           KeycloakAuthRepository(),
-          syncClient: _NoOpSyncClient(),
+          apiClient: VehicleApiClient(httpClient: _StubHttpClient()),
           loadPersisted: false,
         ),
       ),
@@ -209,18 +211,6 @@ void main() {
 
     expect(router.state.uri.path, '/settings');
   });
-}
-
-/// No-op sync client that does nothing (for widget tests).
-class _NoOpSyncClient extends VehicleTrackingSyncClient {
-  _NoOpSyncClient() : super(httpClient: _StubHttpClient());
-
-  @override
-  Future<void> sync({
-    required String endpoint,
-    required List<VehicleTrackPoint> points,
-    VehicleProfile vehicle = const VehicleProfile(),
-  }) async {}
 }
 
 class _StubHttpClient extends http.BaseClient {

@@ -7,7 +7,7 @@ import 'package:car_launcher/features/vehicle/presentation/widgets/vehicle_brand
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:car_launcher/core/theme/launcher_palette.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 
 /// Dialog for creating or editing a vehicle.
 ///

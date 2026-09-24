@@ -1648,11 +1648,6 @@ class _NavigationSection extends ConsumerWidget {
           ),
           const SizedBox(height: CarPlayTheme.widgetGap),
           _GlassPanel(
-            key: const Key('settings-vehicle-tracking-card'),
-            child: const VehicleTrackingSettingsCard(),
-          ),
-          const SizedBox(height: CarPlayTheme.widgetGap),
-          _GlassPanel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

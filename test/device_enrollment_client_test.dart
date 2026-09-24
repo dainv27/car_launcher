@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:car_launcher/core/auth/device_assertion_client.dart';
 import 'package:car_launcher/core/auth/device_identity_service.dart';
-import 'package:car_launcher/features/vehicle/data/device_enrollment_client.dart';
+import 'package:car_launcher/features/device/data/device_enrollment_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

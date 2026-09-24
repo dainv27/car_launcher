@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:car_launcher/shared/data/location_service.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
 import 'package:car_launcher/features/vehicle/data/vehicle_repository.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VehicleRepository', () {
-    test('listVehicles maps VehicleProfile list to Vehicle list', () async {
+    test('listVehicles maps JSON list to Vehicle list', () async {
       final responseBody = jsonEncode([
         {
           'id': 'car-001',
@@ -26,11 +26,11 @@ void main() {
           'metadata': {'year': '2026'},
         },
       ]);
-      final client = VehicleTrackingSyncClient(
+      final client = VehicleApiClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = VehicleRepository(
-        syncClient: client,
+        apiClient: client,
         syncEndpoint: _testEndpoint,
       );
       final vehicles = await repo.listVehicles();
@@ -42,11 +42,11 @@ void main() {
     });
 
     test('listVehicles returns empty list on empty response', () async {
-      final client = VehicleTrackingSyncClient(
+      final client = VehicleApiClient(
         httpClient: _mockClient(body: jsonEncode([])),
       );
       final repo = VehicleRepository(
-        syncClient: client,
+        apiClient: client,
         syncEndpoint: _testEndpoint,
       );
       final vehicles = await repo.listVehicles();
@@ -62,11 +62,11 @@ void main() {
         'brand': 'Honda',
         'model': 'Civic',
       });
-      final client = VehicleTrackingSyncClient(
+      final client = VehicleApiClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = VehicleRepository(
-        syncClient: client,
+        apiClient: client,
         syncEndpoint: _testEndpoint,
       );
       final vehicle = await repo.getVehicle('car-002');
@@ -86,11 +86,11 @@ void main() {
           'model': 'Ranger',
         },
       });
-      final client = VehicleTrackingSyncClient(
+      final client = VehicleApiClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = VehicleRepository(
-        syncClient: client,
+        apiClient: client,
         syncEndpoint: _testEndpoint,
       );
       final created = await repo.createVehicle(
@@ -114,11 +114,11 @@ void main() {
         'brand': 'Toyota',
         'model': 'Vios',
       });
-      final client = VehicleTrackingSyncClient(
+      final client = VehicleApiClient(
         httpClient: _mockClient(body: responseBody),
       );
       final repo = VehicleRepository(
-        syncClient: client,
+        apiClient: client,
         syncEndpoint: _testEndpoint,
       );
       final updated = await repo.updateVehicle(
@@ -167,28 +167,6 @@ void main() {
       expect(vehicle.brand, 'Toyota');
     });
 
-    test('toProfile / fromProfile round-trip', () {
-      const vehicle = Vehicle(
-        id: 'car-001',
-        plateNumber: '51A-12345',
-        name: 'Family car',
-        brand: 'Toyota',
-        model: 'Vios',
-        metadata: {'year': '2026'},
-      );
-      final profile = vehicle.toProfile();
-      expect(profile.vehicleId, 'car-001');
-      expect(profile.plateNumber, '51A-12345');
-      expect(profile.make, 'Toyota');
-      expect(profile.year, '2026');
-
-      final roundTrip = Vehicle.fromProfile(profile);
-      expect(roundTrip.id, vehicle.id);
-      expect(roundTrip.plateNumber, vehicle.plateNumber);
-      expect(roundTrip.brand, vehicle.brand);
-      expect(roundTrip.year, vehicle.year);
-    });
-
     test('displayName returns plateNumber first', () {
       const vehicle = Vehicle(plateNumber: '51A-12345', name: 'Family car');
       expect(vehicle.displayName, '51A-12345');
@@ -200,7 +178,7 @@ void main() {
       const v2 = Vehicle(id: 'car-001');
       expect(v2.displayName, 'car-001');
       const v3 = Vehicle();
-      expect(v3.displayName, 'Unknown vehicle');
+      expect(v3.displayName, 'Not registered');
     });
 
     test('copyWith works correctly', () {

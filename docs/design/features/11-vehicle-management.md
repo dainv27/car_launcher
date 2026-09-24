@@ -1,17 +1,17 @@
 # 11 — Quản lý phương tiện (Vehicle)
 
-Updated: 2026-08-29
+Updated: 2026-09-24
 Status: implemented
 Route: `/vehicles`, `/vehicles/:id` (protected); mục Settings "Vehicle" (cat 7)
 Nguồn: `lib/features/vehicle/domain/vehicle.dart`,
-`lib/features/vehicle/domain/device.dart`,
+`lib/features/vehicle/data/vehicle_api_client.dart`,
 `lib/features/vehicle/data/vehicle_repository.dart`,
 `lib/features/vehicle/presentation/providers/vehicle_providers.dart`,
-`lib/features/vehicle/presentation/providers/device_providers.dart`,
 `lib/features/vehicle/presentation/views/vehicles_page.dart`,
 `lib/features/vehicle/presentation/views/vehicle_detail_page.dart`,
 `lib/features/vehicle/presentation/widgets/vehicle_form_dialog.dart`,
-`lib/shared/data/location_service.dart` (`VehicleTrackingSyncClient`, `VehicleProfile`)
+`lib/features/device/domain/device.dart`,
+`lib/features/device/presentation/providers/device_providers.dart` — xem [14](14-device-registration.md)
 
 ## 1. Mục tiêu & phạm vi
 
@@ -21,15 +21,16 @@ vụ tracking. Yêu cầu đăng nhập.
 
 ## 2. Mô hình dữ liệu
 
-- `Vehicle` (domain) — `id`, `plateNumber`, `name`, `brand`, `model`, `deviceId`,
-  `color`, `vin`, `metadata` (`year` là `metadata['year']`). `fromJson` chấp nhận
-  cả `id`/`vehicleId`, `brand`/`make`. `toJson` (POST) / `toPatchJson` (PATCH).
-  `toProfile()` / `fromProfile()` chuyển đổi với `VehicleProfile`.
-- `Device` (domain) — `id`, `vehicleId`, `name`, `serialNumber`, `imei`,
-  `phoneNumber`, `model`, `firmwareVersion`, `metadata`.
-- `VehicleProfile` (`location_service.dart`) — model "gọn" mà subsystem tracking
-  + native dùng: `vehicleId`, `plateNumber`, `name`, `make`, `model`, `deviceId`,
-  `year`. `toRegistrationJson()` (gửi `brand` + `metadata.year`).
+- `Vehicle` (domain, `features/vehicle/domain/vehicle.dart`) — model **duy
+  nhất** cho cả CRUD xe lẫn tracking (trước đây có 2 model song song `Vehicle`
+  và `VehicleProfile`, đã gộp — xem §6). Trường: `id`, `plateNumber`, `name`,
+  `brand`, `model`, `deviceId`, `color`, `vin`, `metadata` (`year` là
+  `metadata['year']`). `fromJson` chấp nhận cả `id`/`vehicleId`, `brand`/`make`.
+  `toJson` (POST) / `toPatchJson` (PATCH).
+- `Device` (domain, `features/device/domain/device.dart`) — `id`, `vehicleId`,
+  `name`, `serialNumber`, `imei`, `phoneNumber`, `model`, `firmwareVersion`,
+  `metadata`. Thuộc feature `device` cùng với device enrollment/registration —
+  xem [14](14-device-registration.md).
 
 ## 3. Kiến trúc
 
@@ -43,16 +44,19 @@ vehicleListProvider (AsyncNotifier<List<Vehicle>>)      vehicleProvider.family (
 vehicleRepositoryProvider ── getIt<VehicleRepository>(param1: tracking.syncEndpoint)
    │
    ▼
-VehicleRepository  ──►  VehicleTrackingSyncClient (HTTP, AuthInterceptorClient)  ──►  vehicle-service
+VehicleRepository  ──►  VehicleApiClient (HTTP, AuthInterceptorClient)  ──►  vehicle-service
 ```
 
-`vehicleRepositoryProvider` `ref.watch(vehicleTrackingProvider)` để lấy
-`syncEndpoint` runtime → get_it `factoryParam` dựng repo với đúng base URL.
+`vehicleRepositoryProvider` `ref.watch(vehicleTrackingProvider)` (từ
+`features/tracking`) để lấy `syncEndpoint` runtime → get_it `factoryParam` dựng
+repo với đúng base URL. `VehicleApiClient` chỉ làm CRUD xe — đẩy/đọc
+tracking-point là việc của `TrackingSyncClient` riêng (`features/tracking/data`,
+xem [12](12-vehicle-tracking.md)).
 
-`devicesForVehicleProvider` (`FutureProvider.family<List<Device>, vehicleId>`) gọi
-`getIt<DeviceService>().listDevices(endpoint, vehicleId)`.
+`devicesForVehicleProvider` (`FutureProvider.family<List<Device>, vehicleId>`,
+`features/device`) gọi `getIt<DeviceService>().listDevices(endpoint, vehicleId)`.
 
-## 4. Ánh xạ API (`VehicleRepository` + `VehicleTrackingSyncClient`)
+## 4. Ánh xạ API (`VehicleRepository` + `VehicleApiClient`)
 
 | Thao tác | HTTP |
 |---|---|
@@ -80,9 +84,11 @@ Gán xe cho thiết bị + đăng ký nhanh từ dashboard/Settings thực ra ch
 
 ## 6. Quyết định thiết kế & đánh đổi
 
-- **Hai model song song `Vehicle` và `VehicleProfile`**: `Vehicle` là entity đầy
-  đủ cho UI quản lý; `VehicleProfile` là dạng gọn cho tracking + native (chỉ
-  trường cần để sync). Chuyển đổi hai chiều — có chi phí bảo trì mapping.
+- **Một model `Vehicle` duy nhất** (2026-09-24): trước đây có `Vehicle` (UI quản
+  lý) và `VehicleProfile` (`shared/data/location_service.dart`, dạng gọn cho
+  tracking + native) song song, chuyển đổi hai chiều qua `toProfile()`/
+  `fromProfile()`. Đã gộp — `VehicleTrackingState.vehicle` giờ là `Vehicle`
+  thẳng, không còn lớp mapping.
 - **`syncEndpoint` runtime qua `factoryParam`**: đổi endpoint (ví dụ từ Settings)
   tự dựng lại repo; đổi lại provider phụ thuộc `vehicleTrackingProvider`.
 - **`vehicleListProvider.build` nuốt lỗi về `[]`**: UI không vỡ khi offline,

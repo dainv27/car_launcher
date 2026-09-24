@@ -27,6 +27,9 @@ Các mockup giao diện tĩnh (HTML) nằm ở thư mục cha [`docs/design/`](.
 | 12 | Theo dõi hành trình (Vehicle Tracking) | [12-vehicle-tracking.md](12-vehicle-tracking.md) |
 | 13 | Thời tiết & đồng hồ | [13-weather-and-clock.md](13-weather-and-clock.md) |
 | 14 | Đăng ký thiết bị (Device registration) | [14-device-registration.md](14-device-registration.md) |
+| 15 | Chuyến đi (Trip) | [15-trip.md](15-trip.md) |
+| 16 | Ranh giới ảo (Geofence) | [16-geofence.md](16-geofence.md) |
+| 17 | Cảnh báo (Alert) | [17-alert.md](17-alert.md) |
 
 ## Kiến trúc chung (áp dụng cho mọi tính năng)
 

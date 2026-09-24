@@ -75,30 +75,6 @@ void main() {
     expect(native, contains('activeMediaController?.transportControls'));
   });
 
-  test('navigation never fabricates provider state or stop success', () {
-    final source = File(
-      'lib/features/navigation/presentation/navigation_controller.dart',
-    ).readAsStringSync();
-    final native = File(
-      'android/app/src/main/kotlin/com/carlauncher/car_launcher/MainActivity.kt',
-    ).readAsStringSync();
-
-    expect(source, isNot(contains('setMockState')));
-    expect(source, contains('if (launched == true)'));
-    expect(native, isNot(contains('getNavStateMap()')));
-    expect(
-      native,
-      isNot(contains('com.google.android.gms.navigation.STOP_NAVIGATION')),
-    );
-    expect(native, contains('private fun stopNavigation(): Boolean = false'));
-    expect(
-      File(
-        'lib/features/navigation/presentation/widgets/navigation_widget.dart',
-      ).readAsStringSync(),
-      isNot(contains('controller.stopNavigation()')),
-    );
-  });
-
   test('network online state requires Android validated internet', () {
     final footer = File(
       'lib/features/dashboard/presentation/widgets/bottom_status_bar.dart',

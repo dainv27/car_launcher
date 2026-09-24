@@ -1,7 +1,7 @@
 import 'package:car_launcher/features/account/presentation/providers/account_providers.dart';
-import 'package:car_launcher/features/vehicle/domain/trip.dart';
-import 'package:car_launcher/features/vehicle/presentation/providers/trip_providers.dart';
-import 'package:car_launcher/features/vehicle/presentation/views/vehicle_trips_page.dart';
+import 'package:car_launcher/features/trip/domain/trip.dart';
+import 'package:car_launcher/features/trip/presentation/providers/trip_providers.dart';
+import 'package:car_launcher/features/trip/presentation/views/vehicle_trips_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

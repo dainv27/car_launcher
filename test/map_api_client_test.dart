@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:car_launcher/features/vehicle/data/map_api_client.dart';
-import 'package:car_launcher/features/vehicle/data/map_repository.dart';
+import 'package:car_launcher/features/tracking/data/map_api_client.dart';
+import 'package:car_launcher/features/tracking/data/map_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

@@ -199,10 +199,15 @@ Each successful local batch is moved from `pending_points` to `synced_points`. F
 
 These read/manage features consume the owner-JWT `client-api/v1` endpoints
 (same bearer auth as vehicle management) and are surfaced from the vehicle
-detail screen. Each area follows the repo's feature layout —
-`features/vehicle/{domain,data,presentation/{providers,views,widgets}}` — with a
-thin `*ApiClient` (HTTP + URL shaping via `UrlUtils.vehicleUri`), a `*Repository`
-(DTO → domain), Riverpod providers, and a screen.
+detail screen. As of 2026-09-24 each area is its own top-level feature —
+`features/{trip,geofence,alert}/{domain,data,presentation/{providers,views,widgets}}`
+— rather than nested under `features/vehicle`; route/reverse-geocode moved to
+`features/tracking/data/{map_api_client,map_repository}.dart`. Each still
+follows the same thin `*ApiClient` (HTTP + URL shaping via
+`UrlUtils.vehicleUri`) + `*Repository` (DTO → domain) + Riverpod providers +
+screen shape. See [15-trip.md](design/features/15-trip.md),
+[16-geofence.md](design/features/16-geofence.md),
+[17-alert.md](design/features/17-alert.md) for the per-feature source lists.
 
 | Feature | Screen / route | Endpoints |
 | --- | --- | --- |
@@ -214,9 +219,10 @@ thin `*ApiClient` (HTTP + URL shaping via `UrlUtils.vehicleUri`), a `*Repository
 
 Notes:
 
-- The **route map** is a tile-free `CustomPainter` (`RouteMapView` +
-  `GeoUtils.projectToCanvas`) — the app ships no Flutter map package, only the
-  native Google-Maps intent channel.
+- The **route map** is a tile-free `CustomPainter`
+  (`features/tracking/presentation/widgets/route_map_view.dart`'s
+  `RouteMapView` + `GeoUtils.projectToCanvas`) — the app ships no Flutter map
+  package, only the native Google-Maps intent channel.
 - `reverse-geocode` / `snap-to-road` need an operator-configured provider
   server-side; the app treats a `503` as "feature unavailable" rather than an
   error.

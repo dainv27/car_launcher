@@ -1,5 +1,4 @@
-import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/features/vehicle/domain/device.dart';
+import 'package:car_launcher/features/device/domain/device.dart';
 import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,7 +31,7 @@ void main() {
         'Family car',
       );
       expect(const Vehicle(id: 'car-001').displayName, 'car-001');
-      expect(const Vehicle().displayName, 'Unknown vehicle');
+      expect(const Vehicle().displayName, 'Not registered');
     });
 
     test('year accessor from metadata', () {
@@ -104,58 +103,6 @@ void main() {
       expect(json['brand'], 'Toyota');
       expect(json['model'], 'Vios');
       expect(json['metadata'], {'year': '2026'});
-    });
-
-    test('toProfile conversion preserves fields', () {
-      const vehicle = Vehicle(
-        id: 'car-001',
-        plateNumber: '51A-12345',
-        name: 'Family car',
-        brand: 'Toyota',
-        model: 'Vios',
-        metadata: {'year': '2026'},
-      );
-      final profile = vehicle.toProfile();
-      expect(profile.vehicleId, 'car-001');
-      expect(profile.plateNumber, '51A-12345');
-      expect(profile.name, 'Family car');
-      expect(profile.make, 'Toyota');
-      expect(profile.model, 'Vios');
-      expect(profile.year, '2026');
-    });
-
-    test('fromProfile conversion', () {
-      const profile = VehicleProfile(
-        vehicleId: 'car-001',
-        plateNumber: '51A-12345',
-        name: 'Family car',
-        make: 'Toyota',
-        model: 'Vios',
-        year: '2026',
-      );
-      final vehicle = Vehicle.fromProfile(profile);
-      expect(vehicle.id, 'car-001');
-      expect(vehicle.plateNumber, '51A-12345');
-      expect(vehicle.brand, 'Toyota');
-      expect(vehicle.year, '2026');
-    });
-
-    test('toProfile / fromProfile round-trip', () {
-      const vehicle = Vehicle(
-        id: 'car-001',
-        plateNumber: '51A-12345',
-        name: 'Family car',
-        brand: 'Toyota',
-        model: 'Vios',
-        metadata: {'year': '2026'},
-      );
-      final roundTrip = Vehicle.fromProfile(vehicle.toProfile());
-      expect(roundTrip.id, vehicle.id);
-      expect(roundTrip.plateNumber, vehicle.plateNumber);
-      expect(roundTrip.name, vehicle.name);
-      expect(roundTrip.brand, vehicle.brand);
-      expect(roundTrip.model, vehicle.model);
-      expect(roundTrip.year, vehicle.year);
     });
 
     test('equality based on id, plateNumber, name, brand, model', () {

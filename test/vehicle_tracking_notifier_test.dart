@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
-import 'package:car_launcher/shared/data/location_service.dart';
-import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/data/tracking_store_service.dart';
+import 'package:car_launcher/features/tracking/domain/vehicle_track_point.dart';
+import 'package:car_launcher/features/tracking/presentation/tracking_notifier.dart';
+import 'package:car_launcher/features/vehicle/data/vehicle_api_client.dart';
+import 'package:car_launcher/features/vehicle/domain/vehicle.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -46,7 +49,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
         loadPersisted: false,
       );
@@ -69,7 +72,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
         loadPersisted: false,
       );
@@ -91,7 +94,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
         loadPersisted: false,
       );
@@ -138,7 +141,7 @@ void main() {
         final auth = KeycloakAuthRepository();
         final notifier = VehicleTrackingNotifier(
           auth,
-          syncClient: _NoOpSyncClient(),
+          apiClient: _NoOpApiClient(),
           store: store,
         );
         addTearDown(() async {
@@ -170,7 +173,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
       );
       addTearDown(() async {
@@ -195,7 +198,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
         loadPersisted: false,
       );
@@ -214,7 +217,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async => true);
 
-      final sync = _NoOpSyncClient();
+      final sync = _NoOpApiClient();
       final directory = Directory.systemTemp.createTempSync(
         'notifier_assign_test_',
       );
@@ -222,7 +225,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -232,12 +235,12 @@ void main() {
         directory.deleteSync(recursive: true);
       });
 
-      const vehicle = VehicleProfile(
-        vehicleId: 'car-001',
+      const vehicle = Vehicle(
+        id: 'car-001',
         plateNumber: '51A-12345',
       );
       await notifier.assignVehicle(vehicle);
-      expect(notifier.state.vehicle.vehicleId, 'car-001');
+      expect(notifier.state.vehicle.id, 'car-001');
       expect(notifier.state.vehicle.plateNumber, '51A-12345');
     });
 
@@ -246,10 +249,10 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async => true);
 
-      final sync = _NoOpSyncClient()
+      final sync = _NoOpApiClient()
         ..serverVehicles = const [
-          VehicleProfile(vehicleId: 'car-001', plateNumber: '51A-12345'),
-          VehicleProfile(vehicleId: 'car-002', plateNumber: '59B-99999'),
+          Vehicle(id: 'car-001', plateNumber: '51A-12345'),
+          Vehicle(id: 'car-002', plateNumber: '59B-99999'),
         ];
       final directory = Directory.systemTemp.createTempSync(
         'notifier_load_vehicles_test_',
@@ -258,7 +261,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -271,8 +274,8 @@ void main() {
       await notifier.setSyncEndpoint('https://example.com');
       await notifier.loadVehicles();
       expect(notifier.state.vehicles, hasLength(2));
-      expect(notifier.state.vehicles[0].vehicleId, 'car-001');
-      expect(notifier.state.vehicles[1].vehicleId, 'car-002');
+      expect(notifier.state.vehicles[0].id, 'car-001');
+      expect(notifier.state.vehicles[1].id, 'car-002');
       expect(notifier.state.isLoadingVehicles, isFalse);
     });
 
@@ -281,7 +284,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async => true);
 
-      final sync = _FailingSyncClient();
+      final sync = _FailingApiClient();
       final directory = Directory.systemTemp.createTempSync(
         'notifier_load_fail_test_',
       );
@@ -289,7 +292,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -312,7 +315,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: _NoOpSyncClient(),
+        apiClient: _NoOpApiClient(),
         store: store,
         loadPersisted: false,
       );
@@ -326,12 +329,12 @@ void main() {
       expect(notifier.state.formattedDistance, '0 m');
     });
 
-    test('saveVehicleProfile persists to store', () async {
+    test('saveVehicle persists to store', () async {
       const channel = MethodChannel('com.carlauncher/native');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async => true);
 
-      final sync = _NoOpSyncClient();
+      final sync = _NoOpApiClient();
       final directory = Directory.systemTemp.createTempSync(
         'notifier_save_profile_test_',
       );
@@ -339,7 +342,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -349,18 +352,18 @@ void main() {
         directory.deleteSync(recursive: true);
       });
 
-      const vehicle = VehicleProfile(
-        vehicleId: 'car-001',
+      const vehicle = Vehicle(
+        id: 'car-001',
         plateNumber: '51A-12345',
         name: 'Family car',
       );
       await notifier.saveVehicleProfile(vehicle);
-      expect(notifier.state.vehicle.vehicleId, 'car-001');
+      expect(notifier.state.vehicle.id, 'car-001');
       expect(notifier.state.vehicle.plateNumber, '51A-12345');
 
       // Verify persisted in store
       final snapshot = await store.load();
-      expect(snapshot.vehicle.vehicleId, 'car-001');
+      expect(snapshot.vehicle.id, 'car-001');
     });
   });
 
@@ -378,7 +381,7 @@ void main() {
         return true;
       });
 
-      final sync = _RecordingSyncClient();
+      final sync = _RecordingApiClient();
       final directory = Directory.systemTemp.createTempSync(
         'notifier_syncnow_test_',
       );
@@ -398,7 +401,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -423,7 +426,7 @@ void main() {
       // No mock handler registered on 'com.carlauncher/native' — simulates
       // tests/non-Android platforms, matching how other native calls in
       // this codebase degrade.
-      final sync = _RecordingSyncClient();
+      final sync = _RecordingApiClient();
       final directory = Directory.systemTemp.createTempSync(
         'notifier_syncnow_no_native_test_',
       );
@@ -431,7 +434,7 @@ void main() {
       final auth = KeycloakAuthRepository();
       final notifier = VehicleTrackingNotifier(
         auth,
-        syncClient: sync,
+        apiClient: sync,
         store: store,
         loadPersisted: false,
       );
@@ -449,61 +452,46 @@ void main() {
   });
 }
 
-/// No-op sync client that does nothing (for unit tests not focused on sync).
-class _NoOpSyncClient extends VehicleTrackingSyncClient {
-  _NoOpSyncClient() : super(httpClient: _StubHttpClient());
+/// No-op API client that does nothing (for unit tests not focused on the
+/// vehicle-CRUD calls the notifier makes for assign/save/load).
+class _NoOpApiClient extends VehicleApiClient {
+  _NoOpApiClient() : super(httpClient: _StubHttpClient());
 
-  List<VehicleProfile> serverVehicles = const [];
-
-  @override
-  Future<void> sync({
-    required String endpoint,
-    required List<VehicleTrackPoint> points,
-    VehicleProfile vehicle = const VehicleProfile(),
-  }) async {}
+  List<Vehicle> serverVehicles = const [];
 
   @override
-  Future<List<VehicleProfile>> fetchVehicles({required String endpoint}) async {
+  Future<List<Vehicle>> fetchVehicles({required String endpoint}) async {
     return serverVehicles;
   }
 
   @override
-  Future<VehicleProfile> saveVehicle({
+  Future<Vehicle> saveVehicle({
     required String endpoint,
-    required VehicleProfile vehicle,
-    Map<String, dynamic> deviceInfo = const {},
+    required Vehicle vehicle,
   }) async {
     return vehicle;
   }
 }
 
-/// Failing sync client that always throws.
-class _FailingSyncClient extends VehicleTrackingSyncClient {
-  _FailingSyncClient() : super(httpClient: _StubHttpClient());
+/// Failing API client that always throws.
+class _FailingApiClient extends VehicleApiClient {
+  _FailingApiClient() : super(httpClient: _StubHttpClient());
 
   @override
-  Future<List<VehicleProfile>> fetchVehicles({required String endpoint}) async {
+  Future<List<Vehicle>> fetchVehicles({required String endpoint}) async {
     throw Exception('Network error');
   }
 }
 
-/// Recording sync client that tracks uploads — used to prove Dart never
-/// calls it from [VehicleTrackingNotifier.syncNow] anymore.
-class _RecordingSyncClient extends VehicleTrackingSyncClient {
-  _RecordingSyncClient() : super(httpClient: _StubHttpClient());
+/// Recording API client — used to prove [VehicleTrackingNotifier.syncNow]
+/// never calls it. It has no `sync()`/tracking-point method at all (that
+/// lives on `TrackingSyncClient`, which the notifier never references), so
+/// this class only needs a `calls` counter for symmetry with the other
+/// fakes; it never actually increments.
+class _RecordingApiClient extends VehicleApiClient {
+  _RecordingApiClient() : super(httpClient: _StubHttpClient());
 
-  final uploadedIds = <String>[];
   int calls = 0;
-
-  @override
-  Future<void> sync({
-    required String endpoint,
-    required List<VehicleTrackPoint> points,
-    VehicleProfile vehicle = const VehicleProfile(),
-  }) async {
-    calls++;
-    uploadedIds.addAll(points.map((point) => point.id));
-  }
 }
 
 /// Stub HTTP client for subclasses that override all network methods.

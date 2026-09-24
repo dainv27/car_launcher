@@ -68,6 +68,7 @@ flutter_native_splash:
     image: assets/images/splash.png
 
 flutter:
+  default-flavor: system
   uses-material-design: true
 
   assets:

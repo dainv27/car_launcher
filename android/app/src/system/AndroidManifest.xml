@@ -19,9 +19,9 @@
 
       The core embedding permissions (ADD_TRUSTED_DISPLAY, MANAGE_ACTIVITY_TASKS,
       MANAGE_ACTIVITY_STACKS, INJECT_EVENTS, ACTIVITY_EMBEDDING, REORDER_TASKS)
-      are declared in the main manifest and apply to both flavors. The extra
+      are declared in the main manifest. The extra
       system-only permissions below match CarCar's manifest and are added here so
-      they never affect the normal build.
+      they stay scoped to the system flavor.
     -->
 
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"

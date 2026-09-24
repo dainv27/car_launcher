@@ -92,7 +92,7 @@ class _DefaultWallpaperImage extends StatelessWidget {
       );
     }
     return Image.asset(
-      'assets/images/logo_1.png',
+      'assets/images/logo_1.webp',
       key: const Key('launcher-default-wallpaper'),
       fit: BoxFit.cover,
       alignment: Alignment.center,

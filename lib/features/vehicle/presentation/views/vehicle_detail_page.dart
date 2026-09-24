@@ -191,25 +191,22 @@ class _VehicleDetailContent extends ConsumerWidget {
     WidgetRef ref,
     Vehicle vehicle,
   ) async {
-    final result = await showDialog<Vehicle?>(
+    // This widget can be rebuilt away while the dialog is open (the keyboard
+    // resizes the page), which invalidates its `ref`. The container outlives it.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final updated = await showDialog<Vehicle?>(
       context: context,
-      builder: (_) => VehicleFormDialog(vehicle: vehicle),
+      builder: (_) => VehicleFormDialog(
+        vehicle: vehicle,
+        onSubmit: (edited) => container
+            .read(vehicleProvider(vehicle.id).notifier)
+            .updateVehicle(edited),
+      ),
     );
-    if (result != null && context.mounted) {
-      try {
-        await ref.read(vehicleProvider(vehicle.id).notifier).updateVehicle(result);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vehicle updated')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update vehicle: $e')),
-          );
-        }
-      }
+    if (updated != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vehicle updated')),
+      );
     }
   }
 }

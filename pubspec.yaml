@@ -75,6 +75,9 @@ flutter:
     - .env.local
     - .env.development
     - .env.production
+    # Directory entry: app-bootstrap.key is provisioned per build and not in
+    # git, so listing it by name would break builds that lack it.
+    - assets/attestation/
     - assets/images/k3_logo.png
     - assets/images/splash_logo.png
     - assets/images/splash.png

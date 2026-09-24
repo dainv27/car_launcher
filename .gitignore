@@ -54,3 +54,9 @@ app.*.map.json
 !.env.development
 !.env.production
 !.env
+
+# Dev device-attestation CA private key — never ship; only for minting bootstrap creds
+tools/dev-attestation/*.key
+
+# Attestation bootstrap private key — provisioned per build, never committed.
+assets/attestation/*.key

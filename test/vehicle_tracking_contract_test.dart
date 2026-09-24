@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:car_launcher/core/auth/device_identity_service.dart';
 import 'package:car_launcher/features/account/repositories/keycloak_auth_repository.dart';
+import 'package:car_launcher/features/vehicle/data/device_enrollment_client.dart';
 import 'package:car_launcher/shared/data/device_service.dart';
 import 'package:car_launcher/shared/data/location_service.dart';
 import 'package:car_launcher/shared/data/vehicle_tracking_store_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -73,11 +77,14 @@ void main() {
   // dart. This file keeps only the HTTP-contract and vehicle-CRUD coverage.
 
   test(
-    'vehicle tracking sync client sends tracking point body',
+    'vehicle tracking sync client pushes to the device public tracking endpoint',
     () async {
-      final client = _CapturingHttpClient();
+      final push = _CapturingHttpClient();
       final sync = VehicleTrackingSyncClient(
-        httpClient: client,
+        httpClient: _CapturingHttpClient(),
+        pushClient: push,
+        publicApiBaseUrl:
+            'https://dev-car-apis.202corp.com/vehicle-service/public-api/v1',
       );
 
       await sync.sync(
@@ -100,15 +107,15 @@ void main() {
         ],
       );
 
-      expect(client.lastHeaders?['Content-Type'], 'application/json');
+      expect(push.lastHeaders?['Content-Type'], 'application/json');
       expect(
-        client.lastUrl.toString(),
-        'https://dev-car-apis.202corp.com/vehicle-service/client-api/v1/devices/android-abc/tracking-points',
+        push.lastUrl.toString(),
+        'https://dev-car-apis.202corp.com/vehicle-service/public-api/v1/devices/me/tracking-points',
       );
-      expect(client.lastBody, contains('eventTime'));
-      expect(client.lastBody, contains('metadata'));
-      expect(client.lastBody, contains('clientPointId'));
-      expect(client.lastBody, contains('Garage'));
+      expect(push.lastBody, contains('eventTime'));
+      expect(push.lastBody, contains('metadata'));
+      expect(push.lastBody, contains('clientPointId'));
+      expect(push.lastBody, contains('Garage'));
     },
   );
 
@@ -245,9 +252,8 @@ void main() {
   );
 
   test(
-    'ensureDeviceRegistered registers device with correct payload',
+    'ensureDeviceRegistered runs the attestation enrollment handshake',
     () async {
-      // device_info_plus reads from its own channel, not the app's native bridge.
       const deviceInfoChannel =
           MethodChannel('dev.fluttercommunity.plus/device_info');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -255,20 +261,14 @@ void main() {
         if (call.method == 'getDeviceInfo') {
           return <String, dynamic>{
             'id': 'RQ3A.210805.001',
-            // `fingerprint` is used as the serial source (device_info_plus v13
-            // dropped serialNumber).
             'fingerprint': 'R8YY91N3TAF',
             'manufacturer': 'samsung',
             'model': 'SM-X133',
-            'version': <String, dynamic>{
-              'sdkInt': 36,
-              'release': '14',
-            },
+            'version': <String, dynamic>{'sdkInt': 36, 'release': '14'},
           };
         }
         return null;
       });
-      // android_id plugin reads from its own channel.
       const androidIdChannel = MethodChannel('android_id');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(androidIdChannel, (call) async {
@@ -278,34 +278,53 @@ void main() {
 
       final client = _CapturingHttpClient(
         responses: [
-          const _FakeHttpResponse(404, ''), // GET device → not found
+          _FakeHttpResponse(201, '{"nonce":"n-1"}'), // challenge
           _FakeHttpResponse(
             201,
-            '{"device":{"id":"android-abc","name":"samsung SM-X133"}}',
-          ), // POST device → created
+            '{"id":"dev-key-id","claimed":false}',
+          ), // enroll
         ],
       );
       final sync = DeviceService(
-        httpClient: client,
+        httpClient: _CapturingHttpClient(),
+        enrollmentClient: DeviceEnrollmentClient(
+          httpClient: client,
+          publicApiBaseUrl:
+              'https://dev-car-apis.202corp.com/vehicle-service/public-api/v1',
+          identity: _StubDeviceIdentity(),
+          assertionClient: MockClient(
+            (req) async => http.Response(
+              jsonEncode({'id': 'dev-key-id', 'claimed': false}),
+              200,
+            ),
+          ),
+          loadAsset: (key) async => key.endsWith('.pem')
+              ? '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n'
+              : '-----BEGIN PRIVATE KEY-----\nMIGH\n-----END PRIVATE KEY-----\n',
+        ),
       );
 
-      await sync.ensureDeviceRegistered();
+      final device = await sync.ensureDeviceRegistered();
 
-      // GET check + POST create
+      expect(device?.id, 'dev-key-id');
       expect(client.requestUrls.length, 2);
       expect(
         client.requestUrls[0].toString(),
-        'https://dev-car-apis.202corp.com/vehicle-service/client-api/v1/devices/android-abc',
+        'https://dev-car-apis.202corp.com/vehicle-service/public-api/v1/devices/enroll/challenge',
       );
       expect(
         client.requestUrls[1].toString(),
-        'https://dev-car-apis.202corp.com/vehicle-service/client-api/v1/devices',
+        'https://dev-car-apis.202corp.com/vehicle-service/public-api/v1/devices/enroll',
       );
-      final deviceBody = client.requestBodies[1];
-      expect(deviceBody, contains('"id":"android-abc"'));
-      expect(deviceBody, contains('"serialNumber":"R8YY91N3TAF"'));
-      expect(deviceBody, contains('"model":"SM-X133"'));
-      expect(deviceBody, contains('"name":"samsung SM-X133"'));
+      final enrollBody =
+          jsonDecode(client.requestBodies[1]) as Map<String, dynamic>;
+      expect(enrollBody['nonce'], 'n-1');
+      expect(enrollBody['proof'], 'proof:n-1');
+      expect(enrollBody['devicePublicKey'], contains('BEGIN PUBLIC KEY'));
+      expect(enrollBody['attestationCertChain'], hasLength(1));
+      expect(enrollBody['serialNumber'], 'R8YY91N3TAF');
+      expect(enrollBody['model'], 'SM-X133');
+      expect(enrollBody['name'], 'samsung SM-X133');
     },
   );
 
@@ -388,6 +407,28 @@ void main() {
       expect(bootReceiver, contains('VehicleTrackingService.ACTION_START'));
     },
   );
+}
+
+class _StubDeviceIdentity extends DeviceIdentityService {
+  @override
+  Future<DeviceIdentity> getIdentity() async => const DeviceIdentity(
+        deviceId: 'dev-key-id',
+        publicKeyPem:
+            '-----BEGIN PUBLIC KEY-----\nMFkw\n-----END PUBLIC KEY-----\n',
+      );
+
+  @override
+  Future<String> signEnrollmentProof({
+    required String nonce,
+    required String bootstrapPrivateKeyPem,
+  }) async =>
+      'proof:$nonce';
+
+  @override
+  Future<String> assertion() async => 'h.p.s';
+
+  @override
+  void invalidateAssertion() {}
 }
 
 class _RecordingSyncClient extends VehicleTrackingSyncClient {

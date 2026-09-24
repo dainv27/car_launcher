@@ -221,9 +221,6 @@ class _NoOpSyncClient extends VehicleTrackingSyncClient {
     required List<VehicleTrackPoint> points,
     VehicleProfile vehicle = const VehicleProfile(),
   }) async {}
-
-  @override
-  Future<void> ensureDeviceRegistered() async {}
 }
 
 class _StubHttpClient extends http.BaseClient {

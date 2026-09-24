@@ -4,15 +4,24 @@ import 'package:car_launcher/core/api/api_config.dart';
 import 'package:car_launcher/core/api/url_utils.dart';
 import 'package:car_launcher/core/logging/app_logger.dart';
 import 'package:car_launcher/core/services/device_info_service.dart';
+import 'package:car_launcher/features/vehicle/data/device_enrollment_client.dart';
 import 'package:car_launcher/features/vehicle/domain/device.dart';
 import 'package:http/http.dart' as http;
 
 class DeviceService {
-  DeviceService({required http.Client httpClient}) : this._(httpClient);
-
-  DeviceService._(this._httpClient);
+  DeviceService({
+    required this._httpClient,
+    DeviceEnrollmentClient? enrollmentClient,
+  }) : _enrollmentClient = enrollmentClient ??
+            DeviceEnrollmentClient(
+              // Enrollment is attestation-authenticated, not Keycloak — use a
+              // plain client so no bearer token is attached.
+              httpClient: http.Client(),
+              publicApiBaseUrl: ApiConfig.vehicleServicePublicApiBaseUrl,
+            );
 
   final http.Client _httpClient;
+  final DeviceEnrollmentClient _enrollmentClient;
 
   Future<List<Map<String, dynamic>>> listDevices({required String endpoint, String? vehicleId}) async {
     final queryParams = <String, String>{};
@@ -93,26 +102,26 @@ class DeviceService {
     return device;
   }
 
-  /// Ensures this device is registered on the backend.
+  /// Enrolls this device with `vehicle-service` so it exists in the backend.
   ///
-  /// Retrieves device info from the native layer, derives a stable device ID,
-  /// and registers it via `POST /devices` if it does not already exist.
-  /// Uses the same idempotency logic as [createDevice] (GET-then-POST with
-  /// 409 conflict handling).
-  Future<void> ensureDeviceRegistered() async {
-    final deviceInfoService = DeviceInfoService.instance;
-    final deviceInfo = await deviceInfoService.getInfo();
+  /// Runs the SELF_SIGNED_PKI attestation handshake
+  /// (`POST /public-api/v1/devices/enroll`) — no Keycloak session. The device
+  /// is created *unclaimed*; a signed-in user links it to a vehicle later
+  /// through the client API. Enrollment is idempotent, so this is safe to call
+  /// on every launch; failures are logged and retried next launch.
+  ///
+  /// Returns the enrolled device, or `null` when device info is unavailable.
+  Future<EnrolledDevice?> ensureDeviceRegistered() async {
+    final deviceInfo = await DeviceInfoService.instance.getInfo();
     if (deviceInfo == null) {
-      AppLogger.instance.w('Device registration skipped — no device info available', tag: 'DEVICE');
-      return;
-    }
-    if (deviceInfo.id.isEmpty) {
-      AppLogger.instance.w('Device registration skipped — no stable device id derivable', tag: 'DEVICE');
-      return;
+      AppLogger.instance.w(
+        'Device enrollment skipped — no device info available',
+        tag: 'DEVICE',
+      );
+      return null;
     }
 
-    final device = Device(
-      id: deviceInfo.id,
+    final device = await _enrollmentClient.enroll(
       name: _buildDeviceName(deviceInfo),
       serialNumber: deviceInfo.serial,
       imei: deviceInfo.imei,
@@ -121,8 +130,23 @@ class DeviceService {
       metadata: deviceInfo.toMap(),
     );
 
-    await createDevice(endpoint: '', device: device);
-    AppLogger.instance.i('Device registered on first install: ${deviceInfo.id}', tag: 'DEVICE');
+    // Round-trip the per-install key: mint an X-Device-Assertion and read the
+    // device back. Best-effort — a failure here does not undo enrollment.
+    try {
+      final self = await _enrollmentClient.getSelf();
+      AppLogger.instance.i(
+        'Device self-check OK: ${self.id} (claimed=${self.claimed})',
+        tag: 'DEVICE',
+      );
+    } catch (error) {
+      AppLogger.instance.w(
+        'Device self-check failed after enrollment',
+        tag: 'DEVICE',
+        error: error,
+      );
+    }
+
+    return device;
   }
 
   /// Builds a human-readable device name from manufacturer and model.

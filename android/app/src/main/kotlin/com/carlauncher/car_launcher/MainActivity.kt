@@ -73,6 +73,8 @@ class MainActivity : FlutterActivity() {
     private var pendingRingtoneResult: MethodChannel.Result? = null
     private var pendingRoleRequestResult: MethodChannel.Result? = null
 
+    private var deviceAuthChannel: com.carlauncher.car_launcher.deviceauth.DeviceAuthChannel? = null
+
     private var mediaSessionManager: MediaSessionManager? = null
     private var mediaControllerCallback: MediaController.Callback? = null
 
@@ -278,6 +280,11 @@ class MainActivity : FlutterActivity() {
             .registry
             .registerViewFactory("google_maps_taskview", GoogleMapsPlatformViewFactory())
 
+        // Device-attestation auth for the vehicle-service public API.
+        deviceAuthChannel = com.carlauncher.car_launcher.deviceauth.DeviceAuthChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
+
         // MethodChannel for Flutter → Android calls
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
         methodChannel.setMethodCallHandler { call, result ->
@@ -307,8 +314,7 @@ class MainActivity : FlutterActivity() {
                 "syncVehicleTrackingNow" -> result.success(VehicleTrackingService.triggerSyncNow())
                 "updateVehicleTrackingSyncConfig" -> {
                     val trackingPointsUrl = call.argument<String>("trackingPointsUrl") ?: ""
-                    val token = call.argument<String>("accessToken") ?: ""
-                    result.success(updateVehicleTrackingSyncConfig(trackingPointsUrl, token))
+                    result.success(updateVehicleTrackingSyncConfig(trackingPointsUrl))
                 }
                 "launchApp" -> {
                     val packageName = call.argument<String>("packageName")
@@ -411,10 +417,6 @@ class MainActivity : FlutterActivity() {
             }
         })
 
-        // Tracking auth channel — Flutter handles refresh requests from the
-        // native VehicleTrackingService when bearer tokens expire.
-        trackingAuthChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.carlauncher/tracking_auth")
-
         // Navigation MethodChannel
         navMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NAV_METHOD_CHANNEL)
         navMethodChannel?.setMethodCallHandler { call, result ->
@@ -477,8 +479,7 @@ class MainActivity : FlutterActivity() {
         navEventChannel?.setStreamHandler(null)
         mediaEventChannel?.setStreamHandler(null)
         oauthChannel?.setMethodCallHandler(null)
-        trackingAuthChannel?.setMethodCallHandler(null)
-        trackingAuthChannel = null
+        deviceAuthChannel?.dispose()
         oauthDeliveryHandler.removeCallbacksAndMessages(null)
         oauthDeliveryInFlight = false
         if (instance === this) instance = null
@@ -964,7 +965,21 @@ class MainActivity : FlutterActivity() {
     }
 
 
+    private fun hasLocationRuntimePermission(): Boolean =
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
     private fun setVehicleTrackingServiceEnabled(enabled: Boolean): Boolean {
+        // Don't spin up a location foreground service we can't sustain — without
+        // the runtime permission the service bails before startForeground() and
+        // Android kills the process. Ask for the permission and report failure so
+        // Flutter keeps the toggle off.
+        if (enabled && !hasLocationRuntimePermission()) {
+            Log.w("MainActivity", "Vehicle tracking requested without location permission; requesting it")
+            requestLocationPermission()
+            return false
+        }
+
         val intent = Intent(this, VehicleTrackingService::class.java).apply {
             action = if (enabled) VehicleTrackingService.ACTION_START else VehicleTrackingService.ACTION_STOP
         }
@@ -988,68 +1003,19 @@ class MainActivity : FlutterActivity() {
         return getDatabasePath(VehicleTrackingService.DATABASE_NAME).absolutePath
     }
 
-    private fun updateVehicleTrackingSyncConfig(trackingPointsUrl: String, token: String): Boolean {
+    private fun updateVehicleTrackingSyncConfig(trackingPointsUrl: String): Boolean {
         return try {
             getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
                 .edit()
                 .putString("flutter.vehicle_tracking_points_url", trackingPointsUrl)
-                .putString("flutter.vehicle_tracking_access_token", token)
+                // Uploads authenticate with the device assertion now; drop the
+                // bearer token older builds stored here.
+                .remove("flutter.vehicle_tracking_access_token")
                 .apply()
             true
         } catch (error: Throwable) {
             Log.w("MainActivity", "Unable to update vehicle tracking sync config", error)
             false
-        }
-    }
-
-    // ── Vehicle Tracking Token Refresh ─────────────────────────────────────
-    //
-    // The native VehicleTrackingService runs in a background thread and holds
-    // only the access token (not the refresh token or OIDC credentials). When
-    // the access token expires (HTTP 401), it asks Flutter to refresh it via
-    // this channel. Flutter owns KeycloakAuthRepository and can perform the
-    // refresh; it returns the new access token.
-
-    private var trackingAuthChannel: MethodChannel? = null
-
-    /** Called by [VehicleTrackingService] (posted to the main thread) when its
-     * bearer token expires. Forwards to Flutter over [trackingAuthChannel]. */
-    fun requestVehicleTokenRefresh(oldToken: String, result: MethodChannel.Result) {
-        handleVehicleTokenRefresh(oldToken, result)
-    }
-
-    private fun handleVehicleTokenRefresh(oldToken: String, result: MethodChannel.Result) {
-        try {
-            val channel = trackingAuthChannel
-            if (channel == null) {
-                result.error("NO_CHANNEL", "Tracking auth channel not initialised", null)
-                return
-            }
-            // Forward to Flutter. Flutter's handler returns the new token via
-            // the result callback.
-            channel.invokeMethod(
-                "refreshToken",
-                oldToken,
-                object : MethodChannel.Result {
-                    override fun success(response: Any?) {
-                        val newToken = response?.toString().orEmpty()
-                        if (newToken.isNotEmpty()) {
-                            result.success(newToken)
-                        } else {
-                            result.error("REFRESH_FAILED", "Flutter returned empty token", null)
-                        }
-                    }
-                    override fun error(code: String, message: String?, details: Any?) {
-                        result.error(code, message, details)
-                    }
-                    override fun notImplemented() {
-                        result.error("NOT_IMPLEMENTED", "Flutter did not handle refreshToken", null)
-                    }
-                },
-            )
-        } catch (error: Exception) {
-            Log.w("MainActivity", "Vehicle token refresh failed", error)
-            result.error("REFRESH_EXCEPTION", error.message, null)
         }
     }
 

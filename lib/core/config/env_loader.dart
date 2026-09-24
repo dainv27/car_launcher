@@ -47,6 +47,12 @@ class EnvLoader {
   }
 
   /// Read a value with an optional fallback.
-  String? getValue(String key, [String? fallback]) =>
-      dotenv.env[key] ?? fallback;
+  ///
+  /// Safe to call before [load] has run — [dotenv] throws if its `env` map is
+  /// accessed uninitialized, so guard on [DotEnv.isInitialized] and let callers
+  /// fall back to their compile-time defaults.
+  String? getValue(String key, [String? fallback]) {
+    final value = dotenv.isInitialized ? dotenv.env[key] : null;
+    return value ?? fallback;
+  }
 }

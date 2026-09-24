@@ -11,6 +11,7 @@ import 'package:car_launcher/core/theme/app_theme.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/carplay_settings_providers.dart';
 import 'package:car_launcher/features/dashboard/presentation/providers/widget_providers.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
+import 'package:car_launcher/features/settings/presentation/providers/welcome_greeting_provider.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/widgets/launcher_background.dart';
 import 'package:car_launcher/shared/constants/app_constants.dart';
@@ -139,7 +140,17 @@ class _StartupPermissionGateState extends ConsumerState<_StartupPermissionGate> 
 
       // Register device information
       _ensureDeviceRegistered();
+
+      // Spoken welcome greeting, if enabled in settings.
+      _maybeSpeakWelcomeGreeting();
     });
+  }
+
+  /// Speaks the time-of-day welcome greeting once on startup, unless the
+  /// user has disabled it in Settings > Media & Sound.
+  void _maybeSpeakWelcomeGreeting() {
+    if (!ref.read(welcomeGreetingEnabledProvider)) return;
+    ref.read(welcomeGreetingServiceProvider).speak();
   }
 
   /// Checks startup permission status and, when policy calls for it, opens

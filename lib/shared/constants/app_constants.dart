@@ -30,6 +30,8 @@ class AppConstants {
   // Notification sound
   static const keyNotificationSoundUri = 'notification_sound_uri';
   static const keyNotificationSoundTitle = 'notification_sound_title';
+  // Welcome greeting
+  static const keyWelcomeGreetingEnabled = 'welcome_greeting_enabled';
   // Weather
   static const keyWeatherApiKey = 'weather_api_key';
   static const keyWeatherCity = 'weather_city';

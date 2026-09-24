@@ -13,9 +13,11 @@ import 'package:car_launcher/features/dashboard/presentation/widgets/vehicle_tra
 import 'package:car_launcher/features/layout/domain/layout_model.dart';
 import 'package:car_launcher/features/layout/presentation/providers/layout_providers.dart';
 import 'package:car_launcher/features/layout/presentation/widgets/pane_widgets.dart';
+import 'package:car_launcher/features/settings/domain/welcome_greeting.dart';
 import 'package:car_launcher/features/settings/presentation/providers/brightness_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/default_launcher_provider.dart';
 import 'package:car_launcher/features/settings/presentation/providers/notification_sound_provider.dart';
+import 'package:car_launcher/features/settings/presentation/providers/welcome_greeting_provider.dart';
 import 'package:car_launcher/features/settings/presentation/widgets/weather_settings_dialog.dart';
 import 'package:car_launcher/features/theme/presentation/providers/launcher_appearance_provider.dart';
 import 'package:car_launcher/features/theme/presentation/providers/theme_providers.dart';
@@ -2023,6 +2025,7 @@ class _MediaSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final defaultMedia = ref.watch(defaultMediaProvider);
+    final welcomeGreetingEnabled = ref.watch(welcomeGreetingEnabledProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(right: 8, bottom: CarPlayTheme.margin),
@@ -2032,6 +2035,40 @@ class _MediaSection extends ConsumerWidget {
           const _SectionHeader(
             title: 'Media & Sound',
             description: 'Default media app and audio preferences.',
+          ),
+          const SizedBox(height: CarPlayTheme.widgetGap),
+          _GlassPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome Greeting',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: context.palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Spoken Vietnamese greeting on startup (morning, noon, '
+                  'afternoon, evening).',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.palette.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _ToggleRow(
+                  title: 'Play on startup',
+                  subtitle: welcomeGreetingForHour(DateTime.now().hour),
+                  value: welcomeGreetingEnabled,
+                  onChanged: (v) => ref
+                      .read(welcomeGreetingEnabledProvider.notifier)
+                      .setEnabled(v),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: CarPlayTheme.widgetGap),
           _GlassPanel(

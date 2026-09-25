@@ -16,12 +16,16 @@ nhập, hiệu ứng chuyển trang thống nhất, và thanh điều hướng t
 | Path | Trang | Ghi chú |
 |---|---|---|
 | `/splash` | `SplashPage` | `initialLocation`; tự `context.go('/')` sau ~2s |
-| `/` | `DashboardPage` | màn hình chính (PageView 6 trang) |
+| `/` | `DashboardPage` | màn hình chính (PageView 4 trang, xem [03](03-dashboard.md)) |
 | `/apps` | `AppDrawerPage` | |
 | `/media` | `MediaCenterPage` | |
 | `/navigation` | `MapPage(showYoutube: false)` | con: `/navigation/youtube` |
 | `/vehicles` | `VehiclesPage` | **protected** |
 | `/vehicles/:id` | `VehicleDetailPage` | gate ở cấp trang |
+| `/vehicles/:id/trips` | `VehicleTripsPage` | |
+| `/vehicles/:id/geofences` | `GeofencesPage` | |
+| `/vehicles/:id/alerts` | `AlertsPage` | |
+| `/trips/:tripId` | `TripDetailPage` | **protected** (prefix `/trips`) |
 | `/history/:vehicleId` | `TrackingHistoryPage` | **protected** (prefix `/history`) |
 | `/login` | `AccountLoginPage` | |
 | `/callback` | rỗng, redirect | nhận `carlauncher://oauth/callback` → `/` |
@@ -31,7 +35,7 @@ nhập, hiệu ứng chuyển trang thống nhất, và thanh điều hướng t
 
 ## 3. Cơ chế bảo vệ route
 
-`_protectedRoutes = {'/vehicles', '/history'}`. Hàm `redirect` toàn cục:
+`_protectedRoutes = {'/vehicles', '/history', '/trips'}`. Hàm `redirect` toàn cục:
 
 - chỉ xét route top-level (khớp chính xác hoặc prefix `<r>/`);
 - đọc `accountSessionProvider`; nếu `valueOrNull == null` → redirect `/login`;

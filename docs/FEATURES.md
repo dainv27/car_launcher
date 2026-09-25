@@ -43,10 +43,23 @@ native taskbar.
 - Embedded map surface when supported by the device.
 - Fullscreen Maps fallback when embedding is unavailable.
 
+## Account
+
+- Sign in via Keycloak OIDC (Authorization Code + PKCE) at `/login`, with
+  session restore and automatic token refresh.
+- `/vehicles`, `/history/:vehicleId`, and the Vehicle/Tracking settings
+  categories require an active session.
+
 ## Vehicle Tracking
 
-- Settings can load vehicles from the server, register a vehicle, and assign one
-  vehicle to the current device.
+- Vehicle list and detail (`/vehicles`, `/vehicles/:id`), also reachable from
+  Settings, can load vehicles from the server, register a vehicle, and assign
+  one vehicle to the current device.
+- Each vehicle's detail page links to its trips (`/vehicles/:id/trips`, trip
+  detail at `/trips/:tripId`), geofences (`/vehicles/:id/geofences`), and
+  alerts (`/vehicles/:id/alerts`).
+- Tracking history (`/history/:vehicleId`) shows a route map or a list of raw
+  points, filterable by date range.
 - Tracking points are stored offline in SQLite and synced in batches.
 - Native background service records and syncs points while tracking is enabled.
 - API mapping follows the Postman collection paths documented in

@@ -21,14 +21,20 @@ Hai bộ flags được thử:
 - compatibility path: `265`, có thể render trên một số ROM nhưng không đảm bảo
   launch/touch đầy đủ.
 
-## ActivityView fallback
+## ActivityView: chỉ còn native code mồ côi
 
-Nếu VirtualDisplay không tạo hoặc launch được, code thử hidden
-`android.app.ActivityView` qua reflection. API này xuất hiện từ Android 9 nhưng
-không phải SDK công khai và thường chỉ hoạt động cho system/privileged app.
+Hidden `android.app.ActivityView` (qua reflection, xuất hiện từ Android 9,
+không phải SDK công khai, thường chỉ hoạt động cho system/privileged app) vẫn
+tồn tại trong native code (`ActivityViewHelper`, dùng bởi `EmbeddedAppPaneView`
+và `GoogleMapsPlatformView`), nhưng **không còn widget Flutter nào gọi tới
+`embedded_app_pane` hay `google_maps_taskview`** — tính năng Multi App/pane bị
+gỡ khỏi `lib/features/layout` sau khi thiết bị test (Bengal) cho thấy đường
+`embedded_app_pane` báo not-supported ngay cả khi ROM thực sự hỗ trợ embed,
+trong khi `virtual_display_app` đã hoạt động tốt trên cùng thiết bị.
 
-`embedded_app_pane` dùng trực tiếp ActivityView. `virtual_display_app` cũng thử
-ActivityView khi VirtualDisplay thất bại.
+`virtual_display_app` (`VirtualDisplayAppView`) — cơ chế embed đang dùng trong
+app — **không** fallback sang ActivityView khi VirtualDisplay thất bại; nó chỉ
+rơi xuống freeform/adjacent window (xem phần dưới) hoặc báo lỗi.
 
 ## Freeform và adjacent fallback
 

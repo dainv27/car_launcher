@@ -20,7 +20,7 @@ Hỗ trợ giao diện sáng/tối cho ứng dụng và cho phép ứng dụng *
 | Khái niệm | Kiểu | Giá trị |
 |---|---|---|
 | `AppThemeMode` | enum | `day`, `night`, `auto` — lựa chọn thô người dùng lưu, key `theme_mode` |
-| `LauncherThemeStyle` | enum | `dark`(#00E5FF), `electric`(#9B7BFF), `glass`(#A8F7E8) — màu nhấn |
+| `LauncherThemeStyle` | enum | `dark`("Arctic", night #5AC8FA/day #0068B8), `electric`("Violet", night #A78BFA/day #6D4AE0), `glass`("Mint", night #5EE0C4/day #00806C), `ember`("Ember", night #FFA94D/day #B45309) — mỗi preset có màu riêng cho theme sáng/tối |
 | `LauncherBackgroundStyle` | enum | `obsidian`, `electric`, `aurora` |
 | `LauncherAppearance` | class bất biến | `themeStyle`, `backgroundStyle`, `customWallpaperPath?` |
 
@@ -44,6 +44,9 @@ Hỗ trợ giao diện sáng/tối cho ứng dụng và cho phép ứng dụng *
 | 06:00–16:59 | `glass` | `aurora` | ban ngày → coi là "light" |
 | 17:00–21:59 | `electric` | `electric` | chạng vạng |
 | 22:00–05:59 | `dark` | `obsidian` | ban đêm → "dark" |
+
+`ember` không nằm trong lịch tự động — chỉ chọn được thủ công trong Settings
+(vòng lặp `LauncherThemeStyle.values`).
 
 ## 5. Providers
 

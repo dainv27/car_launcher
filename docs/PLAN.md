@@ -8,18 +8,21 @@ Car Launcher registers as an Android HOME/default launcher (`MAIN` + `HOME` +
 `DEFAULT` + `LAUNCHER`), can replace the device's stock launcher without root,
 and restarts itself as the Home surface after boot via `BootReceiver`. Primary
 navigation stays inside the full-width Flutter UI with in-app settings; there
-is still no persistent native taskbar, sidebar, or system overlay. A separate
-`system` build flavor (`sharedUserId=android.uid.system`, platform-signed)
-exists for devices where CarCar-parity privileged embedding permissions are
-required; the default flavor does not request them.
+is still no persistent native taskbar, sidebar, or system overlay. The app now
+ships as a single `system` build flavor (`sharedUserId=android.uid.system`,
+platform-signed when a platform key is configured, debug-signed compile-check
+otherwise) for CarCar-parity privileged embedding permissions — there is no
+longer a separate unprivileged/default flavor; on a device where the APK is
+not platform-signed, the privileged permissions simply fail to grant and the
+app falls back to unprivileged behavior.
 
 ## Completed In Current Architecture
 
 - HOME/default launcher registration, opt-in via the in-app "Set as Default
   Launcher" action or Settings > Apps > Default apps > Home app.
 - `BootReceiver` restarts the app as the Home surface after boot.
-- `system` build flavor for platform-signed, privileged-permission builds
-  matching CarCar's manifest.
+- Single `system` build flavor (the only flavor) for platform-signed,
+  privileged-permission builds matching CarCar's manifest.
 - No system overlay permission (`SYSTEM_ALERT_WINDOW`) and no persistent
   native taskbar/sidebar services.
 - Dashboard, Apps, Media, Navigation, and Settings reachable in app.

@@ -1,6 +1,6 @@
 # 01 — App shell, bootstrap & native bridge
 
-Updated: 2026-08-29
+Updated: 2026-09-24
 Status: implemented
 Nguồn: `lib/main.dart`, `lib/core/di/injection_container.dart`,
 `lib/core/native/native_bridge.dart`,
@@ -10,9 +10,8 @@ Nguồn: `lib/main.dart`, `lib/core/di/injection_container.dart`,
 ## 1. Mục tiêu & phạm vi
 
 Khởi tạo ứng dụng theo đúng thứ tự phụ thuộc, dựng khung `MaterialApp.router`,
-lớp nền (wallpaper) toàn cục, cổng xin quyền lúc khởi động, đăng ký thiết bị, và
-kênh làm mới token cho service nền. Tài liệu này mô tả phần "vỏ" chung; các tính
-năng cụ thể nằm ở các file khác.
+lớp nền (wallpaper) toàn cục, cổng xin quyền lúc khởi động, và đăng ký thiết bị.
+Tài liệu này mô tả phần "vỏ" chung; các tính năng cụ thể nằm ở các file khác.
 
 ## 2. Trình tự khởi động (`main()`)
 
@@ -24,8 +23,7 @@ năng cụ thể nằm ở các file khác.
    `ApiConfig` / `KeycloakConfig` đọc biến môi trường lúc dựng.
 5. `AppLogger.instance.init()` — mở file log.
 6. `setupServiceLocator()` — đăng ký singleton/factory vào `get_it`.
-7. `_setupTrackingAuthChannel()` — mở `MethodChannel('com.carlauncher/tracking_auth')`.
-8. `runApp(ProviderScope(overrides: [...], child: CarLauncherApp()))`.
+7. `runApp(ProviderScope(overrides: [...], child: CarLauncherApp()))`.
 
 `overrides` tiêm `SharedPreferences` (từ `getIt`) vào `widgetListProvider`,
 `carPlaySettingsProvider` — các provider này `throw UnimplementedError` nếu
@@ -73,16 +71,14 @@ access (MediaSession) sau.
 Gọi `getIt<DeviceService>().ensureDeviceRegistered()` — best-effort, nuốt lỗi
 (chỉ log). Chi tiết: [14](14-device-registration.md).
 
-## 5. `_setupTrackingAuthChannel()`
+## 5. Xác thực service nền (tracking)
 
-Service nền native chỉ giữ access token, không giữ refresh token. Khi sync gặp
-`401`, native gọi `refreshToken` trên channel `com.carlauncher/tracking_auth`.
-Handler Flutter:
-
-1. `KeycloakAuthRepository.forceRefreshToken()`; nếu thất bại → ném
-   `PlatformException('REFRESH_FAILED')`.
-2. Lấy `accessToken()` mới; rỗng → `PlatformException('NO_TOKEN')`.
-3. Trả token mới (cảnh báo nếu trùng token cũ).
+`VehicleTrackingService` không còn phụ thuộc token đăng nhập Keycloak: native tự
+mint một `X-Device-Assertion` (JWS ký bằng key Android Keystore riêng của máy,
+qua `DeviceKeyStore`) cho mỗi lần POST, nên việc sync tracking-point hoạt động
+kể cả khi không ai đăng nhập trên đầu xe. Không còn channel
+`com.carlauncher/tracking_auth`/`refreshToken` — xem
+[12](12-vehicle-tracking.md)§7 và [14](14-device-registration.md)§3.1.
 
 ## 6. DI — `setupServiceLocator()`
 
@@ -102,7 +98,8 @@ Handler Flutter:
 `MainActivity : FlutterActivity` xử lý method channel `com.carlauncher/native`.
 Các method chính (`MainActivity.kt`): `getConnectivityStatus`, `getBatteryLevel`,
 `hasNotificationListenerAccess`, `openNotificationAccessSettings`,
-`openAccessibilitySettings`, `ensureStartupPermissions`, `launchVoiceAssistant`,
+`openAccessibilitySettings`, `pickNotificationSound`, `isDefaultLauncher`,
+`requestDefaultLauncher`, `ensureStartupPermissions`, `launchVoiceAssistant`,
 `mediaCommand`, `getCurrentLocationInfo`, `requestLocationPermission`,
 `startVehicleTrackingService` / `stopVehicleTrackingService`,
 `getVehicleTrackingDatabasePath`, `syncVehicleTrackingNow`,
@@ -153,7 +150,4 @@ app (`MANAGE_ACTIVITY_TASKS`, `INJECT_EVENTS`, `ADD_TRUSTED_DISPLAY`, …) chỉ
 
 ## 11. Hạn chế / việc còn lại
 
-- Tài liệu cũ (`docs/DOCUMENTATION.md`, `docs/USE_CASES.md`) mô tả app là "normal
-  app không auto-start"; thực tế manifest hiện vẫn khai báo `BootReceiver` +
-  `BOOT_COMPLETED` + `StartupCoordinator`. Cần thống nhất lại tài liệu tổng.
 - IMEI luôn rỗng (Android 29+ chặn app thường).

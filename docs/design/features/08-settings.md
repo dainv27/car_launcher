@@ -8,6 +8,9 @@ Nguồn: `lib/features/settings/presentation/settings_page.dart`,
 `lib/features/settings/presentation/clock_network_settings_page.dart`,
 `lib/features/settings/presentation/log_viewer_page.dart`,
 `lib/features/settings/presentation/providers/brightness_provider.dart`,
+`lib/features/settings/presentation/providers/default_launcher_provider.dart`,
+`lib/features/settings/presentation/providers/notification_sound_provider.dart`,
+`lib/features/settings/presentation/providers/welcome_greeting_provider.dart`,
 `lib/features/settings/presentation/widgets/weather_settings_dialog.dart`
 
 ## 1. Mục tiêu & phạm vi
@@ -19,13 +22,13 @@ launcher nằm trong `/settings`; deep-link vào từng mục qua `initialCatego
 
 | idx | Danh mục | Section widget | Ghi chú |
 |---|---|---|---|
-| 0 | Appearance | `_AppearanceSection` | theme style, sáng/tối, wallpaper, brightness, transparency, fluid animations |
+| 0 | Appearance | `_AppearanceSection` | theme style, sáng/tối, wallpaper, brightness, transparency, fluid animations; "Quick Settings" card gồm cả Auto Brightness và chọn âm thanh thông báo (`notificationSoundProvider` → native `pickNotificationSound`) |
 | 1 | Dashboard | `_DashboardSection` | `HomeViewMode`, tuỳ chọn dashboard |
 | 2 | Navigation | `_NavigationSection` | app điều hướng mặc định |
-| 3 | Media & Sound | `_MediaSection` | app media mặc định |
+| 3 | Media & Sound | `_MediaSection` | app media mặc định; toggle "Welcome Greeting" — lời chào tiếng Việt phát lúc khởi động theo giờ trong ngày (`welcomeGreetingEnabledProvider`) |
 | 4 | Connectivity | `_ConnectivitySection` | trạng thái Wi‑Fi/BT/VPN (chỉ đọc) |
 | 5 | Account | `_AccountSection` | Keycloak — xem [09](09-account-authentication.md) |
-| 6 | System Info | `_SystemInfoSection` | version/build, hidden apps, link logs |
+| 6 | System Info | `_SystemInfoSection` | version/build, hidden apps, link logs; thẻ "Default Launcher" hiện trạng thái + nút "Set as Default Launcher" (`defaultLauncherStatusProvider`, `LauncherService.requestDefaultLauncher()`) khi app chưa là Home mặc định |
 | 7 | Vehicle | `_VehicleSection` | cần đăng nhập → `/vehicles` — xem [11](11-vehicle-management.md) |
 | 8 | Tracking | `_TrackingSection` | cần đăng nhập → `VehicleTrackingSettingsCard` — xem [12](12-vehicle-tracking.md) |
 
@@ -54,6 +57,9 @@ Provider dùng trong các section:
 | `accountSessionProvider` | [09](09-account-authentication.md) | secure storage (OIDC) |
 | `hiddenAppsProvider` | local `StateNotifier` (in-memory) | — chưa persist |
 | `defaultNavProvider` / `defaultMediaProvider` | `StateProvider<String>` | — chưa persist |
+| `defaultLauncherStatusProvider` | `StreamProvider<bool>` — poll `LauncherService.isDefaultLauncher()` mỗi 3s | — (đọc trạng thái hệ thống) |
+| `notificationSoundProvider` | `StateNotifierProvider<NotificationSoundSettings>` — mở native sound picker (`pickNotificationSound`) | `SharedPreferences` |
+| `welcomeGreetingEnabledProvider` | bật/tắt lời chào phát lúc khởi động | `SharedPreferences` |
 
 Một số tuỳ chọn Appearance (`_transparency`, `_dynamicAccents`, `_fluidAnimations`)
 hiện là `setState` local, **chưa persist / chưa tác động thực**.

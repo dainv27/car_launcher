@@ -23,14 +23,29 @@ It does start itself from `BOOT_COMPLETED`/`LOCKED_BOOT_COMPLETED` via
 
 | Route | Purpose |
 |---|---|
+| `/splash` | Startup splash, then redirects to `/` |
 | `/` | Main dashboard |
 | `/apps` | Installed app drawer |
 | `/media` | Media center |
-| `/navigation` | Full-screen navigation dashboard |
+| `/navigation` | Full-screen navigation dashboard (child: `/navigation/youtube`) |
+| `/vehicles` | Vehicle list (requires login) |
+| `/vehicles/:id` | Vehicle detail, with `trips`, `geofences`, `alerts` sub-routes |
+| `/trips/:tripId` | Trip detail (requires login) |
+| `/history/:vehicleId` | Tracking history (requires login) |
+| `/login` | Account login (Keycloak OIDC) |
+| `/callback` | OAuth redirect target, then routes to `/` |
 | `/settings` | In-app settings |
 | `/settings/account` | Account settings |
 | `/settings/clock-network` | Clock and network settings |
 | `/settings/logs` | Log viewer |
+| `/settings/vehicle` | Vehicle settings |
+| `/settings/tracking` | Tracking settings |
+
+`/vehicles`, `/trips/:tripId`, and `/history/:vehicleId` redirect to `/login`
+when there is no active session; other protected screens (e.g.
+`/vehicles/:id`) gate at the page level instead. See
+[docs/design/features/02-navigation-and-routing.md](design/features/02-navigation-and-routing.md)
+for the full routing design.
 
 The dashboard top bar provides Home, Apps, Media, Navigation, and Settings.
 On narrow screens it keeps Home visible and moves the remaining destinations

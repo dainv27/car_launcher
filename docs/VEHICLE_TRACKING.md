@@ -33,12 +33,18 @@ Implemented API mapping:
 GET    /vehicles?page=0&size=10
 GET    /vehicles/:id
 POST   /vehicles
+PATCH  /vehicles/:id
+GET    /devices?vehicleId=:id
 ```
 
 Currently used by the app:
 
 - `GET /vehicles?page=0&size=10` to load vehicles in Settings.
 - `POST /vehicles` to register a vehicle. The server generates the vehicle id.
+- `PATCH /vehicles/:id` to edit an existing vehicle (no delete endpoint is
+  exposed by the client API).
+- `GET /devices?vehicleId=:id` to list the devices attached to a vehicle on
+  its detail screen.
 
 Registration request body:
 
@@ -79,34 +85,17 @@ The app accepts either `id` or `vehicleId` from server responses.
 
 Selecting a vehicle in Settings assigns it locally to this device and pushes the selected vehicle profile to the native background service.
 
-The app also registers the physical Android device with the vehicle service:
-
-```text
-GET  /devices/:deviceId
-POST /devices
-```
-
-The `GET` call makes registration idempotent. If the server returns `404`, the app creates the device.
-
-Device registration request body:
-
-```json
-{
-  "id": "android-abc",
-  "vehicleId": "car-001",
-  "name": "samsung SM-X133",
-  "serialNumber": "R8YY91N3TAF",
-  "model": "SM-X133",
-  "metadata": {
-    "model": "SM-X133",
-    "manufacturer": "samsung",
-    "androidVersion": "16",
-    "sdkInt": 36,
-    "serial": "R8YY91N3TAF",
-    "androidId": "android-abc"
-  }
-}
-```
+Separately, on every app start the device registers itself with vehicle-service
+via a `SELF_SIGNED_PKI` attestation handshake (`POST
+/public-api/v1/devices/enroll{,/challenge}`, `X-Device-Assertion` signed by a
+per-install Android Keystore key) — this is unrelated to the vehicle CRUD
+above and creates the device *unclaimed*, before any user assigns it to a
+vehicle. See [14-device-registration.md](design/features/14-device-registration.md)
+for the full flow. The older client-api `POST /devices` create path (`Build.ID`
+-based device id) still exists on `DeviceService` but nothing calls it anymore
+— it is dead code as of 2026-09-24. `GET /devices?vehicleId=:id` (see
+[Vehicle Management](#vehicle-management) above) is the one client-api device
+call still in active use, listing devices already assigned to a vehicle.
 
 All later tracking payloads are tied to this assigned vehicle.
 
@@ -136,15 +125,22 @@ GET  /vehicles/:vehicleId/tracking-points/latest                   (latest fix)
 > `getLatestVehicleTrackingPoint` and `TrackingRepository` now take a
 > `vehicleId`.
 
-> **Ingestion (the upload path) is a separate migration.** The owner-JWT
-> `POST /client-api/v1/vehicles/{id}/tracking-points` was removed when the
-> service moved device onboarding to Android Key Attestation. Uploading points
-> now requires enrolling the device on the **public API**
-> (`POST /public-api/v1/devices/me/tracking-points[/batch]`) with an
-> `X-Device-Assertion` JWS. The bootstrap PKI material in `assets/security/`
-> is for that work; `VehicleTrackingSyncClient.sync()` and the native
-> `VehicleTrackingService` upload path are untouched by the read/feature work
-> below.
+> **Ingestion (the upload path) has migrated to device attestation.** The
+> owner-JWT `POST /client-api/v1/vehicles/{id}/tracking-points` was removed
+> when the service moved device onboarding to Android Key Attestation.
+> Uploading points now goes through the **public API**
+> (`POST /public-api/v1/devices/me/tracking-points`) with a per-request
+> `X-Device-Assertion` JWS — both the native `VehicleTrackingService` upload
+> loop and `TrackingSyncClient.sync()` (Flutter, currently unused by the
+> native-only upload path but available for tests/tooling) already POST here.
+> The server derives the vehicle from the device's enrollment link, so uploads
+> keep working with no user session active. Device enrollment itself (`POST
+> /public-api/v1/devices/enroll`) — see
+> [14-device-registration.md](design/features/14-device-registration.md) —
+> reads its bootstrap PKI material from `assets/attestation/` (the private key
+> is provisioned per build and gitignored there; `assets/security/` holds a
+> leftover copy of the same material outside the app's asset bundle and is not
+> what the app loads).
 
 Sync sends pending records in local batches, but each HTTP request follows the
 vehicle service single-point request schema:
@@ -171,15 +167,21 @@ request via `syncVehicleTrackingNow`. A failed upload simply leaves the point
 in `pending_points` for the next attempt; nothing is lost.
 
 Flutter's `VehicleTrackingNotifier` does **not** capture location or upload
-points itself. It only:
+points itself, and does not hold or forward any login token to native for this
+purpose. It only:
 
-- pushes the ready-to-POST tracking-points URL and bearer token to native
-  (`updateVehicleTrackingSyncConfig`) whenever the endpoint, vehicle, or token
-  changes;
+- pushes the ready-to-POST tracking-points URL to native
+  (`updateVehicleTrackingSyncConfig`) whenever the assigned vehicle changes
+  (empty until a vehicle is assigned);
 - periodically re-reads `pending_points`/`synced_points` to reflect state in
   the UI (distance, point count, pending count);
 - optionally nudges native to sync sooner (`syncVehicleTrackingNow`) — e.g.
   the Settings "Sync now" button.
+
+Native authenticates every upload itself with a device-assertion JWS
+(`X-Device-Assertion`, minted from its own Android Keystore key) — see
+[Device Registration (Attestation)](#device-registration-attestation) — so
+sync does not depend on anyone being logged in on the head unit.
 
 This single-writer design exists because Flutter and native previously ran
 independent capture-and-sync loops against the same SQLite file, which could
@@ -188,9 +190,9 @@ double-record the same trip and race each other uploading to the server.
 Sync only runs when:
 
 - tracking is enabled;
-- a device is assigned to this vehicle (Flutter only pushes a tracking-points
-  URL once a device is assigned — see [Assigning Vehicle To Device](#assigning-vehicle-to-device));
-- an access token has been pushed from Flutter to native;
+- a vehicle is assigned to this device (Flutter only pushes a non-empty
+  tracking-points URL once a vehicle is assigned — see
+  [Assigning Vehicle To Device](#assigning-vehicle-to-device));
 - pending points exist.
 
 Each successful local batch is moved from `pending_points` to `synced_points`. Failed batches remain pending for retry.

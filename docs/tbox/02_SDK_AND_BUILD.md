@@ -10,9 +10,16 @@
 
 Embedded app support depends on ROM capabilities:
 
-- `ActivityView` is attempted only on supported Android builds.
-- `VirtualDisplay` embedding requires Android 10 / API 29 or newer.
+- `VirtualDisplay` embedding (the only embed path the Flutter UI currently
+  uses) requires Android 10 / API 29 or newer.
 - TBox Android 13 remains the primary hardware target.
+
+There is a single Gradle product flavor, `system` (dimension `channel`,
+`android/app/build.gradle.kts`), and it is the default/only flavor for every
+build type (debug, profile, release) — there is no separate unprivileged
+flavor. It applies the `android:sharedUserId="android.uid.system"` manifest
+overlay from `android/app/src/system/AndroidManifest.xml` to all builds; see
+[docs/PLAN.md](../PLAN.md).
 
 ## Debug Build
 
@@ -27,8 +34,12 @@ Install:
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-Debug builds are suitable for validating UI, routes, embedded app surfaces, and
-fullscreen fallback behavior. They do not grant privileged system capabilities.
+Every build variant — including this debug build — uses the sole `system`
+flavor and therefore declares `android:sharedUserId="android.uid.system"`.
+Without the platform signing properties below, it falls back to the debug
+key, so it will not actually be granted the system UID/privileged permissions
+at install time; treat it as a UI/route/embedded-surface/fullscreen-fallback
+validation build, not a plain unprivileged one.
 
 ## Android Build Verification
 
@@ -47,8 +58,9 @@ flutter analyze
 
 ## Release And Platform Signing
 
-Release builds may require a TBox platform keystore when the ROM expects system
-UID signing. Provide Gradle properties only when building for that privileged
+The `system` flavor's debug, profile, and release build types are all pinned
+to the same platform signing config, so the properties below affect every
+build type, not only release. Provide them when building for a privileged
 deployment path:
 
 ```properties

@@ -1,6 +1,6 @@
 # 09 — Tài khoản & xác thực (Keycloak OIDC)
 
-Updated: 2026-08-29
+Updated: 2026-09-24
 Status: implemented
 Route: `/login`, `/callback`, `/settings/account`
 Nguồn: `lib/features/account/**`, `lib/core/auth/**`,
@@ -82,15 +82,15 @@ AccountLoginPage ──► accountSessionProvider (AsyncNotifier<AccountUser?>)
    đặt timer 5s rồi `cancelPendingInteractiveLogin()` (S60 có thể trả callback
    chậm).
 
-## 6. Access token cho HTTP & native
+## 6. Access token cho HTTP
 
 - `AuthInterceptorClient` (bọc `http.Client`): chèn `Bearer` cho host gateway;
   gặp `401` → `forceRefreshProvider()` rồi gửi lại request đã copy một lần.
-- Service tracking native: Flutter đẩy access token qua
-  `updateVehicleTrackingSyncConfig`; khi native gặp `401` nó gọi
-  `com.carlauncher/tracking_auth`/`refreshToken` → handler ở `main.dart` gọi
-  `forceRefreshToken()` và trả token mới (xem [01](01-app-shell-and-bootstrap.md),
-  [12](12-vehicle-tracking.md)).
+- Service tracking native (`VehicleTrackingService`) **không** dùng token đăng
+  nhập Keycloak — nó tự mint `X-Device-Assertion` bằng key Android Keystore
+  riêng của máy (`DeviceKeyStore`), độc lập với phiên đăng nhập, nên vẫn sync
+  được khi không ai đăng nhập trên đầu xe (xem
+  [12](12-vehicle-tracking.md)§7, [14](14-device-registration.md)§3.1).
 
 ## 7. Quyết định thiết kế & đánh đổi
 

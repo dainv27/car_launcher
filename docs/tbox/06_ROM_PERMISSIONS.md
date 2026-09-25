@@ -13,6 +13,12 @@ Manifest hiện yêu cầu các quyền liên quan TBox:
 | `ACTIVITY_EMBEDDING` | Activity embedding |
 | `REORDER_TASKS` | Điều phối task |
 
+`android/app/src/system/AndroidManifest.xml` (overlay của flavor `system`,
+flavor duy nhất hiện có) còn khai báo thêm `INTERACT_ACROSS_USERS`,
+`FORCE_STOP_PACKAGES`, `MANAGE_USERS`, `MEDIA_CONTENT_CONTROL`,
+`CONTROL_DISPLAY_BRIGHTNESS`, `READ_PRIVILEGED_PHONE_STATE` — cũng là
+signature/privileged.
+
 Chỉ khai báo permission không đồng nghĩa được cấp. Các quyền như
 `ADD_TRUSTED_DISPLAY`, `INJECT_EVENTS`, `MANAGE_ACTIVITY_TASKS` và
 `ACTIVITY_EMBEDDING` thường là signature/privileged.

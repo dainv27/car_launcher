@@ -20,7 +20,10 @@ chỉ tracking-point, CRUD xe đã tách sang `VehicleApiClient`, xem
 `currentLocationProvider` — vị trí hiển thị chung, KHÔNG liên quan tracking xe),
 `lib/features/dashboard/presentation/widgets/vehicle_tracking_card.dart`,
 `android/app/src/main/kotlin/com/carlauncher/car_launcher/VehicleTrackingService.kt`,
-`lib/main.dart` (`_setupTrackingAuthChannel`)
+`lib/features/tracking/data/{map_api_client,map_repository}.dart` (route
+simplification, reverse-geocode, bounding-box positions — xem §9.1),
+`android/app/src/main/kotlin/com/carlauncher/car_launcher/deviceauth/DeviceKeyStore.kt`
+(device-assertion dùng để xác thực upload, xem §7)
 
 Xem thêm tài liệu nghiệp vụ/API: [`docs/VEHICLE_TRACKING.md`](../../VEHICLE_TRACKING.md).
 
@@ -67,8 +70,10 @@ Flutter chỉ:
                  │  - LocationManager GPS→NETWORK, interval 15s / min 5m           │
                  │  - onLocationChanged → appendPoint() → pending_points → syncNow │
                  │  - scheduleWithFixedDelay 30s: syncPendingPoints()             │
-                 │  - POST từng điểm; 401 → requestTokenRefresh() qua              │
-                 │    MethodChannel 'com.carlauncher/tracking_auth'/'refreshToken' │
+                 │  - POST public-api/v1/devices/me/tracking-points, tự ký header  │
+                 │    X-Device-Assertion (DeviceKeyStore, Keystore key riêng máy,  │
+                 │    KHÔNG dùng token Keycloak) — 401 → mint assertion mới, thử   │
+                 │    lại 1 lần; 409 → chưa gán vehicle, giữ pending               │
                  │  - thành công: chuyển pending→synced, trim > 10000              │
                  └───────────────────────────────────────────────────────────────┘
 ```
@@ -92,7 +97,9 @@ fallback `getApplicationDocumentsDirectory()`), để cả hai phía mở cùng 
 Cài đặt + vehicle profile lưu ở `SharedPreferences` (native đọc từ
 `FlutterSharedPreferences`, prefix `flutter.`):
 `vehicle_tracking_enabled`, `vehicle_tracking_sync_endpoint`, `vehicle_profile`,
-`vehicle_tracking_points_url`, `vehicle_tracking_access_token`.
+`vehicle_tracking_points_url`. Không còn key access-token: native tự ký request
+bằng `X-Device-Assertion` (xem §7), không cần Flutter đẩy token đăng nhập
+xuống nữa.
 
 ## 5. `VehicleTrackingState` (Flutter)
 
@@ -110,9 +117,9 @@ POST một điểm.
 
 ## 6. Vòng đời
 
-- **`start()`**: `enabled=true` → `_saveSettings` → `_syncNativeConfig(token)` →
+- **`start()`**: `enabled=true` → `_saveSettings` → `_syncNativeConfig()` →
   `startVehicleTrackingService` → `syncNow()`.
-- **`stop()`**: `enabled=false` → lưu → `_syncNativeConfig(clearToken:true)` →
+- **`stop()`**: `enabled=false` → lưu → `_syncNativeConfig()` →
   `stopVehicleTrackingService`.
 - **`_load()`** (khởi tạo): đọc snapshot store, dedupe + tính distance; nếu
   `enabled` → bật lại native + đẩy config + `syncNow`.
@@ -120,13 +127,15 @@ POST một điểm.
 - **`assignVehicle` / `saveVehicleProfile` / `loadVehicles`**: gọi
   `VehicleApiClient` (features/vehicle — CRUD xe, không phải
   `TrackingSyncClient`), lưu `Vehicle` vào store, đẩy lại native config (URL
-  tracking-points phụ thuộc `deviceId`).
+  tracking-points phụ thuộc vehicle đã gán).
 - **`syncNow()`**: gọi `syncVehicleTrackingNow` (no-op nếu service không chạy) →
   chờ 300ms → `_refreshFromStore`.
 
-`_trackingPointsUrl()` = `UrlUtils.vehicleUri(endpoint,
-'devices/$deviceId/tracking-points')` — rỗng nếu chưa gán device (native không
-sync khi URL rỗng). `UrlUtils` là nguồn luật URL duy nhất; native không cần biết.
+`_trackingPointsUrl()` = `${ApiConfig.vehicleServicePublicApiBaseUrl}/devices/me/tracking-points`
+(public-api, không phải `client-api` qua `UrlUtils.vehicleUri`) — rỗng nếu
+`state.vehicle.id` rỗng (chưa gán xe); native không sync khi URL rỗng.
+`_syncNativeConfig()` chỉ đẩy `trackingPointsUrl` xuống native — không còn tham
+số token (xem §7).
 
 ## 7. Native `VehicleTrackingService`
 
@@ -137,11 +146,15 @@ sync khi URL rỗng). `UrlUtils` là nguồn luật URL duy nhất; native khôn
   `scheduleBackgroundSync()` (delay 5s, chu kỳ 30s); `syncNow()`.
 - `appendPoint()`: bỏ qua nếu `flutter.vehicle_tracking_enabled` false; insert
   `pending_points` (`CONFLICT_IGNORE`); `syncNow()`.
-- `syncPendingPoints()`: cần `enabled` + có `url` + có `token`; đọc batch 100
-  theo `timestamp ASC`; `postBatchWithRefresh` POST từng điểm; `401` →
-  `requestTokenRefresh(oldToken)` (block tối đa 30s chờ Flutter) → persist token
-  mới → thử lại điểm; thành công → `markBatchSynced` (chuyển pending→synced,
-  `trimSyncedHistory` giữ ≤ 10000). Lỗi → điểm ở lại pending cho lần sau.
+- `syncPendingPoints()`: cần `enabled` + có `url`; đọc batch 100 theo
+  `timestamp ASC`; `postBatch` POST từng điểm, mỗi request tự ký header
+  `X-Device-Assertion` bằng `DeviceKeyStore.mintAssertion()` (key Android
+  Keystore riêng của máy — xem [14](14-device-registration.md)§3.1, không liên
+  quan token đăng nhập Keycloak); `401` → mint assertion mới, thử lại request
+  đó một lần (bù lệch giờ/key vừa xoay); `409` → thiết bị đã enroll nhưng chưa
+  gán vào xe, ném lỗi, điểm ở lại pending; thành công → `markBatchSynced`
+  (chuyển pending→synced, `trimSyncedHistory` giữ ≤ 10000). Lỗi khác → điểm ở
+  lại pending cho lần sau.
 - `triggerSyncNow()` (static): điểm vào duy nhất để "hích" sync từ Flutter.
 
 Payload POST một điểm:
@@ -167,6 +180,24 @@ Payload POST một điểm:
 `TrackingRepository` cung cấp path "history feature" (đọc từ server, qua
 `TrackingSyncClient`) — chủ yếu native lo sync, repo này phục vụ màn hình lịch
 sử.
+
+## 8.1 Bản đồ, reverse-geocode, vị trí trong vùng
+
+`MapApiClient` / `MapRepository` (`features/tracking/data/{map_api_client,
+map_repository}.dart`) bọc 3 endpoint riêng của "map helpers", tách khỏi
+tracking-point CRUD:
+
+| Thao tác | HTTP | Ghi chú |
+|---|---|---|
+| Route đã đơn giản hoá | `GET /vehicles/:vehicleId/tracking-points/route` | tham số `from`/`to`/`toleranceMeters`/`maxPoints`; server rút gọn kiểu Douglas–Peucker |
+| Reverse-geocode | `GET /tracking/reverse-geocode?lat&lon` | `503` → trả `null` (provider chưa cấu hình phía server), UI ẩn địa chỉ thay vì báo lỗi |
+| Vị trí mới nhất trong vùng | `GET /tracking/latest-positions?minLat&minLon&maxLat&maxLon` | có ở tầng repository nhưng **chưa có provider/màn hình nào gọi** — chưa lên UI |
+
+`reverseGeocodeProvider` (`tracking_providers.dart`) cấp địa chỉ cho card
+"Latest Location" ở `VehicleDetailPage`. `RouteMapView` (route trên bản đồ)
+dùng chung giữa `TrackingHistoryPage` và `TripDetailPage` — xem
+[15-trip.md](15-trip.md)§4; đây là `CustomPainter` không tile bản đồ nền
+(`GeoUtils.projectToCanvas`), không phải Flutter map package.
 
 ## 10.1 Đã tách khỏi `shared/` (2026-09-24)
 
@@ -201,9 +232,10 @@ dữ liệu không thể vô tình gọi HTTP tracking-point từ Flutter (bất
 - **Offline-first, single-writer native** — không mất điểm khi mất mạng, không
   double-upload; đổi lại Flutter chỉ "đọc chậm" state (trễ tối đa ~10s giữa các
   lần refresh).
-- **Native chỉ giữ access token, refresh nhờ Flutter** qua channel riêng — không
-  nhân bản refresh token/secret xuống service nền; đổi lại native phải block
-  thread nền tối đa 30s chờ Flutter khi 401.
+- **Native tự xác thực bằng device-assertion (Keystore), không phụ thuộc phiên
+  Keycloak** — service nền vẫn sync được khi không ai đăng nhập trên đầu xe,
+  không cần Flutter chuyển token/refresh; đổi lại việc gán xe cho thiết bị vẫn
+  cần một phiên đăng nhập (chỉ dùng lúc gán, không dùng lúc upload).
 - **URL tracking-points dựng ở Flutter** (`UrlUtils`) rồi đẩy xuống — một nguồn
   luật URL; native chỉ cần string.
 - **POST từng điểm** (không bulk endpoint) — khớp schema vehicle-service; batch

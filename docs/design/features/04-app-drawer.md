@@ -2,7 +2,7 @@
 
 Updated: 2026-08-29
 Status: implemented
-Route: `/apps` (và trang index 4 của Dashboard PageView)
+Route: `/apps` (và trang index 2 của Dashboard PageView)
 Nguồn: `lib/features/app_drawer/presentation/app_drawer_page.dart`,
 `lib/features/app_drawer/presentation/providers/app_drawer_providers.dart`,
 `lib/features/app_drawer/presentation/widgets/*.dart`,

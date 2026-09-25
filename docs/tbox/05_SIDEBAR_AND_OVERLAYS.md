@@ -26,8 +26,11 @@ Khi mở một ứng dụng ngoài ở chế độ toàn màn hình, Car Launche
 điều khiển phía trên ứng dụng đó. Đây là hành vi chủ ý của một ứng dụng Android
 thông thường.
 
-Các pane nhúng bằng `ActivityView` hoặc `VirtualDisplay` vẫn có thể hiển thị
-ứng dụng khác bên trong Car Launcher nếu firmware cấp đủ quyền tương ứng.
+Pane nhúng bằng `VirtualDisplay` (`virtual_display_app`, dùng cho Maps/YouTube
+trên Dashboard) vẫn có thể hiển thị ứng dụng khác bên trong Car Launcher nếu
+firmware cấp đủ quyền tương ứng. Đường `ActivityView` (`embedded_app_pane`)
+còn tồn tại ở phía native nhưng không còn widget Flutter nào gọi tới — xem
+[04_EMBEDDED_APPS.md](04_EMBEDDED_APPS.md).
 
 ## Media
 

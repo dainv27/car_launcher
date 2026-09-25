@@ -102,6 +102,57 @@ Flow:
 3. The status updates automatically once the user confirms (or returns
    from Settings).
 
+## UC-08 Sign In
+
+Actor: user
+
+Trigger: user opens `/login`, or navigates to a protected route
+(`/vehicles`, `/history/:vehicleId`) while signed out.
+
+Flow:
+
+1. Signed-out access to a protected route redirects to `/login`; other
+   vehicle/tracking screens (e.g. `/vehicles/:id`) show a login-required
+   placeholder instead of redirecting.
+2. User taps Sign In; the system browser opens Keycloak OIDC login
+   (Authorization Code + PKCE).
+3. Keycloak redirects to `carlauncher://oauth/callback`, which Android hands
+   to the pending login request; the `/callback` route only controls what is
+   shown before returning to `/`.
+4. On success the session is available to the HTTP client and the native
+   vehicle-tracking service; on cancel or error the login page shows a
+   message instead of navigating away.
+
+## UC-09 Manage Vehicles
+
+Actor: signed-in user
+
+Trigger: user opens `/vehicles` (also reachable from `/settings/vehicle`).
+
+Flow:
+
+1. The app loads the signed-in user's vehicles from the vehicle service.
+2. User can register a new vehicle or open a vehicle's detail page
+   (`/vehicles/:id`) to view/assign the current device and jump to its trips,
+   geofences, and alerts.
+
+## UC-10 Review Trips, Tracking History, Geofences, and Alerts
+
+Actor: signed-in user
+
+Trigger: user opens a vehicle's trips (`/vehicles/:id/trips`, then
+`/trips/:tripId` for detail), tracking history (`/history/:vehicleId`),
+geofences (`/vehicles/:id/geofences`), or alerts (`/vehicles/:id/alerts`).
+
+Flow:
+
+1. Each screen requires an active session (redirect or login-required
+   placeholder, depending on route).
+2. Tracking history renders either a route on a map or a list of raw points,
+   filterable by date range.
+3. Trip, geofence, and alert data is fetched from the vehicle service backend
+   (see [Vehicle Tracking](VEHICLE_TRACKING.md)).
+
 ## Removed Use Cases
 
 The following legacy behaviors are intentionally out of scope:

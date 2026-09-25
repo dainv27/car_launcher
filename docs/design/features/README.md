@@ -85,9 +85,25 @@ Base URL và endpoint xác thực đọc theo thứ tự: `.env` / `.env.local` 
 ### Native bridge
 
 `core/native/native_bridge.dart` bọc `MethodChannel('com.carlauncher/native')`
-và `EventChannel('com.carlauncher/events')`. Ngoài ra còn có các channel riêng:
-`.../media_events`, `.../nav_events`, `.../navigation`, `car_launcher/google_maps`,
-`com.carlauncher/tracking_auth`, `virtual_display_app`, `embedded_app_pane`.
+(gọi lệnh + nhận `startupRuntimePermissionsResult` native gửi vào) và
+`EventChannel('com.carlauncher/events')` (lọc theo trường `type` qua
+`onEvent<T>`; hiện chỉ phát sự kiện đổi danh sách app đã cài). Các channel độc
+lập khác trong code: `com.carlauncher/media_events` (EventChannel,
+MediaSession — xem [05](05-media-center.md)), `com.carlauncher/oauth`
+(MethodChannel, nhận redirect OAuth từ native), `com.carlauncher/device_auth`
+(MethodChannel, ký `X-Device-Assertion` bằng key Keystore — xem
+[14](14-device-registration.md)§3.1), và channel của plugin
+`dev.fluttercommunity.plus/device_info`. `virtual_display_app` không phải
+Method/EventChannel mà là `viewType` của PlatformView, cơ chế nhúng app duy
+nhất còn dùng thật (`EmbeddedAndroidAppView`, xem
+[07](07-multi-window-embedding.md)); `embedded_app_pane` và
+`google_maps_taskview` vẫn đăng ký ở native nhưng không còn widget Flutter nào
+tạo view này (mồ côi — xem
+[docs/tbox/03_NATIVE_API.md](../../tbox/03_NATIVE_API.md)). Channel
+`com.carlauncher/tracking_auth` và các channel `nav_events`/`navigation` đã bị
+gỡ cùng tính năng navigation trong app (Maps mở qua embed/Intent thay vì điều
+hướng trong Flutter — xem [06](06-navigation-maps.md)), không còn tồn tại
+trong code.
 
 ### Logging
 

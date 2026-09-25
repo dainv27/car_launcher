@@ -12,6 +12,17 @@ Mục tiêu là xác định cách CarCar Launcher hiển thị đồng thời n
 
 > Lưu ý: mã nguồn đã qua decompile và obfuscate nên tên package/class như `z7.g`, `z7.m`, `o1.c` không phản ánh tên gốc. Tuy nhiên, các API Android và chuỗi gọi chính vẫn thể hiện rõ cơ chế hoạt động.
 
+> Cập nhật trạng thái: kiến trúc VirtualDisplay mô tả ở đây đã được Car Launcher
+> triển khai thật (`VirtualDisplayAppView`, PlatformView `virtual_display_app`,
+> widget Flutter `EmbeddedAndroidAppView`) — xem
+> [03_NATIVE_API.md](03_NATIVE_API.md), [04_EMBEDDED_APPS.md](04_EMBEDDED_APPS.md)
+> và [../design/features/07-multi-window-embedding.md](../design/features/07-multi-window-embedding.md).
+> Phần "đề xuất" ở §8/§11 bên dưới là bản phác thảo ban đầu; API thực tế đã
+> ship dùng PlatformView (`paneId`, `packageName`, `zOrderOnTop`) thay vì bộ
+> MethodChannel CRUD (`createAppView`/`resizeAppView`/…) được phác thảo ở §8.1,
+> và launcher chỉ cố định hai widget nhúng (Maps, YouTube) chứ không có "pane"
+> gán app tuỳ ý như đề xuất.
+
 ## 2. Kết luận chính
 
 CarCar Launcher không chủ yếu dựa vào Android split-screen, freeform window, `TaskView` hoặc `ActivityView` thông thường.

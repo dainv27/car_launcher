@@ -64,10 +64,10 @@ flutter_native_splash:
   android: true
   ios: false
 
-  android_12:
-    color: "#000000"
-    color_dark: "#000000"
-    image: assets/images/splash.png
+  # No android_12 block: Android 12+'s native Splash Screen API only
+  # supports a small centered icon, not a full-bleed background image.
+  # Omitting it keeps every Android version on the classic full-screen
+  # launch_background (android_gravity: fill) instead.
 
 flutter:
   default-flavor: system
